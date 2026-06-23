@@ -40,14 +40,14 @@ final class ExamResult extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    public static function computeGrade(float $marks): string
+    public static function computeGrade(float $marks, array $scale): string
     {
-        return match (true) {
-            $marks >= 70 => 'A',
-            $marks >= 60 => 'B',
-            $marks >= 50 => 'C',
-            $marks >= 40 => 'D',
-            default      => 'F',
-        };
+        foreach ($scale as $band) {
+            if ($marks >= $band['min'] && $marks <= $band['max']) {
+                return $band['grade'];
+            }
+        }
+
+        return 'F';
     }
 }

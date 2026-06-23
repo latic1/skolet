@@ -56,6 +56,14 @@
            class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
             School Profile
         </a>
+        <a href="{{ $host }}/settings/domain"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Custom Domain
+        </a>
+        <a href="{{ $host }}/settings/notifications"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Notifications
+        </a>
     </div>
 
     {{-- Flash Messages --}}

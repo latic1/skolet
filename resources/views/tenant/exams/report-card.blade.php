@@ -317,7 +317,7 @@
         {{-- Grading scale key --}}
         <div class="flex flex-wrap items-center gap-3 px-6 py-4 border-t border-border bg-surface-secondary">
             <span class="text-xs text-text-muted font-medium uppercase tracking-wide">Grading Scale:</span>
-            @foreach(config('schoolflow.default_grading_scale') as $band)
+            @foreach(config('skolet.default_grading_scale') as $band)
             <span class="inline-flex items-center gap-1.5 text-xs text-text-secondary">
                 <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold {{ $gradeBadge($band['grade']) }}">{{ $band['grade'] }}</span>
                 {{ $band['min'] }}–{{ $band['max'] }} ({{ $band['remark'] }})

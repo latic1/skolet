@@ -17,6 +17,30 @@
     ================================================================ --}}
     @if($can['settings'])
 
+        {{-- Onboarding Resume Banner --}}
+        @if(! ($schoolProfile?->onboarding_completed) && ! session('onboarding_skipped'))
+        <div class="bg-accent-muted border border-accent rounded-2xl p-5 flex items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-accent">Finish setting up your school</p>
+                    <p class="text-xs text-text-muted mt-0.5">Complete the quick setup wizard to unlock all features — takes under 3 minutes.</p>
+                </div>
+            </div>
+            <a href="{{ request()->getSchemeAndHttpHost() }}/onboarding/{{ $schoolProfile?->onboarding_step ?? 1 }}"
+               class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors">
+                Continue Setup
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+        @endif
+
         {{-- Setup Checklist --}}
         @php $doneCount = collect($checklist)->where('done', true)->count(); $total = count($checklist); @endphp
         @if($doneCount < $total)

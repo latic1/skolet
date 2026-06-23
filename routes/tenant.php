@@ -23,7 +23,10 @@ use App\Http\Controllers\Tenant\SchoolProfileController;
 use App\Http\Controllers\Tenant\SectionController;
 use App\Http\Controllers\Tenant\StaffController;
 use App\Http\Controllers\Tenant\StudentController;
+use App\Http\Controllers\Tenant\StudentPromotionController;
 use App\Http\Controllers\Tenant\SubjectController;
+use App\Http\Controllers\Tenant\NotificationsController;
+use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\TimetableController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -34,7 +37,7 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 | Tenant Routes
 |--------------------------------------------------------------------------
 |
-| All routes here are scoped to {subdomain}.schoolflow.com (or a verified
+| All routes here are scoped to {subdomain}.skolet.com (or a verified
 | custom domain). The domain constraint keeps these names distinct from
 | central routes so the route collection never has URI collisions.
 |
@@ -44,7 +47,7 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 |
 */
 
-$appHost = preg_replace('/^www\./i', '', parse_url(config('app.url'), PHP_URL_HOST) ?? 'schoolflow.com');
+$appHost = preg_replace('/^www\./i', '', parse_url(config('app.url'), PHP_URL_HOST) ?? 'skolet.com');
 
 Route::domain('{subdomain}.' . $appHost)
     ->middleware([
@@ -107,7 +110,13 @@ Route::domain('{subdomain}.' . $appHost)
             Route::post('/impersonate/exit', [ImpersonateController::class, 'exit'])->name('impersonate.exit');
 
             // Single permission-aware dashboard — role-filtered widgets rendered in view
-            Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('onboarding')->name('dashboard');
+
+            // Onboarding wizard — shown to school admins before initial setup is complete
+            Route::get('/onboarding', fn () => redirect(request()->getSchemeAndHttpHost() . '/onboarding/1'));
+            Route::get('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
+            Route::get('/onboarding/{step}', [OnboardingController::class, 'show'])->where('step', '[1-5]')->name('onboarding.show');
+            Route::post('/onboarding/{step}', [OnboardingController::class, 'store'])->where('step', '[1-5]')->name('onboarding.store');
 
             // Account Settings — no permission gate, every role can edit their own account
             Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
@@ -142,6 +151,8 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
             });
             Route::middleware('permission:students.edit')->group(function () {
+                Route::get('/students/promote', [StudentPromotionController::class, 'index'])->name('students.promote');
+                Route::post('/students/promote', [StudentPromotionController::class, 'execute'])->name('students.promote.execute');
                 Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
                 Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
                 Route::post('/students/{student}/login', [StudentController::class, 'createLogin'])->name('students.login.create');
@@ -285,9 +296,19 @@ Route::domain('{subdomain}.' . $appHost)
                 // School Profile
                 Route::get('/settings/profile', [SchoolProfileController::class, 'index'])->name('settings.profile');
                 Route::post('/settings/profile', [SchoolProfileController::class, 'update'])->name('settings.profile.update');
+                Route::post('/settings/profile/reset-counter', [SchoolProfileController::class, 'resetAdmissionCounter'])->name('settings.profile.reset-counter');
+                Route::post('/settings/grading-scale', [SchoolProfileController::class, 'updateGradingScale'])->name('settings.grading-scale');
+
+                // Notifications
+                Route::get('/settings/notifications', [NotificationsController::class, 'index'])->name('settings.notifications');
+                Route::post('/settings/notifications', [NotificationsController::class, 'save'])->name('settings.notifications.save');
+                Route::post('/settings/notifications/test/{event}', [NotificationsController::class, 'test'])->name('settings.notifications.test');
 
                 // Custom Domain
                 Route::get('/settings/domain', [CustomDomainController::class, 'index'])->name('settings.domain');
+                Route::post('/settings/domain', [CustomDomainController::class, 'store'])->name('settings.domain.store');
+                Route::patch('/settings/domain/{domainId}/verify', [CustomDomainController::class, 'verify'])->name('settings.domain.verify');
+                Route::delete('/settings/domain/{domainId}', [CustomDomainController::class, 'destroy'])->name('settings.domain.destroy');
             });
         });
     });

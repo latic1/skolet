@@ -1,7 +1,7 @@
 @extends('layouts.central')
 
-@section('title', 'Register Your School — SchoolFlow')
-@section('meta_description', 'Register your school on SchoolFlow in minutes. Choose a subdomain, create your admin account, and your school management platform is ready.')
+@section('title', 'Register Your School — Skolet')
+@section('meta_description', 'Register your school on Skolet in minutes. Choose a subdomain, create your admin account, and your school management platform is ready.')
 
 @section('content')
 @php $errors = $errors ?? new \Illuminate\Support\ViewErrorBag; @endphp
@@ -12,7 +12,7 @@
             {{-- Header --}}
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-text-primary">Register your school</h1>
-                <p class="mt-2 text-text-secondary text-sm">Your school will be live at <span class="font-medium text-text-primary">yourschool.schoolflow.com</span> in minutes.</p>
+                <p class="mt-2 text-text-secondary text-sm">Your school will be live at <span class="font-medium text-text-primary">yourschool.skolet.com</span> in minutes.</p>
             </div>
 
             {{-- Flash success --}}
@@ -96,7 +96,7 @@
                                     class="flex-1 px-3 py-2 bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
                                 >
                                 <div class="flex items-center bg-surface-secondary border-l border-border px-3 text-xs text-text-muted whitespace-nowrap shrink-0">
-                                    .schoolflow.com
+                                    .skolet.com
                                 </div>
                             </div>
                             @error('subdomain')
@@ -104,7 +104,7 @@
                             @else
                             <p class="mt-1.5 text-xs text-text-muted">
                                 Your school will be at:
-                                <span class="font-medium text-accent" x-text="preview + '.schoolflow.com'">yourschool.schoolflow.com</span>
+                                <span class="font-medium text-accent" x-text="preview + '.skolet.com'">yourschool.skolet.com</span>
                             </p>
                             @enderror
                         </div>
@@ -157,38 +157,14 @@
                             @enderror
                         </div>
 
-                        {{-- Password --}}
-                        <div class="mb-4">
-                            <label for="admin_password" class="block text-sm font-medium text-text-dark mb-1.5">
-                                Password <span class="text-error">*</span>
-                            </label>
-                            <input
-                                type="password"
-                                id="admin_password"
-                                name="admin_password"
-                                placeholder="At least 8 characters"
-                                autocomplete="new-password"
-                                class="w-full px-3 py-2 bg-surface border rounded-md text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors
-                                       {{ $errors->has('admin_password') ? 'border-error focus:ring-error focus:border-error' : 'border-border focus:ring-accent focus:border-accent' }}"
-                            >
-                            @error('admin_password')
-                            <p class="mt-1 text-xs text-error">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Confirm Password --}}
-                        <div>
-                            <label for="admin_password_confirmation" class="block text-sm font-medium text-text-dark mb-1.5">
-                                Confirm password <span class="text-error">*</span>
-                            </label>
-                            <input
-                                type="password"
-                                id="admin_password_confirmation"
-                                name="admin_password_confirmation"
-                                placeholder="Re-enter your password"
-                                autocomplete="new-password"
-                                class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-                            >
+                        {{-- Password note --}}
+                        <div class="rounded-lg bg-accent-muted border border-accent-light px-4 py-3 flex items-start gap-3">
+                            <svg class="w-4 h-4 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="text-xs text-accent leading-relaxed">
+                                A secure password will be generated and sent to the admin email address above.
+                            </p>
                         </div>
                     </div>
 
@@ -199,7 +175,7 @@
                     </button>
 
                     <p class="mt-4 text-xs text-center text-text-muted">
-                        By registering, you agree to SchoolFlow's Terms of Service.
+                        By registering, you agree to Skolet's Terms of Service.
                         Already registered?
                         <a href="{{ route('login') }}" class="text-accent hover:underline">Log in</a>
                     </p>

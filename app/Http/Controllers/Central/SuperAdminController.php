@@ -123,7 +123,7 @@ final class SuperAdminController extends Controller
     public function syncStudentCounts(): RedirectResponse
     {
         try {
-            Artisan::call('schoolflow:sync-student-counts');
+            Artisan::call('skolet:sync-student-counts');
 
             return back()->with('success', 'Student counts synced successfully across all schools.');
         } catch (\Throwable $e) {

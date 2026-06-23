@@ -22,6 +22,14 @@
            class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-accent text-accent">
             School Profile
         </a>
+        <a href="{{ $host }}/settings/domain"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Custom Domain
+        </a>
+        <a href="{{ $host }}/settings/notifications"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Notifications
+        </a>
     </div>
 
     {{-- Flash messages --}}
@@ -187,6 +195,55 @@
                 </div>
             </div>
 
+            {{-- Admission Number Pattern --}}
+            <div class="border-t border-border pt-6" x-data="admissionPattern(
+                '{{ old('admission_pattern', $profile?->admission_pattern ?? '{YEAR}/{SEQ:4}') }}',
+                {{ ($profile?->admission_counter ?? 0) + 1 }}
+            )">
+                <div class="mb-4">
+                    <h4 class="text-sm font-semibold text-text-primary">Student Index Number Pattern</h4>
+                    <p class="text-xs text-text-muted mt-0.5">Define how admission/index numbers are auto-generated when adding students.</p>
+                </div>
+
+                <div class="flex flex-col gap-3 sm:max-w-lg">
+                    {{-- Pattern input --}}
+                    <div>
+                        <label class="block text-xs font-medium text-text-secondary uppercase tracking-wide mb-1.5">Pattern</label>
+                        <input type="text" name="admission_pattern" x-model="pattern"
+                               @input="updatePreview()"
+                               maxlength="100"
+                               placeholder="{YEAR}/{SEQ:4}"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary font-mono placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                        @error('admission_pattern')
+                        <p class="mt-1 text-xs text-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Token buttons --}}
+                    <div class="flex flex-wrap gap-1.5">
+                        <span class="text-xs text-text-muted self-center">Insert:</span>
+                        <template x-for="token in tokens" :key="token">
+                            <button type="button" @click="insertToken(token)"
+                                    class="px-2.5 py-1 text-xs font-mono font-medium bg-surface-secondary border border-border rounded-md text-text-dark hover:bg-accent-muted hover:border-accent hover:text-accent transition-colors"
+                                    x-text="token"></button>
+                        </template>
+                    </div>
+
+                    {{-- Live preview --}}
+                    <div class="flex items-center gap-3 px-4 py-3 bg-surface-secondary rounded-lg border border-border">
+                        <span class="text-xs text-text-muted shrink-0">Next number:</span>
+                        <span class="text-sm font-semibold font-mono text-accent" x-text="preview"></span>
+                    </div>
+
+                    {{-- Token reference --}}
+                    <div class="text-xs text-text-muted space-y-1">
+                        <p><span class="font-mono text-text-dark">{YEAR}</span> — 4-digit year (e.g. {{ now()->year }})</p>
+                        <p><span class="font-mono text-text-dark">{YY}</span> — 2-digit year (e.g. {{ now()->format('y') }})</p>
+                        <p><span class="font-mono text-text-dark">{SEQ:4}</span> — sequence padded to N digits (e.g. 0001, 0042)</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="pt-2">
                 <button type="submit"
                         :disabled="submitting"
@@ -198,5 +255,67 @@
             </div>
         </form>
     </div>
+
+    {{-- Reset Sequence Card --}}
+    <div class="bg-surface border border-border rounded-2xl shadow-card">
+        <div class="px-6 py-4 border-b border-border">
+            <h3 class="text-base font-semibold text-text-primary">Index Number Sequence</h3>
+            <p class="text-xs text-text-muted mt-0.5">
+                Current counter: <span class="font-semibold text-text-primary">{{ $profile?->admission_counter ?? 0 }}</span>
+                — the next student will get sequence <span class="font-semibold text-text-primary">{{ ($profile?->admission_counter ?? 0) + 1 }}</span>.
+            </p>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-sm text-text-secondary mb-4">
+                Resetting the counter back to zero means the next student will start from sequence 1.
+                Only do this if you are sure there are no existing students, or if you have changed the pattern to avoid duplicate numbers.
+            </p>
+            <form method="POST" action="{{ $host }}/settings/profile/reset-counter"
+                  onsubmit="return confirm('Reset the sequence counter to zero? This could cause duplicate index numbers if students already exist.')">
+                @csrf
+                <button type="submit"
+                        class="px-4 py-2 bg-surface border border-error text-error text-sm font-medium rounded-md hover:bg-error-light transition-colors">
+                    Reset Sequence to Zero
+                </button>
+            </form>
+        </div>
+    </div>
+
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function admissionPattern(initialPattern, nextCounter) {
+    return {
+        pattern: initialPattern,
+        preview: '',
+        nextCounter,
+        tokens: ['{YEAR}', '{YY}', '{SEQ:4}', '{SEQ:3}', '{SEQ:5}'],
+
+        init() {
+            this.updatePreview();
+        },
+
+        updatePreview() {
+            const now = new Date();
+            const year = now.getFullYear().toString();
+            const yy   = year.slice(-2);
+            let p = this.pattern || '{YEAR}/{SEQ:4}';
+            p = p.replaceAll('{YEAR}', year);
+            p = p.replaceAll('{YY}', yy);
+            p = p.replace(/\{SEQ(?::(\d+))?\}/g, (_, n) => {
+                const pad = n ? parseInt(n) : 4;
+                return this.nextCounter.toString().padStart(pad, '0');
+            });
+            this.preview = p;
+        },
+
+        insertToken(token) {
+            this.pattern = (this.pattern || '') + token;
+            this.updatePreview();
+        },
+    };
+}
+</script>
+@endpush

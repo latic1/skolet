@@ -29,7 +29,7 @@ final class AuthenticatedSessionController extends Controller
             Auth::logout();
             $request->session()->invalidate();
             return back()->withErrors([
-                'email' => 'This school account has been suspended. Please contact SchoolFlow support.',
+                'email' => 'This school account has been suspended. Please contact Skolet support.',
             ]);
         }
 
@@ -40,7 +40,7 @@ final class AuthenticatedSessionController extends Controller
                 Auth::logout();
                 $request->session()->invalidate();
                 return back()->withErrors([
-                    'email' => 'Your subscription has expired. Please contact SchoolFlow support to renew.',
+                    'email' => 'Your subscription has expired. Please contact Skolet support to renew.',
                 ]);
             }
         }

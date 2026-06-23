@@ -51,7 +51,7 @@ final class ImpersonateController extends Controller
      * End the impersonation session and return to the Super Admin dashboard.
      *
      * Never calls Auth::logout() — only the impersonation session keys are
-     * cleared. The super_admin guard on schoolflow.com is completely unaffected
+     * cleared. The super_admin guard on skolet.com is completely unaffected
      * because it lives in a separate session (separate subdomain cookie).
      */
     public function exit(): RedirectResponse

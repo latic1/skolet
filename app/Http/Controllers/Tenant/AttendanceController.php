@@ -12,10 +12,13 @@ use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\Section;
 use App\Models\Tenant\Staff;
 use App\Models\Tenant\StaffAttendance;
+use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Student;
+use App\Notifications\AbsenceAlert;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
 final class AttendanceController extends Controller
@@ -73,8 +76,9 @@ final class AttendanceController extends Controller
     public function save(SaveAttendanceRequest $request): RedirectResponse
     {
         try {
-            $data   = $request->validated();
-            $userId = Auth::id();
+            $data    = $request->validated();
+            $userId  = Auth::id();
+            $profile = SchoolProfile::first();
 
             foreach ($data['statuses'] as $studentId => $status) {
                 if (!$status) {
@@ -85,6 +89,14 @@ final class AttendanceController extends Controller
                     ['student_id' => $studentId, 'date' => $data['date']],
                     ['status' => $status, 'marked_by' => $userId]
                 );
+
+                if ($status === 'absent' && $profile?->isNotificationEnabled('absent_alert')) {
+                    $student = Student::find($studentId);
+                    if ($student?->guardian_email) {
+                        Notification::route('mail', $student->guardian_email)
+                            ->notify(new AbsenceAlert($student, $data['date']));
+                    }
+                }
             }
 
             return back()->with('success', 'Attendance saved for ' . Carbon::parse($data['date'])->format('d M Y') . '.');

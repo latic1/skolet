@@ -1,7 +1,7 @@
 @extends('layouts.central')
 
-@section('title', 'Log in to Your School — SchoolFlow')
-@section('description', 'Enter your school\'s subdomain to access your SchoolFlow dashboard.')
+@section('title', 'Log in to Your School — Skolet')
+@section('description', 'Enter your school\'s subdomain to access your Skolet dashboard.')
 
 @section('content')
 <div class="min-h-[calc(100vh-72px)] bg-background flex items-center justify-center px-4 py-16">
@@ -33,7 +33,7 @@
                             <path d="M7 10L9 12L13 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <span class="text-xl font-bold text-text-darkest tracking-tight">SchoolFlow</span>
+                    <span class="text-xl font-bold text-text-darkest tracking-tight">Skolet</span>
                 </a>
             </div>
 
@@ -58,7 +58,7 @@
                             class="flex-1 px-3 py-2.5 text-sm text-text-darkest bg-surface outline-none placeholder:text-text-muted"
                         />
                         <span class="flex items-center px-3 text-sm text-text-secondary bg-surface-secondary border-l border-border select-none whitespace-nowrap">
-                            .{{ parse_url(config('app.url'), PHP_URL_HOST) ?? 'schoolflow.com' }}
+                            .{{ parse_url(config('app.url'), PHP_URL_HOST) ?? 'skolet.com' }}
                         </span>
                     </div>
                 </div>

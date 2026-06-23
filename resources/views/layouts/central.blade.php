@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'SchoolFlow — School Management Platform')</title>
-    <meta name="description" content="@yield('meta_description', 'SchoolFlow helps schools manage attendance, exams, fees, and communication in one place. Every school gets its own secure database.')">
+    <title>@yield('title', 'Skolet — School Management Platform')</title>
+    <meta name="description" content="@yield('meta_description', 'Skolet helps schools manage attendance, exams, fees, and communication in one place. Every school gets its own secure database.')">
 
     @stack('og_tags')
 
@@ -35,7 +35,7 @@
                         <path d="M7 10L9 12L13 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
-                <span class="text-[19px] font-bold leading-7 text-text-darkest tracking-tight">SchoolFlow</span>
+                <span class="text-[19px] font-bold leading-7 text-text-darkest tracking-tight">Skolet</span>
 
             </a>
 
@@ -112,7 +112,7 @@
                                 <path d="M7 10L9 12L13 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </div>
-                        <span class="text-base font-bold text-text-darkest">SchoolFlow</span>
+                        <span class="text-base font-bold text-text-darkest">Skolet</span>
                     </a>
                     <p class="text-sm text-text-secondary leading-relaxed">
                         The complete school management platform. Attendance, exams, fees, and more — in one place.
@@ -138,7 +138,7 @@
             </div>
 
             <div class="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p class="text-sm text-text-muted">© {{ date('Y') }} SchoolFlow. All rights reserved.</p>
+                <p class="text-sm text-text-muted">© {{ date('Y') }} Skolet. All rights reserved.</p>
                 <p class="text-sm text-text-muted">Built for modern schools.</p>
             </div>
         </div>

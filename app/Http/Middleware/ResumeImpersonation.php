@@ -21,7 +21,7 @@ final class ResumeImpersonation
      *
      * Auth::onceUsingId() logs in without persisting to the session, so the
      * tenant's `web` guard session keys are never written. The super_admin guard
-     * session on schoolflow.com is completely separate and remains intact.
+     * session on skolet.com is completely separate and remains intact.
      */
     public function handle(Request $request, Closure $next): Response
     {

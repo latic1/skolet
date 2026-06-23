@@ -264,7 +264,7 @@
         <div class="max-w-4xl mx-auto px-4 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p class="text-xs text-text-muted">© {{ date('Y') }} {{ $schoolName }}. All rights reserved.</p>
             <p class="text-xs text-text-muted">
-                Powered by <span class="font-medium text-text-secondary">SchoolFlow</span>
+                Powered by <span class="font-medium text-text-secondary">Skolet</span>
             </p>
         </div>
     </footer>

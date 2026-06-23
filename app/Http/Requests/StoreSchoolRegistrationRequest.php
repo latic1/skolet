@@ -16,11 +16,10 @@ final class StoreSchoolRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'school_name'    => ['required', 'string', 'max:255'],
-            'subdomain'      => ['required', 'string', 'max:63', 'regex:/^[a-z0-9][a-z0-9\-]*[a-z0-9]$|^[a-z0-9]$/'],
-            'admin_name'     => ['required', 'string', 'max:255'],
-            'admin_email'    => ['required', 'email', 'max:255'],
-            'admin_password' => ['required', 'string', 'min:8', 'confirmed'],
+            'school_name' => ['required', 'string', 'max:255'],
+            'subdomain'   => ['required', 'string', 'max:63', 'regex:/^[a-z0-9][a-z0-9\-]*[a-z0-9]$|^[a-z0-9]$/'],
+            'admin_name'  => ['required', 'string', 'max:255'],
+            'admin_email' => ['required', 'email', 'max:255'],
         ];
     }
 

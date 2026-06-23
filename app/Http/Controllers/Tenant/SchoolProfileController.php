@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\StoreGradingScaleRequest;
 use App\Http\Requests\Tenant\UpdateSchoolProfileRequest;
 use App\Models\Tenant\SchoolProfile;
+use App\Services\AdmissionNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -59,5 +61,35 @@ final class SchoolProfileController extends Controller
 
         return redirect(request()->getSchemeAndHttpHost() . '/settings/profile')
             ->with('success', 'School profile updated successfully.');
+    }
+
+    public function updateGradingScale(StoreGradingScaleRequest $request): RedirectResponse
+    {
+        $bands   = $request->validated()['bands'];
+        $profile = SchoolProfile::first() ?? new SchoolProfile();
+
+        $scale = array_map(fn ($b) => [
+            'min'    => (int) $b['min'],
+            'max'    => (int) $b['max'],
+            'grade'  => trim($b['grade']),
+            'remark' => trim($b['remark']),
+        ], $bands);
+
+        // Sort highest-first so applyScale() works top-to-bottom
+        usort($scale, fn ($a, $b) => $b['min'] <=> $a['min']);
+
+        $profile->grading_scale = $scale;
+        $profile->save();
+
+        return redirect(request()->getSchemeAndHttpHost() . '/settings/academic-year')
+            ->with('success', 'Grading scale saved successfully.');
+    }
+
+    public function resetAdmissionCounter(AdmissionNumberService $service): RedirectResponse
+    {
+        $service->resetCounter();
+
+        return redirect(request()->getSchemeAndHttpHost() . '/settings/profile')
+            ->with('success', 'Admission number sequence has been reset to zero.');
     }
 }

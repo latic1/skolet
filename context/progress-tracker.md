@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** 7 — Reports & Super Admin (in progress)
-**Last completed:** Feature 21 — Super Admin Impersonation (migration, controller, middleware, banner, audit logging)
-**Next:** 22 Custom Domain Support
+**Phase:** 8 — Platform Foundation (in progress)
+**Last completed:** Feature 27 — Email Notification System (notification_settings JSON on school_profile; 4 queued Notification classes; dispatch wired into AttendanceController, FeeStatusService, PaystackWebhookController, ExamController; SendFeeOverdueReminders weekly command; NotificationsController with toggle save + test email; settings/notifications.blade.php; Notifications tab added to all settings sub-navs)
+**Next:** 28 Rate Limiting & Security Hardening
 
 ---
 
@@ -59,7 +59,48 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - [x] 20 Attendance & Fee Reports (exportable)
 - [x] 21 Super Admin Dashboard — Manage Tenants & Subscriptions + Impersonation (session-based, audit-logged, 1-hour expiry)
-- [ ] 22 Custom Domain Support
+- [x] 22 Custom Domain Support
+
+### Phase 8 — Platform Foundation (MVP Gaps)
+
+- [x] 23 Queue Worker + Horizon Setup
+- [x] 24 Grading Scale Configuration Per School
+- [x] 25 Student Academic Promotion Engine
+- [x] 26 Tenant Onboarding Wizard
+- [x] 27 Email Notification System
+- [ ] 28 Rate Limiting & Security Hardening
+- [ ] 29 Audit Log
+- [ ] 30 Error Tracking & Health Checks
+- [ ] 31 Automated Testing Suite (PestPHP)
+
+### Phase 9 — Growth Features
+
+- [ ] 32 Subject-Teacher Assignments
+- [ ] 33 Staff Leave Management
+- [ ] 34 Parent Portal (Parent-Child Relationships)
+- [ ] 35 Homework & Assignment Management
+- [ ] 36 Disciplinary & Behavior Tracking
+- [ ] 37 Targeted Announcements & Notification Centre
+- [ ] 38 Expense & Budget Management
+- [ ] 39 Scholarship & Fee Waiver Management
+- [ ] 40 Academic Performance Analytics
+- [ ] 41 Attendance Analytics & Chronic Absentee Reports
+- [ ] 42 Online Admission Application
+- [ ] 43 Student Transcript Generation
+- [ ] 44 Multi-Currency & Locale Support
+- [ ] 45 Data Export, Backup & Privacy Tools
+- [ ] 46 REST API (Sanctum)
+
+### Phase 10 — Competitive Advantages
+
+- [ ] 47 Platform Self-Service Billing
+- [ ] 48 Payroll & Staff Salary Management
+- [ ] 49 Payment Plans / Installment Support
+- [ ] 50 Financial P&L Dashboard
+- [ ] 51 Teacher Class Register & Lesson Plans
+- [ ] 52 Outbound Webhook System
+- [ ] 53 Custom Domain Support (Complete Feature 22)
+- [ ] 54 Multi-Language UI Support
 
 ---
 
@@ -911,6 +952,82 @@ Applied consistent submit-disable pattern (Alpine `submitting` state, `@submit="
 - Cache token TTL is 90 seconds (was 60) to survive slow redirects
 
 **Action required**: Run `php artisan migrate` on the central DB to create the `impersonation_logs` table.
+
+---
+
+### 27 — Email Notification System
+
+**Already existed:** `WelcomeCredentialsMail` + `resources/views/mail/welcome-credentials.blade.php` — custom HTML email sent on staff/school admin account creation, already using `->queue()`.
+
+**Migration** (`database/migrations/tenant/2026_06_23_000005_add_notification_settings_to_school_profile.php`): Adds `notification_settings` (JSON, nullable) to `school_profile`. Ran on all 3 tenant DBs.
+
+**SchoolProfile model**: Added `notification_settings` to fillable/casts (`array`). Added helper `isNotificationEnabled(string $key): bool` — returns `true` when `notification_settings` is null (default all enabled), otherwise reads `$settings[$key]['email']`.
+
+**Notification classes** (`app/Notifications/`): All implement `ShouldQueue` + `Queueable`. All use `toMail()` returning `MailMessage` (fluent builder, uses Laravel's default notification template).
+- `AbsenceAlert(Student, string $date)` — recipient: `$student->guardian_email`
+- `FeeOverdueReminder(Student, FeeStructure, float $outstanding)` — recipient: `$student->guardian_email`
+- `ExamResultsPublished(Exam, Student, string $loginUrl)` — recipient: student's linked `User->email`
+- `PaymentConfirmation(FeePayment)` — recipient: `$payment->student->guardian_email`
+
+**Dispatch points** (all gated by `isNotificationEnabled()`):
+- `AttendanceController::save()` — dispatches `AbsenceAlert` per student with status `absent` and a `guardian_email`. Uses `Notification::route('mail', $email)->notify(...)` (on-demand notification, no `Notifiable` model needed).
+- `FeeStatusService::recordCashPayment()` — dispatches `PaymentConfirmation` after creating the `FeePayment` row.
+- `PaystackWebhookController::handle()` — dispatches `PaymentConfirmation` after recording Paystack payment; queries the newly created `FeePayment` by `paystack_ref`.
+- `ExamController::publish()` — dispatches `ExamResultsPublished` for each `ExamResult` row belonging to the exam; skips students without a linked user email. Uses `->each()` on the result collection.
+
+**Command** (`app/Console/Commands/SendFeeOverdueReminders.php`): Loops `Tenant::all()`, runs inside `$tenant->run()`. Queries `FeeStructure` rows with a past `due_date`, then per-student computes outstanding balance from `fee_payments` sum and dispatches `FeeOverdueReminder` for students with `guardian_email` and outstanding > 0. Registered as `schoolflow:send-fee-overdue-reminders`, scheduled weekly in `Kernel.php`.
+
+**Settings UI** (`/settings/notifications`):
+- `NotificationsController`: `index()` resolves settings (fills defaults if null), `save()` writes full settings array, `test(string $event)` sends a plain-text test via `Mail::raw()` to the logged-in admin's email.
+- `settings/notifications.blade.php`: toggle row per event with event icon, description, recipient label, "Send test" form button, and an HTML toggle switch (CSS `peer-checked` pattern). Info card explains `.env` MAIL_* configuration. SMS column is stub (flag stored as `sms: false`, not surfaced in UI).
+- Routes: `GET /settings/notifications`, `POST /settings/notifications`, `POST /settings/notifications/test/{event}` — all under `permission:settings.manage`.
+- "Notifications" tab added to all 4 settings sub-navs: academic-year, roles, school-profile, domain.
+
+**Default behaviour**: When `notification_settings` is null (not yet saved), all events default to `email=true`. Admin must actively disable events to suppress them.
+
+**SMS stub**: `sms` key stored in `notification_settings` schema (`false` always), `SMS_PROVIDER` env noted in UI info card. No SMS provider integration in Phase 8.
+
+**Action required**: ~~Run `php artisan tenants:migrate --path=database/migrations/tenant/2026_06_23_000005_add_notification_settings_to_school_profile.php`~~ — **DONE** (all 3 tenant DBs migrated).
+
+---
+
+### 26 — Tenant Onboarding Wizard
+
+**Migration** (`database/migrations/tenant/2026_06_23_000004_add_onboarding_to_school_profile.php`): Adds `onboarding_completed` (boolean, default false) and `onboarding_step` (tinyint, default 1) to `school_profile`. Ran on all 3 tenant DBs.
+
+**Model** (`SchoolProfile`): Added `onboarding_completed` and `onboarding_step` to `$fillable` and `$casts` (`boolean` and `integer` respectively).
+
+**Middleware** (`app/Http/Middleware/TenantOnboardingMiddleware.php`):
+- Only intercepts users with `settings.manage` permission (school admins).
+- Skips redirect if `session('onboarding_skipped')` is truthy.
+- If `SchoolProfile::first()` is null OR `onboarding_completed` is false → redirects to `/onboarding/{onboarding_step}`.
+- Registered as `'onboarding'` alias in `Kernel.php`. Applied inline on the dashboard route: `->middleware('onboarding')`.
+
+**Controller** (`app/Http/Controllers/Tenant/OnboardingController.php`): `show(int $step)` — clamps step 1–5, redirects to dashboard if already completed. `store(Request, int $step)` — dispatches to private step handlers via `match`. `skip(Request)` — sets session key, redirects to dashboard.
+
+**5-Step Wizard:**
+- Step 1 — School Profile: validates `school_name` (required), `short_description`, `logo` (image upload). Creates or updates `SchoolProfile` row. Logo stored at `logos/{tenantId}/logo.{ext}` on `public` disk (same path as Feature 07b `SchoolProfileController`).
+- Step 2 — Academic Year: validates `year_name`, `start_date`, `end_date`, `period_system` (3_term or 2_semester). Clears all `is_current` flags, creates a new current `AcademicYear`. Updates `school_profile.period_system`.
+- Step 3 — Classes: validates `classes[]` array (min 1). Uses `SchoolClass::firstOrCreate` — safe to re-submit. Sets `onboarding_step = 4`.
+- Step 4 — Subjects: validates `subjects[]` array (min 1). Uses `Subject::firstOrCreate`. Has "Skip for now" link to step 5.
+- Step 5 — Done: sets `onboarding_completed = true`. Redirects to dashboard with success flash.
+
+**Layout** (`resources/views/layouts/onboarding.blade.php`): Minimal no-sidebar layout — slim topbar with app name + "Skip setup →" link, `max-w-2xl` content area. Uses `@yield('content')`. No sidebar, no auth nav.
+
+**View** (`resources/views/tenant/onboarding.blade.php`): `@extends('layouts.onboarding')`. Progress stepper (5 circles with checkmarks for completed steps, accent color for active). Steps 1–4 use Alpine `submitting` state pattern. Steps 3 & 4 have dynamic add/remove rows via Alpine. Step 5 shows success checkmark with summary chips.
+
+**Dashboard banner** (`resources/views/tenant/dashboard.blade.php`): Shown to `$can['settings']` users when `! ($schoolProfile?->onboarding_completed) && ! session('onboarding_skipped')`. Links to `/onboarding/{current_step}`. `DashboardController` now imports and loads `SchoolProfile::first()` as `$schoolProfile` and passes it to the view.
+
+**Routes** (`routes/tenant.php`):
+- `GET /onboarding` — redirects to `/onboarding/1`
+- `GET /onboarding/skip` → `OnboardingController::skip` (named `onboarding.skip`)
+- `GET /onboarding/{step}` → `OnboardingController::show` (where: `[1-5]`, named `onboarding.show`)
+- `POST /onboarding/{step}` → `OnboardingController::store` (where: `[1-5]`, named `onboarding.store`)
+- `/dashboard` route has `->middleware('onboarding')` added inline.
+
+**Skip contract**: Setting `session('onboarding_skipped', true)` is permanent for the session. The dashboard banner is also hidden when this key is set. The admin can always come back to the wizard by visiting `/onboarding` directly.
+
+**Action required**: ~~Run `php artisan tenants:migrate --path=database/migrations/tenant/2026_06_23_000004_add_onboarding_to_school_profile.php`~~ — **DONE** (all 3 tenant DBs migrated).
 
 ---
 

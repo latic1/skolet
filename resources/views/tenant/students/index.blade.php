@@ -30,6 +30,25 @@
     </div>
     @endif
 
+    {{-- Promotion result banner --}}
+    @if(session('promotion_result'))
+    @php $pr = session('promotion_result'); @endphp
+    <div class="bg-success-lightest border border-success-light text-success-foreground text-sm px-4 py-3 rounded-xl flex items-start gap-3">
+        <svg class="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <div>
+            <span class="font-medium">Promotion complete.</span>
+            {{ $pr['promoted'] }} promoted · {{ $pr['retained'] }} retained · {{ $pr['graduated'] }} graduated
+            @if(! empty($pr['errors']))
+            <ul class="mt-1 list-disc list-inside text-xs text-warning space-y-0.5">
+                @foreach($pr['errors'] as $err)<li>{{ $err }}</li>@endforeach
+            </ul>
+            @endif
+        </div>
+    </div>
+    @endif
+
     {{-- Header --}}
     <div class="flex items-center justify-between">
         <div>
@@ -37,6 +56,15 @@
             <p class="text-xs text-text-muted mt-0.5">{{ $students->total() }} student{{ $students->total() !== 1 ? 's' : '' }} total</p>
         </div>
         <div class="flex items-center gap-2">
+            @can('students.edit')
+            <a href="{{ $host }}/students/promote"
+               class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+                End of Year Promotion
+            </a>
+            @endcan
             @can('students.create')
             <button @click="showImport = true"
                     class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
@@ -254,7 +282,7 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                         </svg>
-                        Download schoolflow-students-import-template.xlsx
+                        Download skolet-students-import-template.xlsx
                     </a>
                 </div>
             </div>

@@ -59,7 +59,7 @@ final class ImpersonationController extends Controller
             );
 
             $domain = $tenant->domains->first()?->domain
-                ?? $tenant->subdomain . '.' . (parse_url(config('app.url'), PHP_URL_HOST) ?? 'schoolflow.com');
+                ?? $tenant->subdomain . '.' . (parse_url(config('app.url'), PHP_URL_HOST) ?? 'skolet.com');
             $scheme = request()->isSecure() ? 'https' : 'http';
             $port   = (int) request()->getPort();
             $stdPort = ($scheme === 'https') ? 443 : 80;

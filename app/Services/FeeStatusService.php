@@ -7,11 +7,14 @@ namespace App\Services;
 use App\Models\Tenant\AcademicYear;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
+use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Term;
+use App\Notifications\PaymentConfirmation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 final class FeeStatusService
 {
@@ -136,6 +139,12 @@ final class FeeStatusService
                 'recorded_by'      => Auth::id(),
                 'paid_at'          => now(),
             ]);
+
+            $profile = SchoolProfile::first();
+            if ($profile?->isNotificationEnabled('payment_confirmation') && $student->guardian_email) {
+                Notification::route('mail', $student->guardian_email)
+                    ->notify(new PaymentConfirmation($payment));
+            }
 
             return ['success' => true, 'data' => $payment, 'error' => null];
         } catch (\Throwable $e) {

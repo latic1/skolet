@@ -7,11 +7,14 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
+use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Student;
+use App\Notifications\PaymentConfirmation;
 use App\Services\PaystackService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 final class PaystackWebhookController extends Controller
 {
@@ -89,6 +92,14 @@ final class PaystackWebhookController extends Controller
                 'recorded_by'      => null,
                 'paid_at'          => now(),
             ]);
+            $profile = SchoolProfile::first();
+            if ($profile?->isNotificationEnabled('payment_confirmation') && $student->guardian_email) {
+                $latestPayment = FeePayment::where('paystack_ref', $reference)->first();
+                if ($latestPayment) {
+                    Notification::route('mail', $student->guardian_email)
+                        ->notify(new PaymentConfirmation($latestPayment));
+                }
+            }
         } catch (\Throwable $e) {
             Log::error('[PaystackWebhook] Failed to record payment for ref: ' . $reference . ' — ' . $e->getMessage());
 

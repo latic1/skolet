@@ -12,6 +12,7 @@ use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
 use App\Models\Tenant\SchoolClass;
+use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Staff;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Subject;
@@ -192,9 +193,11 @@ final class DashboardController extends Controller
         }
         $gradeChart = ['labels' => $gradeLabels, 'values' => $gradeValues];
 
+        $schoolProfile = SchoolProfile::first();
+
         return view('tenant.dashboard', compact(
             'user', 'can', 'stats', 'activity', 'recentAnnouncements', 'checklist',
-            'feeChart', 'attendanceChart', 'gradeChart'
+            'feeChart', 'attendanceChart', 'gradeChart', 'schoolProfile'
         ));
     }
 }

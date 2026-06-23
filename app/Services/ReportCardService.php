@@ -31,7 +31,8 @@ final class ReportCardService
         $exam->loadMissing('academicYear');
         $student->loadMissing(['schoolClass', 'section']);
 
-        $scale = config('schoolflow.default_grading_scale', []);
+        $scale = SchoolProfile::first()?->grading_scale
+            ?? config('skolet.default_grading_scale', []);
 
         $rawResults = ExamResult::where('exam_id', $exam->id)
             ->where('student_id', $student->id)

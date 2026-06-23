@@ -19,10 +19,10 @@ return [
     'central_domains' => [
         '127.0.0.1',
         'localhost',
-        'schoolflow.test',
-        'www.schoolflow.test',
-        'schoolflow.com',
-        'www.schoolflow.com',
+        'skolet.test',
+        'www.skolet.test',
+        'skolet.com',
+        'www.skolet.com',
     ],
 
     /**
@@ -140,7 +140,7 @@ return [
          * disable asset() helper tenancy and explicitly use tenant_asset() calls in places
          * where you want to use tenant-specific assets (product images, avatars, etc).
          */
-        'asset_helper_tenancy' => true,
+        'asset_helper_tenancy' => false,
     ],
 
     /**

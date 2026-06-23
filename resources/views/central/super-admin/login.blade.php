@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Super Admin — SchoolFlow</title>
+    <title>Super Admin — Skolet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
                 <path d="M7 10L9 12L13 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </div>
-        <h1 class="text-xl font-bold text-text-darkest">SchoolFlow</h1>
+        <h1 class="text-xl font-bold text-text-darkest">Skolet</h1>
         <p class="mt-1 text-sm text-text-muted">Super Admin Portal</p>
     </div>
 
@@ -43,7 +43,7 @@
                 <input type="email" name="email" value="{{ old('email') }}" required autofocus
                        class="w-full px-3 py-2 bg-surface border rounded-md text-sm focus:outline-none focus:ring-1 transition-colors
                               {{ $errors->has('email') ? 'border-error focus:ring-error' : 'border-border focus:ring-accent focus:border-accent' }}"
-                       placeholder="admin@schoolflow.com">
+                       placeholder="admin@skolet.com">
             </div>
 
             <div>
@@ -67,7 +67,7 @@
     </div>
 
     <p class="mt-6 text-center text-xs text-text-muted">
-        <a href="{{ route('home') }}" class="hover:text-text-secondary transition-colors">← Back to SchoolFlow</a>
+        <a href="{{ route('home') }}" class="hover:text-text-secondary transition-colors">← Back to Skolet</a>
     </p>
 
 </div>

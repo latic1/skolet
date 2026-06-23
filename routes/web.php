@@ -8,15 +8,15 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Central Web Routes (schoolflow.com)
+| Central Web Routes (skolet.com)
 |--------------------------------------------------------------------------
 */
 
 Route::get('/', fn () => view('central.landing'))->name('home');
 Route::get('/pricing', fn () => view('central.pricing'))->name('pricing');
 
-// Domain-constrained so accra.schoolflow.test/login hits the tenant route instead.
-Route::domain(preg_replace('/^www\./i', '', parse_url(config('app.url'), PHP_URL_HOST) ?? 'schoolflow.com'))
+// Domain-constrained so accra.skolet.test/login hits the tenant route instead.
+Route::domain(preg_replace('/^www\./i', '', parse_url(config('app.url'), PHP_URL_HOST) ?? 'skolet.com'))
     ->get('/login', fn () => view('central.login'))
     ->name('login');
 

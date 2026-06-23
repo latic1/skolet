@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 final class SyncTenantStudentCounts extends Command
 {
-    protected $signature = 'schoolflow:sync-student-counts';
+    protected $signature = 'skolet:sync-student-counts';
 
     protected $description = 'Sync student counts from each tenant DB into subscription_plans and auto-expire overdue tenants';
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Super Admin Dashboard — SchoolFlow</title>
+    <title>Super Admin Dashboard — Skolet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
                     <path d="M7 10L9 12L13 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </div>
-            <span class="font-bold text-text-darkest">SchoolFlow</span>
+            <span class="font-bold text-text-darkest">Skolet</span>
             <span class="text-border">|</span>
             <span class="text-sm text-text-muted">Super Admin</span>
         </div>
@@ -127,7 +127,7 @@
                     @forelse ($tenants as $tenant)
                     @php
                         $plan    = $tenant->subscriptionPlan;
-                        $domain  = $tenant->domains->first()?->domain ?? $tenant->subdomain . '.schoolflow.com';
+                        $domain  = $tenant->domains->first()?->domain ?? $tenant->subdomain . '.skolet.com';
                     @endphp
                     <tr class="hover:bg-surface-secondary/50 transition-colors"
                         x-show="matchSearch('{{ addslashes(strtolower($tenant->name)) }}', '{{ addslashes(strtolower($domain)) }}')"
@@ -371,7 +371,7 @@
     </div>{{-- /card --}}
 
     <p class="mt-6 text-xs text-text-muted">
-        Student counts sync daily via scheduler (<code class="bg-surface-secondary px-1 rounded">schoolflow:sync-student-counts</code>).
+        Student counts sync daily via scheduler (<code class="bg-surface-secondary px-1 rounded">skolet:sync-student-counts</code>).
         Use the <strong>Sync Students</strong> button above to force an immediate sync.
     </p>
 

@@ -43,6 +43,14 @@
            class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
             School Profile
         </a>
+        <a href="{{ $host }}/settings/domain"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Custom Domain
+        </a>
+        <a href="{{ $host }}/settings/notifications"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Notifications
+        </a>
     </div>
 
     {{-- Flash messages --}}
@@ -110,7 +118,137 @@
     </div>
 
     {{-- =========================================================
-         Section 2: Academic Years
+         Section 2: Grading Scale
+         ========================================================= --}}
+@php
+    $defaultScale = config('skolet.default_grading_scale', []);
+    $savedScale   = $schoolProfile?->grading_scale ?? $defaultScale;
+    $scaleJson    = json_encode(array_values($savedScale));
+@endphp
+<div class="bg-surface border border-border rounded-2xl shadow-card"
+     x-data="{
+        submitting: false,
+        bands: {{ $scaleJson }},
+        addBand() {
+            this.bands.push({ min: '', max: '', grade: '', remark: '' });
+        },
+        removeBand(index) {
+            this.bands.splice(index, 1);
+        }
+     }">
+
+    <div class="px-6 py-4 border-b border-border flex items-center justify-between gap-4 flex-wrap">
+        <div>
+            <h3 class="text-base font-semibold text-text-primary">Grading Scale</h3>
+            <p class="text-xs text-text-muted mt-0.5">Define how numeric marks are converted to grade letters and remarks on report cards. Must cover 0–100 with no gaps or overlaps.</p>
+        </div>
+    </div>
+
+    {{-- Grading scale errors --}}
+    @if($errors->hasBag('default') && $errors->has('bands'))
+    <div class="mx-6 mt-4 bg-error-light border border-error text-error text-sm px-4 py-3 rounded-xl">
+        <ul class="list-disc list-inside space-y-0.5">
+            @foreach($errors->get('bands') as $msg)
+            <li>{{ is_array($msg) ? $msg[0] : $msg }}</li>
+            @endforeach
+            @foreach($errors->get('bands.*') as $msgs)
+                @foreach($msgs as $msg)
+                <li>{{ $msg }}</li>
+                @endforeach
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
+    <form method="POST" action="{{ $host }}/settings/grading-scale"
+          @submit="submitting = true" class="p-6 space-y-4">
+        @csrf
+
+        {{-- Band rows --}}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="pb-2 text-left text-xs font-medium text-text-muted pr-3 w-24">Min Score</th>
+                        <th class="pb-2 text-left text-xs font-medium text-text-muted pr-3 w-24">Max Score</th>
+                        <th class="pb-2 text-left text-xs font-medium text-text-muted pr-3 w-20">Grade</th>
+                        <th class="pb-2 text-left text-xs font-medium text-text-muted pr-3">Remark</th>
+                        <th class="pb-2 w-8"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    <template x-for="(band, index) in bands" :key="index">
+                        <tr>
+                            <td class="py-2 pr-3">
+                                <input type="number" :name="'bands[' + index + '][min]'"
+                                       x-model="band.min"
+                                       min="0" max="100" required
+                                       class="w-full px-2 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                            </td>
+                            <td class="py-2 pr-3">
+                                <input type="number" :name="'bands[' + index + '][max]'"
+                                       x-model="band.max"
+                                       min="0" max="100" required
+                                       class="w-full px-2 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                            </td>
+                            <td class="py-2 pr-3">
+                                <input type="text" :name="'bands[' + index + '][grade]'"
+                                       x-model="band.grade"
+                                       maxlength="5" required placeholder="A"
+                                       class="w-full px-2 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                            </td>
+                            <td class="py-2 pr-3">
+                                <input type="text" :name="'bands[' + index + '][remark]'"
+                                       x-model="band.remark"
+                                       maxlength="50" required placeholder="Excellent"
+                                       class="w-full px-2 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                            </td>
+                            <td class="py-2">
+                                <button type="button" @click="removeBand(index)"
+                                        x-show="bands.length > 1"
+                                        class="p-1 text-text-muted hover:text-error transition-colors rounded">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Grade band preview --}}
+        <div class="flex gap-1 h-5 rounded-md overflow-hidden" x-show="bands.length > 0">
+            <template x-for="(band, index) in [...bands].sort((a,b) => b.min - a.min)" :key="index">
+                <div class="flex-1 rounded-sm"
+                     :style="`background: ${['#10b981','#61a8ff','#ff8904','#ef4444','#a78bfa','#f59e0b'][index % 6]}; opacity: 0.7`"
+                     :title="band.grade + ': ' + band.min + '–' + band.max">
+                </div>
+            </template>
+        </div>
+        <p class="text-xs text-text-muted -mt-2">Preview — grade bands from highest (left) to lowest (right)</p>
+
+        <div class="flex items-center gap-3 pt-2">
+            <button type="button" @click="addBand()"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-accent border border-accent rounded-md hover:bg-accent-muted transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Band
+            </button>
+            <button type="submit"
+                    :disabled="submitting"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                <span x-show="!submitting">Save Grading Scale</span>
+                <span x-show="submitting">Saving…</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+    {{-- =========================================================
+         Section 3: Academic Years
          ========================================================= --}}
     <div class="bg-surface border border-border rounded-2xl shadow-card">
 

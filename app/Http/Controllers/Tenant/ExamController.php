@@ -12,11 +12,14 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\Term;
 use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\SchoolClass;
+use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Section;
 use App\Models\Tenant\Staff;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\Timetable;
+use App\Notifications\ExamResultsPublished;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -190,6 +193,23 @@ final class ExamController extends Controller
         try {
             $exam->update(['is_published' => true]);
 
+            $profile = SchoolProfile::first();
+            if ($profile?->isNotificationEnabled('exam_results_published')) {
+                $loginUrl = request()->getSchemeAndHttpHost() . '/login';
+
+                ExamResult::where('exam_id', $exam->id)
+                    ->with('student.user')
+                    ->get()
+                    ->each(function (ExamResult $result) use ($exam, $loginUrl): void {
+                        $student = $result->student;
+                        $email   = $student?->user?->email;
+                        if ($email) {
+                            Notification::route('mail', $email)
+                                ->notify(new ExamResultsPublished($exam, $student, $loginUrl));
+                        }
+                    });
+            }
+
             return redirect($host . '/exams')->with('success', "'{$exam->name}' has been published. Students and parents can now view results.");
         } catch (\Throwable $e) {
             \Log::error('[exams.publish] ' . $e->getMessage());
@@ -222,6 +242,9 @@ final class ExamController extends Controller
                 }
             }
 
+            $scale = SchoolProfile::first()?->grading_scale
+                ?? config('skolet.default_grading_scale', []);
+
             foreach ($data['marks'] as $studentId => $marks) {
                 if ($marks === null || $marks === '') {
                     ExamResult::where([
@@ -232,7 +255,7 @@ final class ExamController extends Controller
                     continue;
                 }
 
-                $grade = ExamResult::computeGrade((float) $marks);
+                $grade = ExamResult::computeGrade((float) $marks, $scale);
 
                 ExamResult::updateOrCreate(
                     [

@@ -10,6 +10,7 @@ use App\Models\Central\Tenant;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -20,8 +21,8 @@ final class TenantProvisioningService
         string $subdomain,
         string $adminName,
         string $adminEmail,
-        string $adminPassword,
     ): array {
+        $adminPassword = Str::password(12);
         $tenantDomain = $this->buildTenantDomain($subdomain);
 
         if (Domain::where('domain', $tenantDomain)->exists()) {
@@ -43,7 +44,7 @@ final class TenantProvisioningService
             // Create the initial subscription_plans row (central DB, trial status)
             SubscriptionPlan::create([
                 'tenant_id'        => $tenant->id,
-                'rate_per_student' => config('schoolflow.default_rate_per_student', 5.00),
+                'rate_per_student' => config('skolet.default_rate_per_student', 5.00),
                 'student_count'    => 0,
                 'amount_due'       => 0,
                 'payment_status'   => 'unpaid',
@@ -68,7 +69,13 @@ final class TenantProvisioningService
 
             return [
                 'success' => true,
-                'data'    => ['tenant' => $tenant, 'domain' => $tenantDomain],
+                'data'    => [
+                    'tenant'         => $tenant,
+                    'domain'         => $tenantDomain,
+                    'admin_email'    => $adminEmail,
+                    'admin_name'     => $adminName,
+                    'admin_password' => $adminPassword,
+                ],
                 'error'   => null,
             ];
         } catch (\Throwable $e) {
@@ -148,9 +155,9 @@ final class TenantProvisioningService
 
     private function buildTenantDomain(string $subdomain): string
     {
-        $appHost = parse_url(config('app.url'), PHP_URL_HOST) ?? 'schoolflow.com';
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST) ?? 'skolet.com';
 
-        // Strip 'www.' so demo.www.schoolflow.com is never produced
+        // Strip 'www.' so demo.www.skolet.com is never produced
         $baseHost = (string) preg_replace('/^www\./i', '', $appHost);
 
         return $subdomain . '.' . $baseHost;

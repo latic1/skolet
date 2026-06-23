@@ -1,11 +1,11 @@
 @extends('layouts.central')
 
-@section('title', 'SchoolFlow — The Complete School Management Platform')
-@section('meta_description', 'SchoolFlow helps schools manage attendance, exams, fee collection, and communication — all in one place. Every school gets its own isolated database and free subdomain.')
+@section('title', 'Skolet — The Complete School Management Platform')
+@section('meta_description', 'Skolet helps schools manage attendance, exams, fee collection, and communication — all in one place. Every school gets its own isolated database and free subdomain.')
 
 @push('og_tags')
 <meta property="og:type" content="website">
-<meta property="og:title" content="SchoolFlow — The Complete School Management Platform">
+<meta property="og:title" content="Skolet — The Complete School Management Platform">
 <meta property="og:description" content="Streamline attendance, exams, fees, and communications. Every school gets its own secure database with a free subdomain.">
 <meta property="og:url" content="{{ url('/') }}">
 @endpush
@@ -15,7 +15,7 @@
 {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "SchoolFlow",
+    "name": "Skolet",
     "applicationCategory": "EducationalApplication",
     "operatingSystem": "Web",
     "description": "Multi-tenant school management platform for attendance, exams, fee collection, and communication.",
@@ -85,7 +85,7 @@
                     <div class="w-3 h-3 rounded-full bg-success opacity-60"></div>
                 </div>
                 <div class="bg-surface border border-border rounded-md px-3 py-1 text-xs text-text-muted mx-auto max-w-xs w-full text-center">
-                    greenfield.schoolflow.com/dashboard
+                    greenfield.skolet.com/dashboard
                 </div>
             </div>
 
@@ -262,17 +262,17 @@
         <div class="max-w-2xl mx-auto">
             <div class="text-center mb-10">
                 <h2 class="text-3xl font-bold text-text-primary">Frequently Asked Questions</h2>
-                <p class="mt-3 text-text-secondary">Everything you need to know about SchoolFlow.</p>
+                <p class="mt-3 text-text-secondary">Everything you need to know about Skolet.</p>
             </div>
 
             @php
             $faqs = [
-                ['How much does SchoolFlow cost?', 'SchoolFlow offers multiple plans starting from free. Our Basic plan is free for smaller schools, and our paid plans unlock advanced features like custom domains, bulk imports, and priority support. See the Pricing page for full details.'],
+                ['How much does Skolet cost?', 'Skolet offers multiple plans starting from free. Our Basic plan is free for smaller schools, and our paid plans unlock advanced features like custom domains, bulk imports, and priority support. See the Pricing page for full details.'],
                 ['Can I try it before paying?', 'Yes — you can register your school and use the full platform during the trial period, no credit card required. Upgrade only when you are ready.'],
-                ['How does the subdomain work?', 'When you register your school, you pick a subdomain like "greenfield" and your school lives at greenfield.schoolflow.com. Students, staff, and parents access everything through that address.'],
-                ['Can I use my own domain name?', 'Yes. Once your school is set up, you can add a custom domain (e.g. admin.yourschool.com) by pointing a CNAME record to SchoolFlow. We handle SSL automatically.'],
+                ['How does the subdomain work?', 'When you register your school, you pick a subdomain like "greenfield" and your school lives at greenfield.skolet.com. Students, staff, and parents access everything through that address.'],
+                ['Can I use my own domain name?', 'Yes. Once your school is set up, you can add a custom domain (e.g. admin.yourschool.com) by pointing a CNAME record to Skolet. We handle SSL automatically.'],
                 ['Is our school\'s data safe?', 'Absolutely. Every school runs on its own isolated database — your data never mixes with another school\'s. We take security seriously at every layer of the stack.'],
-                ['Can I manage multiple school branches?', 'Each branch would have its own SchoolFlow account and subdomain. Cross-branch management is on the roadmap for a future release.'],
+                ['Can I manage multiple school branches?', 'Each branch would have its own Skolet account and subdomain. Cross-branch management is on the roadmap for a future release.'],
             ];
             @endphp
 

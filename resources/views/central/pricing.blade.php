@@ -1,11 +1,11 @@
 @extends('layouts.central')
 
-@section('title', 'Pricing — SchoolFlow')
-@section('meta_description', 'SchoolFlow pricing plans for schools of every size. Start free, upgrade when you\'re ready. Basic, Standard, and Premium plans with transparent pricing.')
+@section('title', 'Pricing — Skolet')
+@section('meta_description', 'Skolet pricing plans for schools of every size. Start free, upgrade when you\'re ready. Basic, Standard, and Premium plans with transparent pricing.')
 
 @push('og_tags')
 <meta property="og:type" content="website">
-<meta property="og:title" content="Pricing — SchoolFlow">
+<meta property="og:title" content="Pricing — Skolet">
 <meta property="og:description" content="Transparent pricing for schools of every size. Start free with the Basic plan, upgrade to unlock advanced features.">
 <meta property="og:url" content="{{ url('/pricing') }}">
 @endpush

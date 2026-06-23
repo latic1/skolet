@@ -82,7 +82,7 @@
         <div class="bg-surface border border-border rounded-2xl shadow-card p-6 flex flex-col gap-5">
             <div>
                 <h3 class="text-base font-semibold text-text-primary">Login Account</h3>
-                <p class="text-xs text-text-muted mt-1">These credentials allow the staff member to log in to SchoolFlow.</p>
+                <p class="text-xs text-text-muted mt-1">A secure password will be generated and emailed to the staff member automatically.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -92,20 +92,6 @@
                            placeholder="e.g. jane@example.com"
                            class="w-full px-3 py-2 bg-surface border @error('email') border-error @else border-border @enderror rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('email')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">Password <span class="text-error">*</span></label>
-                    <input type="password" name="password" required autocomplete="new-password"
-                           class="w-full px-3 py-2 bg-surface border @error('password') border-error @else border-border @enderror rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                    @error('password')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">Confirm Password <span class="text-error">*</span></label>
-                    <input type="password" name="password_confirmation" required autocomplete="new-password"
-                           class="w-full px-3 py-2 bg-surface border @error('password_confirmation') border-error @else border-border @enderror rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                    @error('password_confirmation')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="sm:col-span-2">

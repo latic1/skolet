@@ -14,6 +14,7 @@ use App\Imports\StudentImport;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\User;
+use App\Services\AdmissionNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -22,6 +23,9 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class StudentController extends Controller
 {
+    public function __construct(
+        private readonly AdmissionNumberService $admissionNumberService,
+    ) {}
     public function index(): View
     {
         $classes = SchoolClass::with('sections')->orderBy('order')->orderBy('name')->get();
@@ -66,7 +70,7 @@ final class StudentController extends Controller
     {
         try {
             $data = $request->validated();
-            $data['admission_no'] = $this->generateAdmissionNumber();
+            $data['admission_no'] = $this->admissionNumberService->generate();
 
             $student = Student::create($data);
 
@@ -148,7 +152,7 @@ final class StudentController extends Controller
 
     public function downloadTemplate(): BinaryFileResponse
     {
-        return Excel::download(new StudentImportTemplate(), 'schoolflow-students-import-template.xlsx');
+        return Excel::download(new StudentImportTemplate(), 'skolet-students-import-template.xlsx');
     }
 
     public function createLogin(CreateStudentLoginRequest $request, Student $student): RedirectResponse
@@ -200,16 +204,4 @@ final class StudentController extends Controller
         }
     }
 
-    private function generateAdmissionNumber(): string
-    {
-        $year = now()->year;
-        $prefix = $year . '/';
-        $last = Student::where('admission_no', 'like', $prefix . '%')
-            ->orderByDesc('admission_no')
-            ->value('admission_no');
-
-        $sequence = $last ? ((int) substr($last, -4)) + 1 : 1;
-
-        return $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
-    }
 }

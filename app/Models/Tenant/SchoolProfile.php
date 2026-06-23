@@ -19,5 +19,29 @@ final class SchoolProfile extends Model
         'email',
         'website',
         'period_system',
+        'admission_pattern',
+        'admission_counter',
+        'grading_scale',
+        'onboarding_completed',
+        'onboarding_step',
+        'notification_settings',
     ];
+
+    protected $casts = [
+        'grading_scale'         => 'array',
+        'onboarding_completed'  => 'boolean',
+        'onboarding_step'       => 'integer',
+        'notification_settings' => 'array',
+    ];
+
+    public function isNotificationEnabled(string $key): bool
+    {
+        $settings = $this->notification_settings;
+
+        if (! $settings) {
+            return true;
+        }
+
+        return (bool) ($settings[$key]['email'] ?? true);
+    }
 }

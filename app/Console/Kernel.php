@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('schoolflow:sync-student-counts')->daily();
+        $schedule->command('skolet:sync-student-counts')->daily();
+        $schedule->command('skolet:send-fee-overdue-reminders')->weekly();
     }
 
     /**
