@@ -16,7 +16,6 @@ use App\Models\Tenant\User;
 use App\Services\SmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -182,7 +181,7 @@ final class StaffController extends Controller
         try {
             $plainPassword = Str::password(12);
 
-            $staff->user->update(['password' => Hash::make($plainPassword)]);
+            $staff->user->update(['password' => $plainPassword]);
 
             $loginUrl = request()->getSchemeAndHttpHost() . '/login';
             $smsBody  = "Skolet: Your login credentials have been reset.\nLogin: {$loginUrl}\nEmail: {$staff->user->email}\nPassword: {$plainPassword}";
