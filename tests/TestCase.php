@@ -37,7 +37,11 @@ abstract class TenantTestCase extends TestCase
         $subdomain = 'test' . uniqid();
 
         // Tenant::create() fires CreateDatabase + MigrateDatabase via the pipeline.
-        $this->tenant = Tenant::create(['id' => $subdomain]);
+        $this->tenant = Tenant::create([
+            'id'        => $subdomain,
+            'name'      => 'Test School ' . $subdomain,
+            'subdomain' => $subdomain,
+        ]);
         $this->tenant->domains()->create(['domain' => $subdomain . '.localhost']);
 
         tenancy()->initialize($this->tenant);
