@@ -32,6 +32,8 @@ use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\TimetableController;
 use App\Http\Controllers\Tenant\ParentStudentController;
 use App\Http\Controllers\Tenant\ParentPortalController;
+use App\Http\Controllers\Tenant\AssignmentController;
+use App\Http\Controllers\Tenant\SubmissionController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -235,6 +237,24 @@ Route::domain('{subdomain}.' . $appHost)
 
             // Parent portal — parents view their linked children's data
             Route::get('/my-children', [ParentPortalController::class, 'index'])->name('parents.portal');
+
+            // Assignments — literal paths before {assignment} wildcard to avoid conflicts
+            Route::middleware('permission:assignments.view')->group(function () {
+                Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+            });
+            Route::middleware('permission:assignments.create')->group(function () {
+                Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+            });
+            Route::middleware('permission:assignments.edit')->group(function () {
+                Route::put('/assignments/{assignment}', [AssignmentController::class, 'update'])->name('assignments.update');
+                Route::patch('/submissions/{submission}/grade', [SubmissionController::class, 'grade'])->name('submissions.grade');
+            });
+            Route::middleware('permission:assignments.delete')->group(function () {
+                Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+            });
+            Route::middleware('permission:assignments.submit')->group(function () {
+                Route::post('/assignments/{assignment}/submit', [SubmissionController::class, 'store'])->name('assignments.submit');
+            });
 
             // Fees — index accessible to all auth users; controller dispatches by permission
             // (admin/accountant → tabbed admin view; student/parent → own fees view)

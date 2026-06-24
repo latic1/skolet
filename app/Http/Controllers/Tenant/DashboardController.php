@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\AcademicYear;
 use App\Models\Tenant\Announcement;
+use App\Models\Tenant\Assignment;
+use App\Models\Tenant\AssignmentSubmission;
 use App\Models\Tenant\Attendance;
 use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\FeePayment;
@@ -199,9 +201,40 @@ final class DashboardController extends Controller
 
         $schoolProfile = SchoolProfile::first();
 
+        // ── Assignment badges ─────────────────────────────────────────────────
+        $assignmentsDueSoon   = 0;
+        $ungradedSubmissions  = 0;
+
+        if ($user->can('assignments.submit') && ! $user->can('assignments.create')) {
+            // Student: count pending assignments due within 3 days
+            $student = Student::where('user_id', $user->id)->first();
+            if ($student) {
+                $submittedIds = AssignmentSubmission::where('student_id', $student->id)
+                    ->pluck('assignment_id');
+
+                $assignmentsDueSoon = Assignment::where('class_id', $student->class_id)
+                    ->where(function ($q) use ($student) {
+                        $q->whereNull('section_id')->orWhere('section_id', $student->section_id);
+                    })
+                    ->whereNotIn('id', $submittedIds)
+                    ->whereBetween('due_date', [now(), now()->addDays(3)])
+                    ->count();
+            }
+        } elseif ($user->can('assignments.create') && ! $user->can('settings.manage')) {
+            // Teacher: count ungraded submissions on their assignments
+            $staff = Staff::where('user_id', $user->id)->first();
+            if ($staff) {
+                $teacherAssignmentIds = Assignment::where('teacher_id', $staff->id)->pluck('id');
+                $ungradedSubmissions  = AssignmentSubmission::whereIn('assignment_id', $teacherAssignmentIds)
+                    ->whereNull('marks_awarded')
+                    ->count();
+            }
+        }
+
         return view('tenant.dashboard', compact(
             'user', 'can', 'stats', 'activity', 'recentAnnouncements', 'checklist',
-            'feeChart', 'attendanceChart', 'gradeChart', 'schoolProfile'
+            'feeChart', 'attendanceChart', 'gradeChart', 'schoolProfile',
+            'assignmentsDueSoon', 'ungradedSubmissions'
         ));
     }
 }
