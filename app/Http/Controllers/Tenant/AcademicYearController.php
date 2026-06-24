@@ -44,7 +44,12 @@ final class AcademicYearController extends Controller
                 ->with('error', 'The period system cannot be changed after academic years with terms have been created. Delete all academic years first to reset it.');
         }
 
-        SchoolProfile::updateOrCreate([], ['period_system' => $newSystem]);
+        if ($profile) {
+            $profile->update(['period_system' => $newSystem]);
+        } else {
+            return redirect($host . '/settings/academic-year')
+                ->with('error', 'School profile not found. Complete the setup wizard first.');
+        }
 
         $label = $newSystem === '3_term' ? '3-Term System' : '2-Semester System';
 
