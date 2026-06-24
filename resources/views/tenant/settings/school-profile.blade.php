@@ -30,6 +30,10 @@
            class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
             Notifications
         </a>
+        <a href="{{ $host }}/settings/audit-log"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Audit Log
+        </a>
     </div>
 
     {{-- Flash messages --}}

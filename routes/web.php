@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Central\HealthController;
 use App\Http\Controllers\Central\ImpersonationController;
 use App\Http\Controllers\Central\SchoolRegistrationController;
 use App\Http\Controllers\Central\SuperAdminAuthController;
@@ -12,6 +13,12 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Health check & ping — no auth, no CSRF, no tenant middleware (uptime monitors)
+Route::withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+    Route::get('/health', [HealthController::class, 'check'])->name('health');
+    Route::get('/ping', [HealthController::class, 'ping'])->name('ping');
+});
+
 Route::get('/', fn () => view('central.landing'))->name('home');
 Route::get('/pricing', fn () => view('central.pricing'))->name('pricing');
 
@@ -21,7 +28,7 @@ Route::domain(preg_replace('/^www\./i', '', parse_url(config('app.url'), PHP_URL
     ->name('login');
 
 Route::get('/register-school', [SchoolRegistrationController::class, 'create'])->name('register-school');
-Route::post('/register-school', [SchoolRegistrationController::class, 'store'])->name('register-school.store');
+Route::post('/register-school', [SchoolRegistrationController::class, 'store'])->middleware('throttle:3,60')->name('register-school.store');
 
 Route::get('/sitemap.xml', function () {
     $content = view('central.sitemap');

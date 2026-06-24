@@ -7,10 +7,12 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 final class AcademicYear extends Model
 {
-    use HasUuids;
+    use HasUuids, LogsActivity;
 
     protected $fillable = ['name', 'start_date', 'end_date', 'is_current'];
 
@@ -23,5 +25,13 @@ final class AcademicYear extends Model
     public function terms(): HasMany
     {
         return $this->hasMany(Term::class)->orderBy('start_date');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnlyDirty()
+            ->dontLogIfAttributesChangedOnly(['updated_at'])
+            ->useLogName('academic_year');
     }
 }

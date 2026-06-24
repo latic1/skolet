@@ -26,7 +26,7 @@ final class UpdateStaffRequest extends FormRequest
             'status'               => ['required', 'in:active,inactive'],
             'email'                => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'system_role'          => ['required', 'string', 'exists:roles,name'],
-            'new_password'         => ['nullable', Password::min(8)],
+            'new_password'         => ['nullable', Password::min(8)->mixedCase()->numbers()],
             'new_password_confirmation' => ['nullable', 'required_with:new_password', 'same:new_password'],
         ];
     }

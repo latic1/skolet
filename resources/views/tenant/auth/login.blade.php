@@ -31,6 +31,8 @@
 
         <form method="POST" action="{{ request()->getSchemeAndHttpHost() . '/login' }}" class="space-y-4">
             @csrf
+            {{-- Honeypot: bots fill this, humans don't see it --}}
+            <input type="text" name="hp_check" class="hidden" autocomplete="off" tabindex="-1" aria-hidden="true">
 
             {{-- Email --}}
             <div>

@@ -21,6 +21,11 @@ final class AuthenticatedSessionController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
+        // Honeypot: any non-empty submission is a bot.
+        if ($request->filled('hp_check')) {
+            return back()->withErrors(['email' => 'Invalid credentials.']);
+        }
+
         $request->authenticate();
 
         // Block suspended tenants (manual Super Admin disable)

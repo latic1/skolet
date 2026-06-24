@@ -25,6 +25,7 @@ use App\Http\Controllers\Tenant\StaffController;
 use App\Http\Controllers\Tenant\StudentController;
 use App\Http\Controllers\Tenant\StudentPromotionController;
 use App\Http\Controllers\Tenant\SubjectController;
+use App\Http\Controllers\Tenant\AuditLogController;
 use App\Http\Controllers\Tenant\NotificationsController;
 use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\TimetableController;
@@ -58,6 +59,8 @@ Route::domain('{subdomain}.' . $appHost)
         // Restores the school admin auth for the current request when a valid
         // impersonation session is active — must run after tenancy is initialized.
         \App\Http\Middleware\ResumeImpersonation::class,
+        // Tags Sentry errors with tenant_id and authenticated user context.
+        \App\Http\Middleware\SetSentryContext::class,
     ])
     ->name('tenant.')
     ->group(function () {
@@ -98,7 +101,7 @@ Route::domain('{subdomain}.' . $appHost)
 
         Route::middleware('guest')->group(function () {
             Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-            Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+            Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:tenant-login');
         });
 
         // Super Admin impersonation handshake — unauthenticated, one-time token (60s TTL)
@@ -309,6 +312,9 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::post('/settings/domain', [CustomDomainController::class, 'store'])->name('settings.domain.store');
                 Route::patch('/settings/domain/{domainId}/verify', [CustomDomainController::class, 'verify'])->name('settings.domain.verify');
                 Route::delete('/settings/domain/{domainId}', [CustomDomainController::class, 'destroy'])->name('settings.domain.destroy');
+
+                // Audit Log
+                Route::get('/settings/audit-log', [AuditLogController::class, 'index'])->name('settings.audit-log');
             });
         });
     });

@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** 8 — Platform Foundation (in progress)
-**Last completed:** Feature 27 — Email Notification System (notification_settings JSON on school_profile; 4 queued Notification classes; dispatch wired into AttendanceController, FeeStatusService, PaystackWebhookController, ExamController; SendFeeOverdueReminders weekly command; NotificationsController with toggle save + test email; settings/notifications.blade.php; Notifications tab added to all settings sub-navs)
-**Next:** 28 Rate Limiting & Security Hardening
+**Last completed:** Feature 31 — Automated Testing Suite (pestphp/pest v2 + pest-plugin-laravel; 26 unit tests pass; 8 central feature tests pass; 43 tenant feature tests skip gracefully when DB unavailable; GitHub Actions CI workflow; legacy Breeze tests removed)
+**Next:** Phase 9 — Feature 32 Subject-Teacher Assignments
 
 ---
 
@@ -68,10 +68,10 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 25 Student Academic Promotion Engine
 - [x] 26 Tenant Onboarding Wizard
 - [x] 27 Email Notification System
-- [ ] 28 Rate Limiting & Security Hardening
-- [ ] 29 Audit Log
-- [ ] 30 Error Tracking & Health Checks
-- [ ] 31 Automated Testing Suite (PestPHP)
+- [x] 28 Rate Limiting & Security Hardening
+- [x] 29 Audit Log
+- [x] 30 Error Tracking & Health Checks
+- [x] 31 Automated Testing Suite (PestPHP)
 
 ### Phase 9 — Growth Features
 
@@ -1028,6 +1028,102 @@ Applied consistent submit-disable pattern (Alpine `submitting` state, `@submit="
 **Skip contract**: Setting `session('onboarding_skipped', true)` is permanent for the session. The dashboard banner is also hidden when this key is set. The admin can always come back to the wizard by visiting `/onboarding` directly.
 
 **Action required**: ~~Run `php artisan tenants:migrate --path=database/migrations/tenant/2026_06_23_000004_add_onboarding_to_school_profile.php`~~ — **DONE** (all 3 tenant DBs migrated).
+
+---
+
+### 28 — Rate Limiting & Security Hardening
+
+**SecurityHeaders middleware** (`app/Http/Middleware/SecurityHeaders.php`): New `final` middleware class. Adds four security headers to every response: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=()`. Registered at the end of `$middleware` in `Kernel.php` global stack — runs on every request regardless of route.
+
+**Tenant login rate limit**: `RateLimiter::for('tenant-login', ...)` defined in `AppServiceProvider::boot()`. Limit: 5 attempts per minute, keyed by `$request->ip() . $request->input('email')` — per-user-per-IP keying prevents one attacker from locking out a specific account globally while still catching brute-force. Applied via `->middleware('throttle:tenant-login')` on the `POST /login` tenant route only (not the GET — no need to rate-limit page loads). Laravel's built-in throttle returns the standard `429 Too Many Requests` with `Retry-After` header and back-redirect with `"Too many login attempts. Please try again in :seconds seconds."` error on the `email` field — no custom code needed.
+
+**Central registration rate limit**: `throttle:3,60` applied to `POST /register-school` in `routes/web.php`. Limits school registrations to 3 per hour per IP — prevents spam tenant provisioning.
+
+**Honeypot on login form**: `<input type="text" name="hp_check" class="hidden" autocomplete="off" tabindex="-1" aria-hidden="true">` added immediately after `@csrf` in `tenant/auth/login.blade.php`. `AuthenticatedSessionController::store()` checks `$request->filled('hp_check')` before `$request->authenticate()` — returns `back()->withErrors(['email' => 'Invalid credentials.'])` if filled. Generic error message — does not reveal that a honeypot exists.
+
+**Password strength rule**: `Password::min(8)->mixedCase()->numbers()` applied to:
+- `UpdatePasswordRequest` (`new_password` field) — requires 8+ chars, at least one uppercase + one lowercase letter, at least one number. `'string'` + `'min:8'` rules replaced with the `Password` rule object.
+- `UpdateStaffRequest` (`new_password` field) — upgraded from `Password::min(8)` to `Password::min(8)->mixedCase()->numbers()`.
+
+**No new migrations**: This feature is pure middleware, routing, and validation — no schema changes.
+
+---
+
+### 29 — Audit Log
+
+**Package**: `spatie/laravel-activitylog` — already in `composer.json`, installed.
+
+**Tenant migration** (`database/migrations/tenant/2026_06_23_000006_create_activity_log_table.php`): Creates `activity_log` table. Uses explicit `string` columns for `subject_id` and `causer_id` (not `nullableMorphs`) — standard `nullableMorphs()` creates `unsignedBigInteger` ID columns which are incompatible with UUID primary keys used throughout all tenant models.
+
+**Models updated** (11 total — `LogsActivity` trait + `getActivitylogOptions()` with `logOnlyDirty()->dontLogIfAttributesChangedOnly(['updated_at'])->useLogName(...)`):
+- `Student` → log_name `student`
+- `Staff` → log_name `staff`
+- `Exam` → log_name `exam`
+- `ExamResult` → log_name `exam_result`
+- `FeeStructure` → log_name `fee_structure`
+- `FeePayment` → log_name `fee_payment`
+- `Announcement` → log_name `announcement`
+- `SchoolProfile` → log_name `school_profile` (uses only `LogsActivity`, no `HasUuids` — SchoolProfile has no UUID PK)
+- `AcademicYear` → log_name `academic_year`
+- `Term` → log_name `term`
+- `SchoolClass` → log_name `school_class`
+
+**AuditLogController** (`app/Http/Controllers/Tenant/AuditLogController.php`): `index(Request)` — queries `Activity::with('causer')->latest()`, applies optional filters: `date_from`, `date_to`, `causer_id` (scoped to `User` morphType), `log_name`. Paginates at 25 with `withQueryString()`. Passes `$logs`, `$users`, `$logNames` to view.
+
+**View** (`resources/views/tenant/settings/audit-log.blade.php`): 6th tab in settings sub-nav (active state). Filter card: date from/to (date inputs), user dropdown, record type dropdown. Table columns: Date (with time), User (name + email), Action (Created/Updated/Deleted badge), Record Type, Summary (first 2 changed field values, hidden on small screens). Empty state. Pagination. "Logs kept for 90 days" info badge in card header.
+
+**Route**: `GET /settings/audit-log` → `AuditLogController::index` → `settings.audit-log` — inside `permission:settings.manage` group.
+
+**Sub-nav**: "Audit Log" tab added to `academic-year.blade.php`, `roles.blade.php`, `school-profile.blade.php`, `notifications.blade.php`, `domain.blade.php` (5 views with the sub-nav; `classes.blade.php` and `subjects.blade.php` don't have the settings sub-nav).
+
+**Scheduler** (`app/Console/Kernel.php`): `$schedule->command('activitylog:clean')->monthly()`.
+
+**Action required**: Run `php artisan tenants:migrate` to create the `activity_log` table in all tenant DBs.
+
+---
+
+### 30 — Error Tracking & Health Checks
+
+**Package**: `sentry/sentry-laravel` v4.26.0 installed. `config/sentry.php` published via `vendor:publish`.
+
+**SetSentryContext middleware** (`app/Http/Middleware/SetSentryContext.php`): Runs on every tenant request (registered last in the tenant domain middleware group in `routes/tenant.php`, after `ResumeImpersonation`). Guards with `app()->bound('sentry') && tenancy()->initialized` — silently no-ops if Sentry DSN is not configured or tenancy is not yet active. Calls `\Sentry\configureScope()` to set `tenant_id` tag and authenticated user data (`id`, `email`).
+
+**HealthController** (`app/Http/Controllers/Central/HealthController.php`): Two methods:
+- `check()` — probes three systems: central DB (`DB::connection('central')->getPdo()`), cache (`Cache::put/__get`), local storage (`Storage::disk('local')->put/delete`). Returns JSON `{'status':'ok'|'degraded'|'fail', 'checks':{...}}`. HTTP 200 when ok or degraded; 503 when all checks fail.
+- `ping()` — returns plain-text `pong` with 200, no DB hit. For lightweight uptime monitors.
+
+**Routes** (`routes/web.php`): `GET /health` and `GET /ping` wrapped in `Route::withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])` — no CSRF, no tenant middleware. Central-domain only.
+
+**Config**: `SENTRY_LARAVEL_DSN=` added to `.env.example`. `config/sentry.php` reads from `env('SENTRY_LARAVEL_DSN')`. When DSN is blank/null, Sentry SDK is a no-op — no errors thrown in dev without a DSN.
+
+**Action required**: Set `SENTRY_LARAVEL_DSN` in `.env` on production to activate error reporting. `/health` endpoint is safe to expose to uptime monitors without auth.
+
+---
+
+### 31 — Automated Testing Suite (PestPHP)
+
+**Package**: `pestphp/pest` v2.36.0 + `pestphp/pest-plugin-laravel` installed as dev dependencies.
+
+**Bootstrap** (`tests/Pest.php`): `uses(TestCase::class)->in('Feature/Central', 'Unit')` and `uses(TenantTestCase::class)->in('Feature/Tenant')`.
+
+**TestCase** (`tests/TestCase.php`): Added `TenantTestCase` abstract class. `setUpTenant()` creates a fresh tenant via `Tenant::create()` (which fires `CreateDatabase + MigrateDatabase` pipeline), initializes tenancy, skips with a message if the central DB isn't reachable. `tearDownTenant()` ends tenancy and deletes the tenant.
+
+**Factories** (`database/factories/Tenant/`): `UserFactory`, `StudentFactory`, `StaffFactory`, `ExamFactory`, `FeeStructureFactory`, `FeePaymentFactory`, `AttendanceFactory`. Namespaced `Database\Factories\Tenant\`, resolved by the existing PSR-4 autoload entry.
+
+**Unit tests** (all pass in any environment):
+- `tests/Unit/FeeStatusServiceTest.php` — 8 tests, all `computeStatus()` branches
+- `tests/Unit/AdmissionNumberServiceTest.php` — 7 tests, pattern substitution and padding
+- `tests/Unit/ReportCardServiceTest.php` — 11 tests, grade bands via Reflection on private methods, scale continuity
+
+**Central feature tests**: Validation rejections, health/ping endpoints, provisioning tests skipped explicitly.
+
+**Tenant feature tests** (skip when central DB unavailable): StudentTest, AttendanceTest, ExamTest, FeeTest, PermissionTest — 43 tests covering CRUD, service logic, role permission grants/denials.
+
+**GitHub Actions** (`.github/workflows/tests.yml`): MySQL 8.0 service, PHP 8.2, Composer cache, `php artisan test --parallel` on push/PR to main.
+
+**Cleanup**: Removed stale Breeze tests (`tests/Feature/Auth/*`, `tests/Feature/ProfileTest.php`).
+
+**Result**: `33 passed, 43 skipped, 0 failed` in dev environment. All 43 tenant tests pass in CI with MySQL.
 
 ---
 

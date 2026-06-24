@@ -601,6 +601,19 @@ After building any component — update this file with the component name, file 
 
 ---
 
+### Audit Log Page (Settings)
+**File:** `resources/views/tenant/settings/audit-log.blade.php`
+**Description:** 6th tab in the Settings sub-nav. Read-only activity feed with filter bar and paginated table. No Alpine component needed — server-side filtering via GET form.
+- Settings sub-nav: same pattern as other settings views; "Audit Log" tab is the last item with active state `border-accent text-accent`
+- Filter card: `bg-surface border border-border rounded-2xl shadow-card p-5` — filter form `flex flex-wrap items-end gap-4`; date inputs `px-3 py-2 bg-surface border border-border rounded-md text-sm`; "Clear" link only shown when `request()->hasAny(['date_from','date_to','causer_id','log_name'])`
+- Table card header: `flex items-center justify-between px-6 py-4 border-b border-border` — count subtitle `text-xs text-text-muted mt-0.5`, "Logs kept for 90 days" badge
+- Action badge: Created → `bg-success-lightest text-success-foreground`; Deleted → `bg-error-light text-error`; Updated → `bg-accent-muted text-accent`. Applied via `match($event)` in Blade `@php`.
+- Summary column: `hidden md:table-cell` — shows up to 2 changed fields as `<span class="text-xs text-text-secondary">` with field name in `font-medium text-text-primary`. Truncated at 40 chars.
+- Min table width: `style="min-width: 700px"` wrapped in `overflow-x-auto` — same responsive pattern as other tables
+- Empty state: icon in `w-12 h-12 rounded-xl bg-surface-secondary`, same pattern as other list pages
+
+---
+
 ### My Account Page
 **File:** `resources/views/tenant/account/edit.blade.php`
 **Description:** Two-card account settings page available to all roles. Profile card (avatar + name + email + phone) and Password card (current + new + confirm). Both forms are independent POSTs with submit-disable.

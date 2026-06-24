@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 final class SchoolProfile extends Model
 {
+    use LogsActivity;
     protected $table = 'school_profile';
 
     protected $fillable = [
@@ -33,6 +36,14 @@ final class SchoolProfile extends Model
         'onboarding_step'       => 'integer',
         'notification_settings' => 'array',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnlyDirty()
+            ->dontLogIfAttributesChangedOnly(['updated_at'])
+            ->useLogName('school_profile');
+    }
 
     public function isNotificationEnabled(string $key): bool
     {
