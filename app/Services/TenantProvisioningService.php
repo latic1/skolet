@@ -21,6 +21,7 @@ final class TenantProvisioningService
         string $subdomain,
         string $adminName,
         string $adminEmail,
+        ?string $adminPhone = null,
     ): array {
         $adminPassword = Str::password(12);
         $tenantDomain = $this->buildTenantDomain($subdomain);
@@ -75,6 +76,7 @@ final class TenantProvisioningService
                     'admin_email'    => $adminEmail,
                     'admin_name'     => $adminName,
                     'admin_password' => $adminPassword,
+                    'admin_phone'    => $adminPhone,
                 ],
                 'error'   => null,
             ];

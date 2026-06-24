@@ -157,6 +157,33 @@
                             @enderror
                         </div>
 
+                        {{-- Admin Phone --}}
+                        <div class="mb-4">
+                            <label for="admin_phone" class="block text-sm font-medium text-text-dark mb-1.5">
+                                Phone number <span class="text-text-muted text-xs font-normal">(optional — for SMS backup)</span>
+                            </label>
+                            <div class="flex items-stretch rounded-md overflow-hidden border transition-colors
+                                        {{ $errors->has('admin_phone') ? 'border-error' : 'border-border focus-within:ring-1 focus-within:ring-accent focus-within:border-accent' }}">
+                                <div class="flex items-center bg-surface-secondary border-r border-border px-3 text-xs text-text-muted whitespace-nowrap shrink-0">
+                                    🇬🇭 +233
+                                </div>
+                                <input
+                                    type="tel"
+                                    id="admin_phone"
+                                    name="admin_phone"
+                                    value="{{ old('admin_phone') }}"
+                                    placeholder="0244123456"
+                                    autocomplete="tel"
+                                    class="flex-1 px-3 py-2 bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+                                >
+                            </div>
+                            @error('admin_phone')
+                            <p class="mt-1 text-xs text-error">{{ $message }}</p>
+                            @else
+                            <p class="mt-1 text-xs text-text-muted">Used to deliver login credentials by SMS if email fails.</p>
+                            @enderror
+                        </div>
+
                         {{-- Password note --}}
                         <div class="rounded-lg bg-accent-muted border border-accent-light px-4 py-3 flex items-start gap-3">
                             <svg class="w-4 h-4 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

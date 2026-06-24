@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Central;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSchoolRegistrationRequest;
 use App\Mail\WelcomeCredentialsMail;
+use App\Services\SmsService;
 use App\Services\TenantProvisioningService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Mail;
@@ -16,6 +17,7 @@ final class SchoolRegistrationController extends Controller
 {
     public function __construct(
         private readonly TenantProvisioningService $provisioningService,
+        private readonly SmsService $smsService,
     ) {}
 
     public function create(): View
@@ -30,6 +32,7 @@ final class SchoolRegistrationController extends Controller
             subdomain:  $request->validated('subdomain'),
             adminName:  $request->validated('admin_name'),
             adminEmail: $request->validated('admin_email'),
+            adminPhone: $request->validated('admin_phone'),
         );
 
         if (! $result['success']) {
@@ -54,9 +57,22 @@ final class SchoolRegistrationController extends Controller
             $mailSent = false;
         }
 
-        $message = $mailSent
-            ? 'School registered! Login credentials have been sent to ' . $result['data']['admin_email'] . '.'
-            : 'School registered! (Email delivery failed — save these credentials now) Email: ' . $result['data']['admin_email'] . ' | Password: ' . $result['data']['admin_password'];
+        // Send SMS if a phone was provided and email failed (or always if phone given)
+        $smsSent = false;
+        $phone   = $result['data']['admin_phone'] ?? null;
+        if ($phone !== null) {
+            $smsBody = "Skolet: Your school is live!\nLogin: {$loginUrl}\nEmail: {$result['data']['admin_email']}\nPassword: {$result['data']['admin_password']}";
+            $smsSent = $this->smsService->send($phone, $smsBody);
+        }
+
+        if ($mailSent || $smsSent) {
+            $via     = array_filter(['email' => $mailSent, 'SMS' => $smsSent]);
+            $message = 'School registered! Login credentials sent via ' . implode(' and ', array_keys($via)) . '.';
+        } else {
+            $message = 'School registered! (Notifications failed — save these credentials now) '
+                . 'Email: ' . $result['data']['admin_email']
+                . ' | Password: ' . $result['data']['admin_password'];
+        }
 
         return redirect($loginUrl)->with('success', $message);
     }

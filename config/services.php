@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'smsonlinegh' => [
+        'key'       => env('SMS_ONLINE_GH_KEY'),
+        'sender_id' => env('SMS_ONLINE_GH_SENDER', 'Skolet'),
+    ],
+
 ];
