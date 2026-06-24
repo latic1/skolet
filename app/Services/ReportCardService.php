@@ -28,7 +28,7 @@ final class ReportCardService
      */
     public function build(Exam $exam, Student $student): array
     {
-        $exam->loadMissing('academicYear');
+        $exam->loadMissing('term.academicYear');
         $student->loadMissing(['schoolClass', 'section']);
 
         $scale = SchoolProfile::first()?->grading_scale

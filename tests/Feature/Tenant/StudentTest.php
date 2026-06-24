@@ -10,14 +10,13 @@ use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
-    // Seed minimum roles so assignRole works
     Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
     Role::firstOrCreate(['name' => 'teacher',      'guard_name' => 'web']);
+
+    $this->class = SchoolClass::create(['name' => 'Primary 1', 'order' => 1]);
 });
 
 test('student can be created with required fields', function (): void {
-    $class = SchoolClass::create(['name' => 'Primary 1', 'order' => 1]);
-
     $student = Student::create([
         'admission_no'     => '2026/0001',
         'full_name'        => 'Jane Doe',
@@ -25,7 +24,7 @@ test('student can be created with required fields', function (): void {
         'guardian_name'    => 'John Doe',
         'guardian_contact' => '0244000000',
         'status'           => 'active',
-        'class_id'         => $class->id,
+        'class_id'         => $this->class->id,
     ]);
 
     expect($student)->toBeInstanceOf(Student::class)
@@ -41,6 +40,7 @@ test('student is retrieved from database after creation', function (): void {
         'guardian_name'    => 'Guardian',
         'guardian_contact' => '0200000000',
         'status'           => 'active',
+        'class_id'         => $this->class->id,
     ]);
 
     expect(Student::where('admission_no', '2026/0002')->exists())->toBeTrue();
@@ -54,6 +54,7 @@ test('student can be updated', function (): void {
         'guardian_name'    => 'Guardian',
         'guardian_contact' => '0200000000',
         'status'           => 'active',
+        'class_id'         => $this->class->id,
     ]);
 
     $student->update(['full_name' => 'New Name']);
@@ -69,6 +70,7 @@ test('student can be deleted', function (): void {
         'guardian_name'    => 'Guardian',
         'guardian_contact' => '0200000000',
         'status'           => 'active',
+        'class_id'         => $this->class->id,
     ]);
 
     $id = $student->id;
@@ -112,6 +114,7 @@ test('student status defaults to active', function (): void {
         'guardian_name'    => 'Guardian',
         'guardian_contact' => '0200000000',
         'status'           => 'active',
+        'class_id'         => $this->class->id,
     ]);
 
     expect($student->status)->toBe('active');

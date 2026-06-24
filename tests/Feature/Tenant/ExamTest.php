@@ -54,7 +54,7 @@ test('exam results can be recorded', function (): void {
         ->where('student_id', $this->student->id)
         ->first();
 
-    expect($result->marks)->toBe('75.00');
+    expect($result->marks)->toBe(75.0);
 });
 
 test('exam result grade is computed from marks', function (): void {
