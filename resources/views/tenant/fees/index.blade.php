@@ -667,10 +667,11 @@
                                 <input type="hidden" name="academic_year_id" value="{{ $currentYear?->id ?? '' }}">
                             </div>
                             <div x-show="form.billing_cycle === 'term'">
-                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Term</label>
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Term <span class="text-error">*</span></label>
                                 <select name="term_id" x-model="form.term_id"
+                                        :required="form.billing_cycle === 'term'"
                                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                                    <option value="">No specific term</option>
+                                    <option value="">Select a term</option>
                                     <template x-for="t in currentYearTerms" :key="t.id">
                                         <option :value="t.id" :selected="form.term_id === t.id" x-text="t.name"></option>
                                     </template>
@@ -783,10 +784,11 @@
                                 <input type="hidden" name="academic_year_id" :value="form.academic_year_id">
                             </div>
                             <div x-show="form.billing_cycle === 'term'">
-                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Term</label>
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Term <span class="text-error">*</span></label>
                                 <select name="term_id" x-model="form.term_id"
+                                        :required="form.billing_cycle === 'term'"
                                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                                    <option value="">No specific term</option>
+                                    <option value="">Select a term</option>
                                     <template x-for="t in currentYearTerms" :key="t.id">
                                         <option :value="t.id" :selected="form.term_id === t.id" x-text="t.name"></option>
                                     </template>

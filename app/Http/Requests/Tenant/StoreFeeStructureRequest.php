@@ -21,7 +21,7 @@ final class StoreFeeStructureRequest extends FormRequest
             'amount'             => ['required', 'numeric', 'min:0'],
             'target_classes'     => ['required', 'array', 'min:1'],
             'target_classes.*'   => ['required', 'string', 'max:100'],
-            'term_id'            => ['nullable', 'uuid', 'exists:terms,id'],
+            'term_id'            => ['required_if:billing_cycle,term', 'nullable', 'uuid', 'exists:terms,id'],
             'academic_year_id'   => ['nullable', 'uuid', 'exists:academic_years,id'],
             'is_mandatory'       => ['boolean'],
             'due_date'           => ['nullable', 'date'],

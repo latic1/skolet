@@ -20,7 +20,7 @@ final class UpdateFeeStructureRequest extends FormRequest
             'fee_item'         => ['required', 'string', 'max:100'],
             'amount'           => ['required', 'numeric', 'min:0'],
             'target_class'     => ['required', 'string', 'max:100'],
-            'term_id'          => ['nullable', 'uuid', 'exists:terms,id'],
+            'term_id'          => ['required_if:billing_cycle,term', 'nullable', 'uuid', 'exists:terms,id'],
             'academic_year_id' => ['nullable', 'uuid', 'exists:academic_years,id'],
             'is_mandatory'     => ['boolean'],
             'due_date'         => ['nullable', 'date'],

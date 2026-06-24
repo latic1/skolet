@@ -13,10 +13,10 @@
 
 {{-- Term --}}
 <div class="flex flex-col gap-1.5">
-    <label class="block text-sm font-medium text-text-dark mb-1.5">Term</label>
-    <select name="term_id" x-model="form.term_id"
+    <label class="block text-sm font-medium text-text-dark mb-1.5">Term <span class="text-error">*</span></label>
+    <select name="term_id" x-model="form.term_id" required
             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-        <option value="">No term selected</option>
+        <option value="">Select a term</option>
         <template x-for="t in terms" :key="t.id">
             <option :value="t.id"
                     x-text="t.name + (t.academic_year ? ' (' + t.academic_year.name + ')' : '')"></option>

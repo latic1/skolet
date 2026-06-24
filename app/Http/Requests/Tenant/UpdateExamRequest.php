@@ -17,7 +17,7 @@ final class UpdateExamRequest extends FormRequest
     {
         return [
             'name'       => ['required', 'string', 'max:255'],
-            'term_id'    => ['nullable', 'uuid', 'exists:terms,id'],
+            'term_id'    => ['required', 'uuid', 'exists:terms,id'],
             'start_date' => ['nullable', 'date'],
             'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
         ];
