@@ -106,9 +106,12 @@ final class StaffController extends Controller
 
     public function show(Staff $staff): View
     {
-        $staff->load('user');
+        $staff->load(['user', 'assignments.subject', 'assignments.schoolClass', 'assignments.section']);
 
-        return view('tenant.staff.show', compact('staff'));
+        $classes  = \App\Models\Tenant\SchoolClass::with('sections')->orderBy('order')->get();
+        $subjects = \App\Models\Tenant\Subject::orderBy('name')->get();
+
+        return view('tenant.staff.show', compact('staff', 'classes', 'subjects'));
     }
 
     public function edit(Staff $staff): View

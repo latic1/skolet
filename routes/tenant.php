@@ -24,6 +24,7 @@ use App\Http\Controllers\Tenant\SectionController;
 use App\Http\Controllers\Tenant\StaffController;
 use App\Http\Controllers\Tenant\StudentController;
 use App\Http\Controllers\Tenant\StudentPromotionController;
+use App\Http\Controllers\Tenant\SubjectAssignmentController;
 use App\Http\Controllers\Tenant\SubjectController;
 use App\Http\Controllers\Tenant\AuditLogController;
 use App\Http\Controllers\Tenant\NotificationsController;
@@ -182,6 +183,8 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
                 Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
                 Route::post('/staff/{staff}/resend-credentials', [StaffController::class, 'resendCredentials'])->name('staff.resend-credentials');
+                Route::post('/staff/{staff}/assignments', [SubjectAssignmentController::class, 'store'])->name('staff.assignments.store');
+                Route::delete('/staff/assignments/{assignment}', [SubjectAssignmentController::class, 'destroy'])->name('staff.assignments.destroy');
             });
             Route::middleware('permission:staff.delete')->group(function () {
                 Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])->name('staff.destroy');

@@ -7,9 +7,33 @@
 @php
     $host       = request()->getSchemeAndHttpHost();
     $systemRole = $staff->user?->getRoleNames()->first();
-@endphp
-<div class="flex flex-col gap-6 max-w-3xl">
 
+    // Build sections map keyed by class_id for Alpine
+    $sectionsMap = $classes->mapWithKeys(fn ($c) => [
+        $c->id => $c->sections->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values(),
+    ]);
+@endphp
+
+{{-- Flash messages --}}
+@if(session('success'))
+<div class="mb-4 px-4 py-3 bg-success-lightest border border-success-foreground/20 text-success-foreground text-sm rounded-xl">
+    {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div class="mb-4 px-4 py-3 bg-error-light border border-error/20 text-error text-sm rounded-xl">
+    {{ session('error') }}
+</div>
+@endif
+
+<div class="flex flex-col gap-6 max-w-3xl"
+     x-data="{
+        sections: {{ $sectionsMap->toJson() }},
+        selectedClass: '',
+        get currentSections() {
+            return this.selectedClass && this.sections[this.selectedClass] ? this.sections[this.selectedClass] : [];
+        }
+     }">
 
     {{-- Breadcrumb --}}
     <div class="flex items-center gap-2 text-sm text-text-muted">
@@ -123,40 +147,114 @@
         </dl>
     </div>
 
-    {{-- Assigned Classes & Subjects (Phase 3 placeholder) --}}
+    {{-- Assigned Classes & Subjects --}}
     <div class="bg-surface border border-border rounded-2xl shadow-card p-6">
-        <div class="flex items-center justify-between mb-5">
-            <h3 class="text-base font-semibold text-text-primary">Assigned Classes &amp; Subjects</h3>
-            <span class="text-xs text-text-muted bg-surface-secondary px-2 py-1 rounded-md">Available in Phase 3</span>
-        </div>
-        <div class="flex items-center justify-center py-8 text-center">
-            <div>
-                <div class="w-10 h-10 rounded-xl bg-surface-secondary flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <p class="text-sm text-text-muted">Class and subject assignments will appear here once the timetable is set up.</p>
-            </div>
-        </div>
-    </div>
+        <h3 class="text-base font-semibold text-text-primary mb-5">Assigned Classes &amp; Subjects</h3>
 
-    {{-- Attendance Summary (Phase 3 placeholder) --}}
-    <div class="bg-surface border border-border rounded-2xl shadow-card p-6">
-        <div class="flex items-center justify-between mb-5">
-            <h3 class="text-base font-semibold text-text-primary">Attendance Record</h3>
-            <span class="text-xs text-text-muted bg-surface-secondary px-2 py-1 rounded-md">Available in Phase 3</span>
-        </div>
+        {{-- Current assignments --}}
+        @if($staff->assignments->isEmpty())
         <div class="flex items-center justify-center py-8 text-center">
             <div>
                 <div class="w-10 h-10 rounded-xl bg-surface-secondary flex items-center justify-center mx-auto mb-3">
                     <svg class="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                     </svg>
                 </div>
-                <p class="text-sm text-text-muted">Staff attendance records will appear here once attendance tracking is set up.</p>
+                <p class="text-sm text-text-muted">No subject assignments yet.</p>
             </div>
         </div>
+        @else
+        <div class="overflow-x-auto mb-5">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Subject</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Class</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Section</th>
+                        @can('staff.edit')
+                        <th class="pb-2"></th>
+                        @endcan
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    @foreach($staff->assignments->sortBy([['schoolClass.order', 'asc'], ['subject.name', 'asc']]) as $assignment)
+                    <tr>
+                        <td class="py-2.5 pr-4 font-medium text-text-primary">{{ $assignment->subject?->name ?? '—' }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary">{{ $assignment->schoolClass?->name ?? '—' }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary">{{ $assignment->section?->name ?? '—' }}</td>
+                        @can('staff.edit')
+                        <td class="py-2.5 text-right">
+                            <form method="POST" action="{{ $host }}/staff/assignments/{{ $assignment->id }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Remove this assignment?')"
+                                        class="text-xs text-error hover:text-red-700 transition-colors">
+                                    Remove
+                                </button>
+                            </form>
+                        </td>
+                        @endcan
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+        {{-- Add assignment form (admins only) --}}
+        @can('staff.edit')
+        <div class="border-t border-border pt-5">
+            <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Add Assignment</p>
+            <form method="POST" action="{{ $host }}/staff/{{ $staff->id }}/assignments"
+                  class="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                @csrf
+
+                {{-- Subject --}}
+                <div class="flex-1 min-w-0">
+                    <label class="block text-xs text-text-muted mb-1">Subject <span class="text-error">*</span></label>
+                    <select name="subject_id" required
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                        <option value="">Select subject</option>
+                        @foreach($subjects as $subject)
+                        <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('subject_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- Class --}}
+                <div class="flex-1 min-w-0">
+                    <label class="block text-xs text-text-muted mb-1">Class <span class="text-error">*</span></label>
+                    <select name="class_id" required x-model="selectedClass"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                        <option value="">Select class</option>
+                        @foreach($classes as $class)
+                        <option value="{{ $class->id }}">{{ $class->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('class_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- Section (conditional) --}}
+                <div class="flex-1 min-w-0" x-show="currentSections.length > 0" x-cloak>
+                    <label class="block text-xs text-text-muted mb-1">Section</label>
+                    <select name="section_id"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                        <option value="">All sections</option>
+                        <template x-for="sec in currentSections" :key="sec.id">
+                            <option :value="sec.id" x-text="sec.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors shrink-0">
+                    Add
+                </button>
+            </form>
+        </div>
+        @endcan
     </div>
 
 </div>

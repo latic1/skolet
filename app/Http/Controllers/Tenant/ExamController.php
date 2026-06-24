@@ -17,6 +17,7 @@ use App\Models\Tenant\Section;
 use App\Models\Tenant\Staff;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Subject;
+use App\Models\Tenant\SubjectTeacherAssignment;
 use App\Models\Tenant\Timetable;
 use App\Notifications\ExamResultsPublished;
 use Illuminate\Support\Facades\Notification;
@@ -105,12 +106,12 @@ final class ExamController extends Controller
         // Build teacher assignment map: [{class_id, section_id, subject_id}]
         $teacherAssignments = collect();
         if (!$canManageAll && $staffRecord) {
-            $teacherAssignments = Timetable::where('teacher_id', $staffRecord->id)
+            $teacherAssignments = SubjectTeacherAssignment::where('staff_id', $staffRecord->id)
                 ->get(['class_id', 'section_id', 'subject_id'])
-                ->map(fn ($t) => [
-                    'class_id'   => $t->class_id,
-                    'section_id' => $t->section_id,
-                    'subject_id' => $t->subject_id,
+                ->map(fn ($a) => [
+                    'class_id'   => $a->class_id,
+                    'section_id' => $a->section_id,
+                    'subject_id' => $a->subject_id,
                 ])
                 ->values();
         }
@@ -126,12 +127,14 @@ final class ExamController extends Controller
         if ($examId && $classId && $subjectId) {
             // Server-side access check for teachers
             if (!$canManageAll && $staffRecord) {
-                $query = Timetable::where('teacher_id', $staffRecord->id)
+                $query = SubjectTeacherAssignment::where('staff_id', $staffRecord->id)
                     ->where('class_id', $classId)
                     ->where('subject_id', $subjectId);
 
                 if ($sectionId) {
                     $query->where('section_id', $sectionId);
+                } else {
+                    $query->whereNull('section_id');
                 }
 
                 $accessDenied = !$query->exists();
@@ -229,12 +232,14 @@ final class ExamController extends Controller
             $staffRecord  = Staff::where('user_id', $user->id)->first();
 
             if (!$canManageAll && $staffRecord) {
-                $q = Timetable::where('teacher_id', $staffRecord->id)
+                $q = SubjectTeacherAssignment::where('staff_id', $staffRecord->id)
                     ->where('class_id', $data['class_id'])
                     ->where('subject_id', $data['subject_id']);
 
                 if (!empty($data['section_id'])) {
                     $q->where('section_id', $data['section_id']);
+                } else {
+                    $q->whereNull('section_id');
                 }
 
                 if (!$q->exists()) {

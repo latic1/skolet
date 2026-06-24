@@ -13,6 +13,7 @@ use App\Models\Tenant\Section;
 use App\Models\Tenant\Staff;
 use App\Models\Tenant\StaffAttendance;
 use App\Models\Tenant\SchoolProfile;
+use App\Models\Tenant\SubjectTeacherAssignment;
 use App\Models\Tenant\Student;
 use App\Notifications\AbsenceAlert;
 use Carbon\Carbon;
@@ -25,7 +26,20 @@ final class AttendanceController extends Controller
 {
     public function index(): View
     {
-        $classes = SchoolClass::with('sections')->orderBy('order')->get();
+        $user        = Auth::user();
+        $staffRecord = Staff::where('user_id', $user->id)->first();
+
+        if ($user->can('settings.manage')) {
+            $classes = SchoolClass::with('sections')->orderBy('order')->get();
+        } else {
+            $assignedClassIds = SubjectTeacherAssignment::where('staff_id', $staffRecord?->id)
+                ->pluck('class_id')
+                ->unique();
+            $classes = SchoolClass::with('sections')
+                ->whereIn('id', $assignedClassIds)
+                ->orderBy('order')
+                ->get();
+        }
 
         $classId   = request('class_id');
         $sectionId = request('section_id');
