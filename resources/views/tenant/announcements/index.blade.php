@@ -10,12 +10,18 @@
     $annFormError = ($errors->has('title') || $errors->has('body')) && old('_ann_mode');
 @endphp
 <div class="flex flex-col gap-6"
-     x-data="announcementsPage({{ Js::from($announcements->map(fn($a) => [
-         'id'        => $a->id,
-         'title'     => $a->title,
-         'body'      => $a->body,
-         'is_public' => $a->is_public,
-     ])) }})">
+     x-data="announcementsPage(
+         {{ Js::from($announcements->map(fn($a) => [
+             'id'            => $a->id,
+             'title'         => $a->title,
+             'body'          => $a->body,
+             'is_public'     => $a->is_public,
+             'audience_type' => $a->audience_type ?? 'all',
+             'audience_ids'  => $a->audience_ids ?? [],
+         ])) }},
+         {{ Js::from($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name])) }},
+         {{ Js::from($roles) }}
+     )">
 
     {{-- Flash messages --}}
     @if(session('success'))
@@ -95,6 +101,7 @@
                                 {{ $announcement->created_at->format('M j, Y') }}
                                 · Posted by {{ $announcement->postedBy?->name ?? 'Unknown' }}
                             </span>
+                            {{-- Public badge --}}
                             @if($announcement->is_public)
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-lightest text-success-foreground">
                                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -107,6 +114,22 @@
                                 Staff Only
                             </span>
                             @endif
+                            {{-- Audience badge --}}
+                            @php
+                                $audienceLabels = [
+                                    'all'          => null,
+                                    'all_students' => ['label' => 'Students', 'class' => 'bg-info-lightest text-info-foreground'],
+                                    'all_parents'  => ['label' => 'Parents', 'class' => 'bg-accent-muted text-accent'],
+                                    'class'        => ['label' => 'Specific Classes', 'class' => 'bg-warning-light text-warning'],
+                                    'role'         => ['label' => 'Specific Roles', 'class' => 'bg-surface-secondary text-text-secondary'],
+                                ];
+                                $audienceBadge = $audienceLabels[$announcement->audience_type ?? 'all'] ?? null;
+                            @endphp
+                            @if($audienceBadge)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $audienceBadge['class'] }}">
+                                {{ $audienceBadge['label'] }}
+                            </span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -114,7 +137,14 @@
                 {{-- Actions --}}
                 <div class="flex items-center gap-1 shrink-0">
                     @can('announcements.edit')
-                    <button @click="openEdit({{ Js::from(['id' => $announcement->id, 'title' => $announcement->title, 'body' => $announcement->body, 'is_public' => $announcement->is_public]) }})"
+                    <button @click="openEdit({{ Js::from([
+                            'id'            => $announcement->id,
+                            'title'         => $announcement->title,
+                            'body'          => $announcement->body,
+                            'is_public'     => $announcement->is_public,
+                            'audience_type' => $announcement->audience_type ?? 'all',
+                            'audience_ids'  => $announcement->audience_ids ?? [],
+                        ]) }})"
                             class="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-secondary transition-colors"
                             title="Edit">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,12 +198,12 @@
          x-transition:leave="transition ease-in duration-100"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-12 sm:items-center sm:pt-4"
+         class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-10 sm:items-center sm:pt-4"
          style="display: none;">
 
         <div class="absolute inset-0 bg-overlay/40" @click="close()"></div>
 
-        <div class="relative w-full max-w-lg bg-surface rounded-2xl shadow-xl border border-border"
+        <div class="relative w-full max-w-lg bg-surface rounded-2xl shadow-xl border border-border max-h-[90vh] flex flex-col"
              x-transition:enter="transition ease-out duration-150"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
@@ -182,7 +212,7 @@
              x-transition:leave-end="opacity-0 scale-95">
 
             {{-- Modal header --}}
-            <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
                 <h3 class="text-base font-semibold text-text-primary"
                     x-text="mode === 'add' ? 'Post Announcement' : 'Edit Announcement'"></h3>
                 <button @click="close()"
@@ -193,113 +223,241 @@
                 </button>
             </div>
 
-            {{-- Add form --}}
-            <form x-show="mode === 'add'" method="POST" action="{{ $host }}/announcements"
-                  class="flex flex-col gap-4 px-6 py-5" @submit="submitting = true">
-                @csrf
-                <input type="hidden" name="_ann_mode" value="add">
+            {{-- Scrollable form body --}}
+            <div class="overflow-y-auto flex-1">
 
-                <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">
-                        Title <span class="text-error">*</span>
+                {{-- Add form --}}
+                <form x-show="mode === 'add'" method="POST" action="{{ $host }}/announcements"
+                      class="flex flex-col gap-4 px-6 py-5" @submit="submitting = true">
+                    @csrf
+                    <input type="hidden" name="_ann_mode" value="add">
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-dark mb-1.5">
+                            Title <span class="text-error">*</span>
+                        </label>
+                        <input type="text" name="title" x-model="form.title"
+                               placeholder="e.g. Term 2 Timetable Released"
+                               maxlength="150"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                               required>
+                        @error('title')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-dark mb-1.5">
+                            Body <span class="text-error">*</span>
+                        </label>
+                        <textarea name="body" x-model="form.body" rows="5"
+                                  placeholder="Write the full announcement text here…"
+                                  maxlength="5000"
+                                  class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
+                                  required></textarea>
+                        @error('body')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                    </div>
+
+                    <label class="flex items-center gap-3 cursor-pointer select-none">
+                        <input type="hidden" name="is_public" value="0">
+                        <input type="checkbox" name="is_public" value="1"
+                               x-model="form.is_public"
+                               class="w-4 h-4 rounded border-border text-accent focus:ring-accent focus:ring-1">
+                        <span class="text-sm text-text-primary">Show on public school page</span>
                     </label>
-                    <input type="text" name="title" x-model="form.title"
-                           placeholder="e.g. Term 2 Timetable Released"
-                           maxlength="150"
-                           class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-                           required>
-                    @error('title')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
-                </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">
-                        Body <span class="text-error">*</span>
+                    {{-- Audience section --}}
+                    <div class="border-t border-border pt-4">
+                        <label class="block text-sm font-medium text-text-dark mb-2">Audience</label>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="all"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">All School</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="all_students"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">All Students</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="all_parents"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">All Parents</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="class"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">Specific Class</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="role"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">Specific Role</span>
+                            </label>
+                        </div>
+
+                        {{-- Class multi-select --}}
+                        <div x-show="form.audience_type === 'class'" x-cloak class="mt-3">
+                            <label class="block text-xs font-medium text-text-muted mb-1.5">Select Classes</label>
+                            <select name="audience_ids[]" multiple x-model="form.audience_ids"
+                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                                    style="min-height: 100px">
+                                <template x-for="cls in classes" :key="cls.id">
+                                    <option :value="cls.id" x-text="cls.name"></option>
+                                </template>
+                            </select>
+                            <p class="mt-1 text-xs text-text-muted">Hold Ctrl / Cmd to select multiple classes.</p>
+                        </div>
+
+                        {{-- Role multi-select --}}
+                        <div x-show="form.audience_type === 'role'" x-cloak class="mt-3">
+                            <label class="block text-xs font-medium text-text-muted mb-1.5">Select Roles</label>
+                            <select name="audience_ids[]" multiple x-model="form.audience_ids"
+                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                                    style="min-height: 100px">
+                                <template x-for="role in roles" :key="role">
+                                    <option :value="role" x-text="role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+                                </template>
+                            </select>
+                            <p class="mt-1 text-xs text-text-muted">Hold Ctrl / Cmd to select multiple roles.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" @click="close()"
+                                class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                :disabled="submitting"
+                                :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
+                                class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                            <span x-show="!submitting">Post Announcement</span>
+                            <span x-show="submitting">Saving…</span>
+                        </button>
+                    </div>
+                </form>
+
+                {{-- Edit form --}}
+                <form x-show="mode === 'edit'" method="POST"
+                      :action="`{{ $host }}/announcements/${form.id}`"
+                      class="flex flex-col gap-4 px-6 py-5" @submit="submitting = true">
+                    @csrf
+                    <input type="hidden" name="_method" value="PUT">
+                    <input type="hidden" name="_ann_mode" value="edit">
+                    <input type="hidden" name="_ann_id" :value="form.id">
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-dark mb-1.5">
+                            Title <span class="text-error">*</span>
+                        </label>
+                        <input type="text" name="title" x-model="form.title"
+                               maxlength="150"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                               required>
+                        @error('title')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-dark mb-1.5">
+                            Body <span class="text-error">*</span>
+                        </label>
+                        <textarea name="body" x-model="form.body" rows="5"
+                                  maxlength="5000"
+                                  class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
+                                  required></textarea>
+                        @error('body')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                    </div>
+
+                    <label class="flex items-center gap-3 cursor-pointer select-none">
+                        <input type="hidden" name="is_public" value="0">
+                        <input type="checkbox" name="is_public" value="1"
+                               x-model="form.is_public"
+                               class="w-4 h-4 rounded border-border text-accent focus:ring-accent focus:ring-1">
+                        <span class="text-sm text-text-primary">Show on public school page</span>
                     </label>
-                    <textarea name="body" x-model="form.body" rows="6"
-                              placeholder="Write the full announcement text here…"
-                              maxlength="5000"
-                              class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
-                              required></textarea>
-                    @error('body')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
-                </div>
 
-                <label class="flex items-center gap-3 cursor-pointer select-none">
-                    <input type="hidden" name="is_public" value="0">
-                    <input type="checkbox" name="is_public" value="1"
-                           x-model="form.is_public"
-                           class="w-4 h-4 rounded border-border text-accent focus:ring-accent focus:ring-1">
-                    <span class="text-sm text-text-primary">Show on public school page</span>
-                </label>
+                    {{-- Audience section (edit) --}}
+                    <div class="border-t border-border pt-4">
+                        <label class="block text-sm font-medium text-text-dark mb-2">Audience</label>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="all"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">All School</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="all_students"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">All Students</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="all_parents"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">All Parents</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="class"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">Specific Class</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="radio" name="audience_type" value="role"
+                                       x-model="form.audience_type"
+                                       class="w-4 h-4 text-accent focus:ring-accent border-border">
+                                <span class="text-sm text-text-primary">Specific Role</span>
+                            </label>
+                        </div>
 
-                <div class="flex justify-end gap-3 pt-1">
-                    <button type="button" @click="close()"
-                            class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                            :disabled="submitting"
-                            :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
-                            class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
-                        <span x-show="!submitting">Post Announcement</span>
-                        <span x-show="submitting">Saving…</span>
-                    </button>
-                </div>
-            </form>
+                        <div x-show="form.audience_type === 'class'" x-cloak class="mt-3">
+                            <label class="block text-xs font-medium text-text-muted mb-1.5">Select Classes</label>
+                            <select name="audience_ids[]" multiple x-model="form.audience_ids"
+                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                                    style="min-height: 100px">
+                                <template x-for="cls in classes" :key="cls.id">
+                                    <option :value="cls.id" x-text="cls.name"></option>
+                                </template>
+                            </select>
+                            <p class="mt-1 text-xs text-text-muted">Hold Ctrl / Cmd to select multiple classes.</p>
+                        </div>
 
-            {{-- Edit form --}}
-            <form x-show="mode === 'edit'" method="POST"
-                  :action="`{{ $host }}/announcements/${form.id}`"
-                  class="flex flex-col gap-4 px-6 py-5" @submit="submitting = true">
-                @csrf
-                <input type="hidden" name="_method" value="PUT">
-                <input type="hidden" name="_ann_mode" value="edit">
-                <input type="hidden" name="_ann_id" :value="form.id">
+                        <div x-show="form.audience_type === 'role'" x-cloak class="mt-3">
+                            <label class="block text-xs font-medium text-text-muted mb-1.5">Select Roles</label>
+                            <select name="audience_ids[]" multiple x-model="form.audience_ids"
+                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                                    style="min-height: 100px">
+                                <template x-for="role in roles" :key="role">
+                                    <option :value="role" x-text="role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+                                </template>
+                            </select>
+                            <p class="mt-1 text-xs text-text-muted">Hold Ctrl / Cmd to select multiple roles.</p>
+                        </div>
+                    </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">
-                        Title <span class="text-error">*</span>
-                    </label>
-                    <input type="text" name="title" x-model="form.title"
-                           maxlength="150"
-                           class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-                           required>
-                    @error('title')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
-                </div>
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" @click="close()"
+                                class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                :disabled="submitting"
+                                :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
+                                class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                            <span x-show="!submitting">Save Changes</span>
+                            <span x-show="submitting">Saving…</span>
+                        </button>
+                    </div>
+                </form>
 
-                <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">
-                        Body <span class="text-error">*</span>
-                    </label>
-                    <textarea name="body" x-model="form.body" rows="6"
-                              maxlength="5000"
-                              class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
-                              required></textarea>
-                    @error('body')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
-                </div>
-
-                <label class="flex items-center gap-3 cursor-pointer select-none">
-                    <input type="hidden" name="is_public" value="0">
-                    <input type="checkbox" name="is_public" value="1"
-                           x-model="form.is_public"
-                           class="w-4 h-4 rounded border-border text-accent focus:ring-accent focus:ring-1">
-                    <span class="text-sm text-text-primary">Show on public school page</span>
-                </label>
-
-                <div class="flex justify-end gap-3 pt-1">
-                    <button type="button" @click="close()"
-                            class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                            :disabled="submitting"
-                            :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
-                            class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
-                        <span x-show="!submitting">Save Changes</span>
-                        <span x-show="submitting">Saving…</span>
-                    </button>
-                </div>
-            </form>
-
+            </div>{{-- /scrollable body --}}
         </div>
     </div>
 
@@ -308,13 +466,18 @@
 
 @push('scripts')
 <script>
-function announcementsPage(announcements) {
+function announcementsPage(announcements, classes, roles) {
     return {
         showModal: false,
         submitting: false,
         mode: 'add',
         announcements,
-        form: { id: '', title: '', body: '', is_public: false },
+        classes,
+        roles,
+        form: {
+            id: '', title: '', body: '', is_public: false,
+            audience_type: 'all', audience_ids: [],
+        },
 
         init() {
             const annMode = @json(old('_ann_mode'));
@@ -322,10 +485,12 @@ function announcementsPage(announcements) {
                 this.$nextTick(() => {
                     this.mode = annMode;
                     this.form = {
-                        id:        @json(old('_ann_id', '')),
-                        title:     @json(old('title', '')),
-                        body:      @json(old('body', '')),
-                        is_public: @json((bool) old('is_public', false)),
+                        id:            @json(old('_ann_id', '')),
+                        title:         @json(old('title', '')),
+                        body:          @json(old('body', '')),
+                        is_public:     @json((bool) old('is_public', false)),
+                        audience_type: @json(old('audience_type', 'all')),
+                        audience_ids:  @json(old('audience_ids', [])),
                     };
                     this.showModal = true;
                 });
@@ -334,13 +499,23 @@ function announcementsPage(announcements) {
 
         openAdd() {
             this.mode = 'add';
-            this.form = { id: '', title: '', body: '', is_public: false };
+            this.form = {
+                id: '', title: '', body: '', is_public: false,
+                audience_type: 'all', audience_ids: [],
+            };
             this.showModal = true;
         },
 
         openEdit(data) {
             this.mode = 'edit';
-            this.form = { ...data };
+            this.form = {
+                id:            data.id,
+                title:         data.title,
+                body:          data.body,
+                is_public:     data.is_public,
+                audience_type: data.audience_type || 'all',
+                audience_ids:  data.audience_ids  || [],
+            };
             this.showModal = true;
         },
 

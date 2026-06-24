@@ -34,6 +34,7 @@ use App\Http\Controllers\Tenant\ParentStudentController;
 use App\Http\Controllers\Tenant\ParentPortalController;
 use App\Http\Controllers\Tenant\AssignmentController;
 use App\Http\Controllers\Tenant\SubmissionController;
+use App\Http\Controllers\Tenant\UserNotificationsController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -131,6 +132,11 @@ Route::domain('{subdomain}.' . $appHost)
             Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
             Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');
             Route::get('/account/avatar', [AccountController::class, 'avatar'])->name('account.avatar');
+
+            // Notifications — personal notification centre for every authenticated user
+            Route::get('/notifications', [UserNotificationsController::class, 'index'])->name('notifications.index');
+            Route::patch('/notifications/read-all', [UserNotificationsController::class, 'markAllRead'])->name('notifications.read-all');
+            Route::patch('/notifications/{notification}/read', [UserNotificationsController::class, 'markRead'])->name('notifications.read');
 
             // Announcements — read access for all authenticated users
             Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');

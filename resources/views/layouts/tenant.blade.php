@@ -97,14 +97,97 @@
                     @yield('page-title', 'Dashboard')
                 </h2>
 
+                @php
+                    $notifUnreadCount = 0;
+                    $notifRecent = collect();
+                    try {
+                        if (auth()->check() && tenancy()->initialized) {
+                            $notifUnreadCount = \App\Models\Tenant\TenantNotification::where('user_id', auth()->id())->whereNull('read_at')->count();
+                            $notifRecent      = \App\Models\Tenant\TenantNotification::where('user_id', auth()->id())->latest()->limit(5)->get();
+                        }
+                    } catch (\Throwable) {}
+                @endphp
                 <div class="flex items-center gap-2">
-                    {{-- Notifications placeholder — Phase 06 --}}
-                    <button class="p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-secondary transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                    </button>
+                    {{-- Notification bell --}}
+                    <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                        <button @click="open = !open"
+                                class="relative p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-secondary transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            @if($notifUnreadCount > 0)
+                            <span class="absolute top-1 right-1 min-w-[16px] h-4 bg-error text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+                                {{ $notifUnreadCount > 9 ? '9+' : $notifUnreadCount }}
+                            </span>
+                            @endif
+                        </button>
+
+                        <div x-show="open"
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute right-0 top-full mt-2 w-80 bg-surface border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+                             style="display:none">
+
+                            {{-- Header --}}
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-border">
+                                <h3 class="text-sm font-semibold text-text-primary">Notifications</h3>
+                                @if($notifUnreadCount > 0)
+                                <form method="POST" action="{{ request()->getSchemeAndHttpHost() }}/notifications/read-all">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="text-xs font-medium text-accent hover:text-accent-dark transition-colors">
+                                        Mark all as read
+                                    </button>
+                                </form>
+                                @endif
+                            </div>
+
+                            {{-- Notification items --}}
+                            <div class="max-h-72 overflow-y-auto divide-y divide-border">
+                                @forelse($notifRecent as $notif)
+                                <div class="flex items-start gap-3 px-4 py-3 {{ is_null($notif->read_at) ? 'bg-accent-muted/20' : '' }} hover:bg-surface-secondary transition-colors">
+                                    <div class="shrink-0 mt-1.5">
+                                        @if(is_null($notif->read_at))
+                                        <div class="w-2 h-2 rounded-full bg-accent"></div>
+                                        @else
+                                        <div class="w-2 h-2 rounded-full bg-transparent"></div>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm {{ is_null($notif->read_at) ? 'font-semibold text-text-primary' : 'font-medium text-text-dark' }} leading-snug truncate">
+                                            {{ $notif->message }}
+                                        </p>
+                                        <p class="text-xs text-text-muted mt-0.5">{{ $notif->created_at->diffForHumans() }}</p>
+                                    </div>
+                                    @if(is_null($notif->read_at))
+                                    <form method="POST" action="{{ request()->getSchemeAndHttpHost() }}/notifications/{{ $notif->id }}/read" class="shrink-0">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="text-xs text-text-muted hover:text-text-primary transition-colors mt-0.5">✓</button>
+                                    </form>
+                                    @endif
+                                </div>
+                                @empty
+                                <div class="flex flex-col items-center justify-center py-8 px-4 text-center">
+                                    <p class="text-sm text-text-muted">No notifications yet</p>
+                                </div>
+                                @endforelse
+                            </div>
+
+                            {{-- Footer --}}
+                            <div class="border-t border-border px-4 py-3">
+                                <a href="{{ request()->getSchemeAndHttpHost() }}/notifications"
+                                   class="text-xs font-medium text-accent hover:text-accent-dark transition-colors">
+                                    View all notifications →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- Account dropdown --}}
                     @php

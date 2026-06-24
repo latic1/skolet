@@ -17,9 +17,12 @@ final class UpdateAnnouncementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'     => ['required', 'string', 'max:150'],
-            'body'      => ['required', 'string', 'max:5000'],
-            'is_public' => ['boolean'],
+            'title'          => ['required', 'string', 'max:150'],
+            'body'           => ['required', 'string', 'max:5000'],
+            'is_public'      => ['boolean'],
+            'audience_type'  => ['string', 'in:all,all_students,all_parents,class,role'],
+            'audience_ids'   => ['nullable', 'array'],
+            'audience_ids.*' => ['string'],
         ];
     }
 }

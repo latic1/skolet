@@ -19,10 +19,13 @@ final class Announcement extends Model
         'body',
         'posted_by',
         'is_public',
+        'audience_type',
+        'audience_ids',
     ];
 
     protected $casts = [
-        'is_public' => 'boolean',
+        'is_public'    => 'boolean',
+        'audience_ids' => 'array',
     ];
 
     public function postedBy(): BelongsTo
