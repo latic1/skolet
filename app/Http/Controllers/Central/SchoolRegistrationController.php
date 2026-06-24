@@ -42,14 +42,22 @@ final class SchoolRegistrationController extends Controller
         $portSuffix = in_array($port, [80, 443]) ? '' : ':' . $port;
         $loginUrl   = request()->getScheme() . '://' . $result['data']['domain'] . $portSuffix . '/login';
 
-        Mail::to($result['data']['admin_email'])->queue(new WelcomeCredentialsMail(
-            recipientName:  $result['data']['admin_name'],
-            recipientEmail: $result['data']['admin_email'],
-            plainPassword:  $result['data']['admin_password'],
-            loginUrl:       $loginUrl,
-        ));
+        $mailSent = true;
+        try {
+            Mail::to($result['data']['admin_email'])->queue(new WelcomeCredentialsMail(
+                recipientName:  $result['data']['admin_name'],
+                recipientEmail: $result['data']['admin_email'],
+                plainPassword:  $result['data']['admin_password'],
+                loginUrl:       $loginUrl,
+            ));
+        } catch (\Throwable) {
+            $mailSent = false;
+        }
 
-        return redirect($loginUrl)
-            ->with('success', 'School registered! Login credentials have been sent to ' . $result['data']['admin_email'] . '.');
+        $message = $mailSent
+            ? 'School registered! Login credentials have been sent to ' . $result['data']['admin_email'] . '.'
+            : 'School registered! (Email delivery failed — save these credentials now) Email: ' . $result['data']['admin_email'] . ' | Password: ' . $result['data']['admin_password'];
+
+        return redirect($loginUrl)->with('success', $message);
     }
 }
