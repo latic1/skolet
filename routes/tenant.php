@@ -181,6 +181,7 @@ Route::domain('{subdomain}.' . $appHost)
             Route::middleware('permission:staff.edit')->group(function () {
                 Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
                 Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
+                Route::post('/staff/{staff}/resend-credentials', [StaffController::class, 'resendCredentials'])->name('staff.resend-credentials');
             });
             Route::middleware('permission:staff.delete')->group(function () {
                 Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])->name('staff.destroy');

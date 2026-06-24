@@ -61,7 +61,8 @@ final class SchoolRegistrationController extends Controller
         $smsSent = false;
         $phone   = $result['data']['admin_phone'] ?? null;
         if ($phone !== null) {
-            $smsBody = "Skolet: Your school is live! Login at {$loginUrl}";
+            $plainPassword = $request->validated('admin_password');
+            $smsBody = "Skolet: Your school is live!\nLogin: {$loginUrl}\nEmail: {$result['data']['admin_email']}\nPassword: {$plainPassword}";
             $smsSent = $this->smsService->send($phone, $smsBody);
         }
 

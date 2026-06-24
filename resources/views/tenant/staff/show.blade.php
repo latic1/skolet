@@ -49,6 +49,19 @@
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 @can('staff.edit')
+                @if($staff->phone)
+                <form method="POST" action="{{ $host }}/staff/{{ $staff->id }}/resend-credentials">
+                    @csrf
+                    <button type="submit"
+                            onclick="return confirm('This will reset {{ addslashes($staff->full_name) }}\'s password and send new credentials via SMS to {{ $staff->phone }}. Continue?')"
+                            class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        Resend via SMS
+                    </button>
+                </form>
+                @endif
                 <a href="{{ $host }}/staff/{{ $staff->id }}/edit"
                    class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

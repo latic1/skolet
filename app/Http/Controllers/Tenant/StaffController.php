@@ -13,8 +13,10 @@ use App\Imports\StaffImport;
 use App\Mail\WelcomeCredentialsMail;
 use App\Models\Tenant\Staff;
 use App\Models\Tenant\User;
+use App\Services\SmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -79,15 +81,23 @@ final class StaffController extends Controller
 
             $loginUrl = request()->getSchemeAndHttpHost() . '/login';
 
-            Mail::to($data['email'])->queue(new WelcomeCredentialsMail(
-                recipientName:  $data['full_name'],
-                recipientEmail: $data['email'],
-                plainPassword:  $plainPassword,
-                loginUrl:       $loginUrl,
-            ));
+            try {
+                Mail::to($data['email'])->queue(new WelcomeCredentialsMail(
+                    recipientName:  $data['full_name'],
+                    recipientEmail: $data['email'],
+                    plainPassword:  $plainPassword,
+                    loginUrl:       $loginUrl,
+                ));
+            } catch (\Throwable) {}
+
+            $phone = $data['phone'] ?? null;
+            if ($phone) {
+                $smsBody = "Skolet: Your account is ready!\nLogin: {$loginUrl}\nEmail: {$data['email']}\nPassword: {$plainPassword}";
+                app(SmsService::class)->send($phone, $smsBody);
+            }
 
             return redirect(request()->getSchemeAndHttpHost() . '/staff')
-                ->with('success', 'Staff member added. Login credentials sent to ' . $data['email'] . '.');
+                ->with('success', 'Staff member added. Login credentials sent to ' . $data['email'] . ($phone ? ' and via SMS.' : '.'));
         } catch (\Throwable $e) {
             \Log::error('[staff.store] ' . $e->getMessage());
 
@@ -158,6 +168,36 @@ final class StaffController extends Controller
             \Log::error('[staff.destroy] ' . $e->getMessage());
 
             return back()->with('error', 'Could not remove staff member. Please try again.');
+        }
+    }
+
+    public function resendCredentials(Staff $staff): RedirectResponse
+    {
+        $phone = $staff->phone;
+
+        if (empty($phone)) {
+            return back()->with('error', 'This staff member has no phone number on record. Update their profile first.');
+        }
+
+        try {
+            $plainPassword = Str::password(12);
+
+            $staff->user->update(['password' => Hash::make($plainPassword)]);
+
+            $loginUrl = request()->getSchemeAndHttpHost() . '/login';
+            $smsBody  = "Skolet: Your login credentials have been reset.\nLogin: {$loginUrl}\nEmail: {$staff->user->email}\nPassword: {$plainPassword}";
+
+            $sent = app(SmsService::class)->send($phone, $smsBody);
+
+            if (! $sent) {
+                return back()->with('error', 'Password was reset but SMS could not be delivered. Check the phone number.');
+            }
+
+            return back()->with('success', 'New credentials sent via SMS to ' . $phone . '.');
+        } catch (\Throwable $e) {
+            \Log::error('[staff.resendCredentials] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not resend credentials. Please try again.');
         }
     }
 
