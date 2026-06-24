@@ -34,21 +34,23 @@ final class SmsService
         }
 
         try {
-            $response = Http::timeout(10)->post($this->endpoint, [
-                'key'      => $this->apiKey,
-                'messages' => [
-                    [
-                        'destinations' => [['to' => $number]],
-                        'from'         => $this->senderId,
-                        'text'         => $message,
-                    ],
-                ],
-            ]);
+            $response = Http::timeout(10)
+                ->withHeaders([
+                    'Authorization' => 'key ' . $this->apiKey,
+                    'Content-Type'  => 'application/json',
+                    'Accept'        => 'application/json',
+                ])
+                ->post($this->endpoint, [
+                    'text'         => $message,
+                    'type'         => 0,
+                    'sender'       => $this->senderId,
+                    'destinations' => [['number' => $number]],
+                ]);
 
             $body = $response->json();
             $handshakeId = data_get($body, 'handshake.id');
 
-            if ($handshakeId === 1000) {
+            if ($handshakeId === 0) {
                 return true;
             }
 
