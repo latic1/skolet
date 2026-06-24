@@ -9,6 +9,7 @@ use App\Models\Tenant\AcademicYear;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Subject;
+use App\Models\Tenant\Term;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -108,12 +109,25 @@ final class OnboardingController extends Controller
             // Mark all other years as not current, then create this one
             AcademicYear::query()->update(['is_current' => false]);
 
-            AcademicYear::create([
+            $year = AcademicYear::create([
                 'name'       => $data['year_name'],
                 'start_date' => $data['start_date'],
                 'end_date'   => $data['end_date'],
                 'is_current' => true,
             ]);
+
+            // Auto-create terms based on selected period system
+            $termNames = $data['period_system'] === '2_semester'
+                ? ['Semester 1', 'Semester 2']
+                : ['Term 1', 'Term 2', 'Term 3'];
+
+            foreach ($termNames as $i => $name) {
+                Term::create([
+                    'academic_year_id' => $year->id,
+                    'name'             => $name,
+                    'is_current'       => $i === 0, // first term is current
+                ]);
+            }
 
             $profile = SchoolProfile::first() ?? new SchoolProfile();
             $profile->fill(['period_system' => $data['period_system'], 'onboarding_step' => 3])->save();
