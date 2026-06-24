@@ -7,6 +7,7 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -48,6 +49,13 @@ final class Student extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function parents(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'parent_student', 'student_id', 'user_id')
+            ->withPivot('relationship')
+            ->withTimestamps();
     }
 
     public function getActivitylogOptions(): LogOptions

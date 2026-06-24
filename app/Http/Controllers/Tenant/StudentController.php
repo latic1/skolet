@@ -85,7 +85,7 @@ final class StudentController extends Controller
 
     public function show(Student $student): View
     {
-        $student->load(['schoolClass', 'section', 'user']);
+        $student->load(['schoolClass', 'section', 'user', 'parents']);
 
         return view('tenant.students.show', compact('student'));
     }

@@ -30,6 +30,8 @@ use App\Http\Controllers\Tenant\AuditLogController;
 use App\Http\Controllers\Tenant\NotificationsController;
 use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\TimetableController;
+use App\Http\Controllers\Tenant\ParentStudentController;
+use App\Http\Controllers\Tenant\ParentPortalController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -161,6 +163,8 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
                 Route::post('/students/{student}/login', [StudentController::class, 'createLogin'])->name('students.login.create');
                 Route::delete('/students/{student}/login', [StudentController::class, 'revokeLogin'])->name('students.login.revoke');
+                Route::post('/students/{student}/parents', [ParentStudentController::class, 'store'])->name('students.parents.store');
+                Route::delete('/students/{student}/parents/{parentUser}', [ParentStudentController::class, 'destroy'])->name('students.parents.destroy');
             });
             Route::middleware('permission:students.delete')->group(function () {
                 Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
@@ -228,6 +232,9 @@ Route::domain('{subdomain}.' . $appHost)
             Route::middleware('permission:exams.delete')->group(function () {
                 Route::delete('/exams/{exam}', [ExamController::class, 'destroy'])->name('exams.destroy');
             });
+
+            // Parent portal — parents view their linked children's data
+            Route::get('/my-children', [ParentPortalController::class, 'index'])->name('parents.portal');
 
             // Fees — index accessible to all auth users; controller dispatches by permission
             // (admin/accountant → tabbed admin view; student/parent → own fees view)

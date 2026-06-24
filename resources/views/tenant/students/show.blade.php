@@ -226,12 +226,10 @@
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">Account Role <span class="text-error">*</span></label>
-                    <select name="role" required
-                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors @error('role') border-error @enderror">
-                        <option value="student" @selected(old('role', 'student') === 'student')>Student (logs in as themselves)</option>
-                        <option value="parent"  @selected(old('role') === 'parent')>Parent (logs in on behalf of student)</option>
-                    </select>
+                    <label class="block text-sm font-medium text-text-dark mb-1.5">Account Role</label>
+                    <input type="hidden" name="role" value="student">
+                    <p class="text-sm text-text-muted py-2">Student — logs in as themselves</p>
+                    <p class="text-xs text-text-muted">To give parents access, use the <strong>Parent Accounts</strong> section below.</p>
                 </div>
             </div>
             <div class="flex justify-end">
@@ -245,6 +243,171 @@
             </div>
         </form>
         @endif
+    </div>
+    @endcan
+
+    {{-- Parent Accounts --}}
+    @can('students.edit')
+    <div class="bg-surface border border-border rounded-2xl shadow-card p-6"
+         x-data="{ mode: 'create', submitting: false }">
+        <h3 class="text-base font-semibold text-text-primary mb-5">Parent Accounts</h3>
+
+        {{-- Linked parents list --}}
+        @if($student->parents->isEmpty())
+        <div class="flex items-center justify-center py-6 text-center mb-5">
+            <div>
+                <div class="w-10 h-10 rounded-xl bg-surface-secondary flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-text-muted">No parent accounts linked yet.</p>
+            </div>
+        </div>
+        @else
+        <div class="overflow-x-auto mb-5">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Name</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Email</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Relationship</th>
+                        <th class="pb-2"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    @foreach($student->parents as $parent)
+                    <tr>
+                        <td class="py-2.5 pr-4 font-medium text-text-primary">{{ $parent->name }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary">{{ $parent->email }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary capitalize">{{ $parent->pivot->relationship ?? '—' }}</td>
+                        <td class="py-2.5 text-right">
+                            <form method="POST" action="{{ $host }}/students/{{ $student->id }}/parents/{{ $parent->id }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Remove {{ addslashes($parent->name) }} as a parent of {{ addslashes($student->full_name) }}?')"
+                                        class="text-xs text-error hover:text-red-700 transition-colors">
+                                    Remove
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+        {{-- Add parent form --}}
+        <div class="border-t border-border pt-5">
+            <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Link Parent Account</p>
+
+            {{-- Mode toggle --}}
+            <div class="flex gap-2 mb-4">
+                <button type="button" @click="mode = 'create'"
+                        :class="mode === 'create' ? 'bg-accent text-accent-foreground' : 'bg-surface border border-border text-text-primary hover:bg-surface-secondary'"
+                        class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors">
+                    Create new account
+                </button>
+                <button type="button" @click="mode = 'link'"
+                        :class="mode === 'link' ? 'bg-accent text-accent-foreground' : 'bg-surface border border-border text-text-primary hover:bg-surface-secondary'"
+                        class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors">
+                    Link existing account
+                </button>
+            </div>
+
+            @if($errors->hasAny(['name', 'email', 'phone', 'password', 'password_confirmation', 'parent_email', 'relationship', 'mode']))
+            <div class="mb-4 p-3 bg-error-light border border-error rounded-xl text-xs text-error">
+                <ul class="space-y-0.5">
+                    @foreach($errors->only(['name', 'email', 'phone', 'password', 'password_confirmation', 'parent_email', 'relationship', 'mode']) as $msgs)
+                        @foreach($msgs as $msg)
+                        <li>{{ $msg }}</li>
+                        @endforeach
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+
+            <form method="POST" action="{{ $host }}/students/{{ $student->id }}/parents"
+                  class="flex flex-col gap-4"
+                  @submit="submitting = true">
+                @csrf
+                <input type="hidden" name="mode" :value="mode">
+
+                {{-- Create new account fields --}}
+                <div x-show="mode === 'create'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs text-text-muted mb-1">Full Name <span class="text-error">*</span></label>
+                        <input type="text" name="name" value="{{ old('name') }}"
+                               placeholder="Kwame Mensah"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Email Address <span class="text-error">*</span></label>
+                        <input type="email" name="email" value="{{ old('email') }}"
+                               placeholder="parent@example.com"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Phone Number</label>
+                        <input type="text" name="phone" value="{{ old('phone') }}"
+                               placeholder="0244123456"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Password <span class="text-error">*</span></label>
+                        <input type="password" name="password" minlength="8"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Confirm Password <span class="text-error">*</span></label>
+                        <input type="password" name="password_confirmation"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Relationship</label>
+                        <select name="relationship"
+                                class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                            <option value="">Select…</option>
+                            <option value="father"   @selected(old('relationship') === 'father')>Father</option>
+                            <option value="mother"   @selected(old('relationship') === 'mother')>Mother</option>
+                            <option value="guardian" @selected(old('relationship') === 'guardian')>Guardian</option>
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Link existing account fields --}}
+                <div x-show="mode === 'link'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs text-text-muted mb-1">Parent Email Address <span class="text-error">*</span></label>
+                        <input type="email" name="parent_email" value="{{ old('parent_email') }}"
+                               placeholder="existing.parent@example.com"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Relationship</label>
+                        <select name="relationship"
+                                class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                            <option value="">Select…</option>
+                            <option value="father"   @selected(old('relationship') === 'father')>Father</option>
+                            <option value="mother"   @selected(old('relationship') === 'mother')>Mother</option>
+                            <option value="guardian" @selected(old('relationship') === 'guardian')>Guardian</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit"
+                            :disabled="submitting"
+                            :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
+                            class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                        <span x-show="!submitting" x-text="mode === 'create' ? 'Create & Link Parent' : 'Link Parent'"></span>
+                        <span x-show="submitting">Saving…</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
     @endcan
 

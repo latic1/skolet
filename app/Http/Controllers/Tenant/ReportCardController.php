@@ -25,9 +25,14 @@ final class ReportCardController extends Controller
      *  - School admin / teacher (settings.manage or exams.edit): sees all exams + all students.
      *  - Student / parent: sees only published exams; student is auto-resolved from their linked user.
      */
-    public function preview(Request $request): View
+    public function preview(Request $request): View|\Illuminate\Http\RedirectResponse
     {
-        $user         = Auth::user();
+        $user = Auth::user();
+
+        if ($user->hasRole('parent')) {
+            return redirect($request->getSchemeAndHttpHost() . '/my-children');
+        }
+
         $canManageAll = $user->can('settings.manage') || $user->can('exams.edit');
 
         // Build exam list scoped by role
@@ -108,7 +113,12 @@ final class ReportCardController extends Controller
      */
     public function download(Request $request): Response|\Illuminate\Http\RedirectResponse
     {
-        $user         = Auth::user();
+        $user = Auth::user();
+
+        if ($user->hasRole('parent')) {
+            return redirect($request->getSchemeAndHttpHost() . '/my-children');
+        }
+
         $canManageAll = $user->can('settings.manage') || $user->can('exams.edit');
 
         $examId    = $request->input('exam_id');

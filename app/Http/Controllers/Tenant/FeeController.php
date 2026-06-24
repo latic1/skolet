@@ -33,9 +33,15 @@ final class FeeController extends Controller
         private readonly PaystackService $paystackService,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
-        if ($request->user()->can('fees.view')) {
+        $user = $request->user();
+
+        if ($user->hasRole('parent')) {
+            return redirect($request->getSchemeAndHttpHost() . '/my-children');
+        }
+
+        if ($user->can('fees.view')) {
             return $this->adminView($request);
         }
 

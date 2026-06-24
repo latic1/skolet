@@ -90,9 +90,9 @@ test('attendance report service builds summary for a class', function (): void {
     );
 
     expect($result['success'])->toBeTrue()
-        ->and($result['data'])->not->toBeEmpty();
+        ->and($result['data']['rows'])->not->toBeEmpty();
 
-    $studentRow = collect($result['data'])->firstWhere('student_id', $this->student->id);
+    $studentRow = collect($result['data']['rows'])->first(fn ($r) => $r['student']->id === $this->student->id);
     expect($studentRow)->not->toBeNull()
         ->and($studentRow['present'])->toBe(2)
         ->and($studentRow['absent'])->toBe(1);

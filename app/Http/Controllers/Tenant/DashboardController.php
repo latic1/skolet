@@ -23,9 +23,13 @@ use Illuminate\View\View;
 
 final class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(): View|\Illuminate\Http\RedirectResponse
     {
         $user = auth()->user();
+
+        if ($user->hasRole('parent')) {
+            return redirect(request()->getSchemeAndHttpHost() . '/my-children');
+        }
 
         $can = [
             'students'   => $user->can('students.view'),

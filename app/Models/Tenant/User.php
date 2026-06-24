@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -31,4 +32,11 @@ final class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
     ];
+
+    public function linkedChildren(): BelongsToMany
+    {
+        return $this->belongsToMany(Student::class, 'parent_student', 'user_id', 'student_id')
+            ->withPivot('relationship')
+            ->withTimestamps();
+    }
 }

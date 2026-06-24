@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** 8 — Platform Foundation (in progress)
-**Last completed:** Feature 31 — Automated Testing Suite (pestphp/pest v2 + pest-plugin-laravel; 26 unit tests pass; 8 central feature tests pass; 43 tenant feature tests skip gracefully when DB unavailable; GitHub Actions CI workflow; legacy Breeze tests removed)
-**Next:** Phase 9 — Feature 32 Subject-Teacher Assignments
+**Phase:** 9 — Growth Features (in progress)
+**Last completed:** Feature 34 — Parent Portal (parent_student pivot table; ParentStudentController for admins to create/link/unlink parent accounts on student profiles; ParentPortalController + portal view showing all children with attendance summary, fee status, and published exam results; parents redirected from /fees and /dashboard to /my-children; sidebar "My Children" nav item for parent role)
+**Next:** Feature 33 — Staff Leave Management
 
 ---
 
@@ -75,9 +75,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 9 — Growth Features
 
-- [ ] 32 Subject-Teacher Assignments
+- [x] 32 Subject-Teacher Assignments (subject_teacher_assignments table; add/remove on staff profile; attendance + exam marks scoped to assigned classes/subjects for teachers)
 - [ ] 33 Staff Leave Management
-- [ ] 34 Parent Portal (Parent-Child Relationships)
+- [x] 34 Parent Portal (parent_student pivot many-to-many; admin creates/links/unlinks parent accounts on student profile; parent role gets dedicated /my-children portal with child selector, fee status, attendance summary, published exam results; /dashboard and /fees redirect parents to portal; "My Children" sidebar nav for parent role)
 - [ ] 35 Homework & Assignment Management
 - [ ] 36 Disciplinary & Behavior Tracking
 - [ ] 37 Targeted Announcements & Notification Centre
