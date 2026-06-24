@@ -21,7 +21,7 @@ final class UpdateStaffRequest extends FormRequest
 
         return [
             'full_name'            => ['required', 'string', 'max:255'],
-            'phone'                => ['nullable', 'string', 'max:30'],
+            'phone'                => ['required', 'string', 'max:30'],
             'role_title'           => ['nullable', 'string', 'max:100'],
             'status'               => ['required', 'in:active,inactive'],
             'email'                => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],

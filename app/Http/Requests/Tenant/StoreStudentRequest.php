@@ -22,7 +22,7 @@ final class StoreStudentRequest extends FormRequest
             'date_of_birth'     => ['nullable', 'date'],
             'gender'            => ['nullable', 'in:male,female,other'],
             'guardian_name'     => ['nullable', 'string', 'max:255'],
-            'guardian_contact'  => ['nullable', 'string', 'max:50'],
+            'guardian_contact'  => ['required', 'string', 'max:50'],
             'guardian_email'    => ['nullable', 'email', 'max:255'],
             'address'           => ['nullable', 'string', 'max:500'],
             'status'            => ['nullable', 'in:active,inactive,graduated'],

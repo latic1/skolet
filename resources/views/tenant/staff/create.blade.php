@@ -59,9 +59,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">Phone Number</label>
-                    <input type="text" name="phone" value="{{ old('phone') }}"
-                           placeholder="e.g. +2348012345678"
+                    <label class="block text-sm font-medium text-text-dark mb-1.5">Phone Number <span class="text-error">*</span></label>
+                    <input type="text" name="phone" value="{{ old('phone') }}" required
+                           placeholder="e.g. 0244123456"
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('phone')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>

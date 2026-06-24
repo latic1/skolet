@@ -140,8 +140,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-text-dark mb-1.5">Guardian Contact</label>
-                    <input type="text" name="guardian_contact" value="{{ old('guardian_contact', $student->guardian_contact) }}"
+                    <label class="block text-sm font-medium text-text-dark mb-1.5">Guardian Contact <span class="text-error">*</span></label>
+                    <input type="text" name="guardian_contact" value="{{ old('guardian_contact', $student->guardian_contact) }}" required
+                           placeholder="e.g. 0244123456"
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('guardian_contact')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
