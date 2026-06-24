@@ -37,17 +37,19 @@
                         <table width="100%" cellpadding="0" cellspacing="0"
                                style="background:#f6f7fb;border:1px solid #e7eaf3;border-radius:8px;margin-bottom:28px;">
                             <tr>
-                                <td style="padding:16px 20px;border-bottom:1px solid #e7eaf3;">
+                                <td style="padding:16px 20px;{{ $plainPassword ? 'border-bottom:1px solid #e7eaf3;' : '' }}">
                                     <span style="font-size:12px;color:#99a1af;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Email</span>
                                     <span style="font-size:14px;font-weight:500;color:#101828;">{{ $recipientEmail }}</span>
                                 </td>
                             </tr>
+                            @if($plainPassword)
                             <tr>
                                 <td style="padding:16px 20px;">
                                     <span style="font-size:12px;color:#99a1af;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Password</span>
                                     <span style="font-size:15px;font-weight:600;color:#101828;font-family:monospace;letter-spacing:1px;">{{ $plainPassword }}</span>
                                 </td>
                             </tr>
+                            @endif
                         </table>
 
                         {{-- CTA button --}}

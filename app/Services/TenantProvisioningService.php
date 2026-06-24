@@ -10,7 +10,6 @@ use App\Models\Central\Tenant;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -21,9 +20,9 @@ final class TenantProvisioningService
         string $subdomain,
         string $adminName,
         string $adminEmail,
+        string $adminPassword,
         ?string $adminPhone = null,
     ): array {
-        $adminPassword = Str::password(12);
         $tenantDomain = $this->buildTenantDomain($subdomain);
 
         if (Domain::where('domain', $tenantDomain)->exists()) {

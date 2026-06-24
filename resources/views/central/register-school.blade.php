@@ -184,14 +184,38 @@
                             @enderror
                         </div>
 
-                        {{-- Password note --}}
-                        <div class="rounded-lg bg-accent-muted border border-accent-light px-4 py-3 flex items-start gap-3">
-                            <svg class="w-4 h-4 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <p class="text-xs text-accent leading-relaxed">
-                                A secure password will be generated and sent to the admin email address above.
-                            </p>
+                        {{-- Password --}}
+                        <div class="mb-4">
+                            <label for="admin_password" class="block text-sm font-medium text-text-dark mb-1.5">
+                                Password <span class="text-error">*</span>
+                            </label>
+                            <input
+                                type="password"
+                                id="admin_password"
+                                name="admin_password"
+                                placeholder="Min. 8 characters"
+                                autocomplete="new-password"
+                                class="w-full px-3 py-2 bg-surface border rounded-md text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors
+                                       {{ $errors->has('admin_password') ? 'border-error focus:ring-error focus:border-error' : 'border-border focus:ring-accent focus:border-accent' }}"
+                            >
+                            @error('admin_password')
+                            <p class="mt-1 text-xs text-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        {{-- Confirm Password --}}
+                        <div class="mb-4">
+                            <label for="admin_password_confirmation" class="block text-sm font-medium text-text-dark mb-1.5">
+                                Confirm password <span class="text-error">*</span>
+                            </label>
+                            <input
+                                type="password"
+                                id="admin_password_confirmation"
+                                name="admin_password_confirmation"
+                                placeholder="Repeat your password"
+                                autocomplete="new-password"
+                                class="w-full px-3 py-2 bg-surface border rounded-md text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors border-border focus:ring-accent focus:border-accent"
+                            >
                         </div>
                     </div>
 

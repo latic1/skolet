@@ -17,7 +17,7 @@ final class WelcomeCredentialsMail extends Mailable
     public function __construct(
         public readonly string $recipientName,
         public readonly string $recipientEmail,
-        public readonly string $plainPassword,
+        public readonly ?string $plainPassword,
         public readonly string $loginUrl,
     ) {}
 
