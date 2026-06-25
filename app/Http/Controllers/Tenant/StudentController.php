@@ -87,7 +87,9 @@ final class StudentController extends Controller
     {
         $student->load(['schoolClass', 'section', 'user', 'parents']);
 
-        return view('tenant.students.show', compact('student'));
+        $disciplinaryRecords = $student->disciplinaryRecords()->with('reportedBy')->get();
+
+        return view('tenant.students.show', compact('student', 'disciplinaryRecords'));
     }
 
     public function edit(Student $student): View

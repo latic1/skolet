@@ -113,6 +113,7 @@ final class TenantProvisioningService
             'fees.view', 'fees.create', 'fees.edit',
             'announcements.view', 'announcements.create', 'announcements.edit', 'announcements.delete',
             'assignments.view', 'assignments.create', 'assignments.edit', 'assignments.delete', 'assignments.submit',
+            'behavior.view', 'behavior.create', 'behavior.edit', 'behavior.delete',
             'reports.view',
             'settings.manage',
         ];
@@ -130,6 +131,7 @@ final class TenantProvisioningService
                 'exams.view', 'exams.create', 'exams.edit',
                 'announcements.view', 'announcements.create', 'announcements.edit',
                 'assignments.view', 'assignments.create', 'assignments.edit', 'assignments.delete',
+                'behavior.view', 'behavior.create',
             ],
             'accountant' => [
                 'fees.view', 'fees.create', 'fees.edit',

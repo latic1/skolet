@@ -465,5 +465,210 @@
         </div>
     </div>
 
+    {{-- Behavior / Discipline --}}
+    @can('behavior.view')
+    <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden"
+         x-data="studentBehavior()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div>
+                <h3 class="text-base font-semibold text-text-primary">Behavior & Discipline</h3>
+                <p class="text-xs text-text-muted mt-0.5">{{ $disciplinaryRecords->count() }} {{ Str::plural('record', $disciplinaryRecords->count()) }}</p>
+            </div>
+            @can('behavior.create')
+            <button @click="showModal = true"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground text-xs font-medium rounded-md hover:bg-accent-dark transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Log Incident
+            </button>
+            @endcan
+        </div>
+
+        @if($disciplinaryRecords->isEmpty())
+        <div class="flex items-center justify-center py-10 text-center px-6">
+            <p class="text-sm text-text-muted">No behavior records for this student.</p>
+        </div>
+        @else
+        <div class="divide-y divide-border">
+            @foreach($disciplinaryRecords as $record)
+            @php
+                $typeBadge = match($record->incident_type) {
+                    'warning'      => 'bg-warning-light text-warning',
+                    'detention'    => 'bg-error-light text-error',
+                    'suspension'   => 'bg-error-light text-error',
+                    'expulsion'    => 'bg-error text-white',
+                    'commendation' => 'bg-success-lightest text-success-foreground',
+                    default        => 'bg-surface-secondary text-text-secondary',
+                };
+            @endphp
+            <div class="px-6 py-4" x-data="{ expanded: false }">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3 min-w-0">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 {{ $typeBadge }}">
+                            {{ ucfirst($record->incident_type) }}
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm text-text-primary leading-snug line-clamp-2"
+                               x-show="!expanded">{{ $record->description }}</p>
+                            <p class="text-sm text-text-primary leading-snug whitespace-pre-line"
+                               x-show="expanded" x-cloak>{{ $record->description }}</p>
+                            @if($record->action_taken)
+                            <p class="text-xs text-text-muted mt-1"
+                               x-show="expanded" x-cloak>
+                                <span class="font-medium">Action:</span> {{ $record->action_taken }}
+                            </p>
+                            @endif
+                            <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+                                <span class="text-xs text-text-muted">{{ $record->date->format('d M Y') }}</span>
+                                <span class="text-xs text-text-muted">by {{ $record->reportedBy?->name ?? '—' }}</span>
+                                @if($record->parent_notified)
+                                <span class="text-xs text-success-foreground font-medium">Parent notified</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        @if(strlen($record->description) > 120 || $record->action_taken)
+                        <button @click="expanded = !expanded"
+                                class="text-xs text-accent hover:text-accent-dark transition-colors"
+                                x-text="expanded ? 'Less' : 'More'"></button>
+                        @endif
+                        @can('behavior.delete')
+                        <form method="POST" action="{{ $host }}/behavior/{{ $record->id }}" class="inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    onclick="return confirm('Delete this record?')"
+                                    class="p-1 rounded text-text-muted hover:text-error hover:bg-error-light transition-colors ml-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </form>
+                        @endcan
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
+        {{-- Log Incident Modal (student pre-filled) --}}
+        <div x-show="showModal"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-10 sm:items-center sm:pt-4"
+             style="display: none;">
+
+            <div class="absolute inset-0 bg-overlay/40" @click="showModal = false"></div>
+
+            <div class="relative w-full max-w-lg bg-surface rounded-2xl shadow-xl border border-border max-h-[90vh] flex flex-col"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95">
+
+                <div class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                    <h3 class="text-base font-semibold text-text-primary">Log Incident — {{ $student->full_name }}</h3>
+                    <button @click="showModal = false" class="p-1.5 rounded-md text-text-muted hover:bg-surface-secondary transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="overflow-y-auto flex-1">
+                    <form method="POST" action="{{ $host }}/behavior"
+                          class="flex flex-col gap-4 px-6 py-5"
+                          @submit="submitting = true">
+                        @csrf
+                        <input type="hidden" name="student_id" value="{{ $student->id }}">
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Type <span class="text-error">*</span></label>
+                                <select name="incident_type" x-model="form.incident_type" required
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                    <option value="">Select…</option>
+                                    @foreach(['warning','detention','suspension','expulsion','commendation'] as $type)
+                                    <option value="{{ $type }}">{{ ucfirst($type) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Date <span class="text-error">*</span></label>
+                                <input type="date" name="date" x-model="form.date" required
+                                       max="{{ date('Y-m-d') }}"
+                                       class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Description <span class="text-error">*</span></label>
+                            <textarea name="description" x-model="form.description" rows="3"
+                                      placeholder="What happened?"
+                                      maxlength="2000" required
+                                      class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Action Taken</label>
+                            <textarea name="action_taken" x-model="form.action_taken" rows="2"
+                                      placeholder="Steps taken to address the incident (optional)"
+                                      maxlength="1000"
+                                      class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"></textarea>
+                        </div>
+
+                        <label class="flex items-center gap-3 cursor-pointer select-none">
+                            <input type="hidden" name="parent_notified" value="0">
+                            <input type="checkbox" name="parent_notified" value="1"
+                                   x-model="form.parent_notified"
+                                   class="w-4 h-4 rounded border-border text-accent focus:ring-accent focus:ring-1">
+                            <span class="text-sm text-text-primary">Notify parent by email</span>
+                            @if(!$student->guardian_email)
+                            <span class="text-xs text-text-muted">(no guardian email on file)</span>
+                            @endif
+                        </label>
+
+                        <div class="flex justify-end gap-3 pt-1">
+                            <button type="button" @click="showModal = false"
+                                    class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    :disabled="submitting"
+                                    :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
+                                    class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                                <span x-show="!submitting">Log Incident</span>
+                                <span x-show="submitting">Saving…</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function studentBehavior() {
+    return {
+        showModal: false,
+        submitting: false,
+        form: { incident_type: '', description: '', action_taken: '', date: '{{ date('Y-m-d') }}', parent_notified: false },
+    };
+}
+</script>
+@endpush

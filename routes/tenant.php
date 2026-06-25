@@ -33,6 +33,7 @@ use App\Http\Controllers\Tenant\TimetableController;
 use App\Http\Controllers\Tenant\ParentStudentController;
 use App\Http\Controllers\Tenant\ParentPortalController;
 use App\Http\Controllers\Tenant\AssignmentController;
+use App\Http\Controllers\Tenant\DisciplinaryController;
 use App\Http\Controllers\Tenant\SubmissionController;
 use App\Http\Controllers\Tenant\UserNotificationsController;
 use Illuminate\Support\Facades\Route;
@@ -260,6 +261,17 @@ Route::domain('{subdomain}.' . $appHost)
             });
             Route::middleware('permission:assignments.submit')->group(function () {
                 Route::post('/assignments/{assignment}/submit', [SubmissionController::class, 'store'])->name('assignments.submit');
+            });
+
+            // Behavior / Disciplinary Records
+            Route::middleware('permission:behavior.view')->group(function () {
+                Route::get('/behavior', [DisciplinaryController::class, 'index'])->name('behavior.index');
+            });
+            Route::middleware('permission:behavior.create')->group(function () {
+                Route::post('/behavior', [DisciplinaryController::class, 'store'])->name('behavior.store');
+            });
+            Route::middleware('permission:behavior.delete')->group(function () {
+                Route::delete('/behavior/{disciplinaryRecord}', [DisciplinaryController::class, 'destroy'])->name('behavior.destroy');
             });
 
             // Fees — index accessible to all auth users; controller dispatches by permission
