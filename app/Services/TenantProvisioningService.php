@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Central\Domain;
 use App\Models\Central\SubscriptionPlan;
 use App\Models\Central\Tenant;
+use App\Models\Tenant\ExpenseCategory;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -56,6 +57,7 @@ final class TenantProvisioningService
             // Switch to tenant DB context: seed permissions, roles, create School Admin
             $tenant->run(function () use ($adminName, $adminEmail, $adminPassword): void {
                 $this->seedPermissions();
+                $this->seedExpenseCategories();
 
                 $user = User::create([
                     'name'     => $adminName,
@@ -114,6 +116,8 @@ final class TenantProvisioningService
             'announcements.view', 'announcements.create', 'announcements.edit', 'announcements.delete',
             'assignments.view', 'assignments.create', 'assignments.edit', 'assignments.delete', 'assignments.submit',
             'behavior.view', 'behavior.create', 'behavior.edit', 'behavior.delete',
+            'expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete',
+            'admissions.view', 'admissions.manage',
             'reports.view',
             'settings.manage',
         ];
@@ -135,6 +139,7 @@ final class TenantProvisioningService
             ],
             'accountant' => [
                 'fees.view', 'fees.create', 'fees.edit',
+                'expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete',
                 'reports.view',
                 'announcements.view',
             ],
@@ -157,6 +162,15 @@ final class TenantProvisioningService
         foreach ($rolePermissions as $roleName => $permissions) {
             $role = Role::create(['name' => $roleName, 'guard_name' => 'web']);
             $role->givePermissionTo($permissions);
+        }
+    }
+
+    private function seedExpenseCategories(): void
+    {
+        $defaults = ['Salaries', 'Utilities', 'Supplies', 'Maintenance', 'Events', 'Other'];
+
+        foreach ($defaults as $name) {
+            ExpenseCategory::firstOrCreate(['name' => $name]);
         }
     }
 

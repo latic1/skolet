@@ -40,6 +40,7 @@ final class SeedTenantPermissions extends Command
                 'exams.view', 'exams.create', 'exams.edit', 'exams.delete',
                 'fees.view', 'fees.create', 'fees.edit',
                 'announcements.view', 'announcements.create', 'announcements.edit', 'announcements.delete',
+                'admissions.view', 'admissions.manage',
                 'reports.view',
                 'settings.manage',
             ];

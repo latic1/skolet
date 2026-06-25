@@ -87,8 +87,8 @@
         </div>
         @endif
 
-        {{-- 4 Stat Cards --}}
-        <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        {{-- 5 Stat Cards --}}
+        <div class="grid grid-cols-2 xl:grid-cols-5 gap-4">
 
             {{-- Total Students --}}
             <div class="bg-surface border border-border rounded-2xl p-5 shadow-card">
@@ -157,6 +157,21 @@
                     @endif
                 </div>
             </div>
+
+            {{-- Chronic Absentees --}}
+            @php $absLink = request()->getSchemeAndHttpHost() . '/reports?tab=alerts'; @endphp
+            <a href="{{ $absLink }}" class="bg-surface border border-border rounded-2xl p-5 shadow-card hover:border-error hover:bg-error-light transition-colors block">
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <p class="text-sm font-medium text-text-secondary">Chronic Absentees</p>
+                    <div class="w-8 h-8 rounded-lg bg-error-light flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-[30px] font-semibold {{ $stats['chronic_absentees'] > 0 ? 'text-error' : 'text-text-primary' }} leading-none mb-1">{{ $stats['chronic_absentees'] }}</p>
+                <span class="text-xs text-text-muted">below 80% this term</span>
+            </a>
 
         </div>
 
@@ -244,8 +259,8 @@
     ================================================================ --}}
     @elseif($can['attendance'] && $can['exams'])
 
-        {{-- 2 Stat Cards --}}
-        <div class="grid grid-cols-2 gap-4">
+        {{-- 3 Stat Cards --}}
+        <div class="grid grid-cols-2 xl:grid-cols-3 gap-4">
             <div class="bg-surface border border-border rounded-2xl p-5 shadow-card">
                 <div class="flex items-start justify-between gap-2 mb-3">
                     <p class="text-sm font-medium text-text-secondary">Attendance Today</p>
@@ -272,6 +287,21 @@
                 <p class="text-[30px] font-semibold text-text-primary leading-none mb-1">{{ number_format($stats['total_students']) }}</p>
                 <span class="text-xs text-text-muted">total enrolled</span>
             </div>
+            @if($can['reports'])
+            <a href="{{ request()->getSchemeAndHttpHost() }}/reports?tab=alerts"
+               class="bg-surface border border-border rounded-2xl p-5 shadow-card hover:border-error hover:bg-error-light transition-colors block">
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <p class="text-sm font-medium text-text-secondary">Chronic Absentees</p>
+                    <div class="w-8 h-8 rounded-lg bg-error-light flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-[30px] font-semibold {{ $stats['chronic_absentees'] > 0 ? 'text-error' : 'text-text-primary' }} leading-none mb-1">{{ $stats['chronic_absentees'] }}</p>
+                <span class="text-xs text-text-muted">below 80% this term</span>
+            </a>
+            @endif
         </div>
 
         {{-- Assignments badge for teacher --}}

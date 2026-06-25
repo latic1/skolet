@@ -86,13 +86,40 @@ final class DashboardController extends Controller
             }
         }
 
+        // ── Chronic absentees (below 80% this term) ─────────────────────────
+        $chronicAbsentees = 0;
+        if ($currentTerm && $currentTerm->start_date) {
+            $termFrom = $currentTerm->start_date->toDateString();
+            $termTo   = ($currentTerm->end_date && $currentTerm->end_date->isPast())
+                ? $currentTerm->end_date->toDateString()
+                : $today;
+
+            $studentIds = Student::where('status', 'active')->pluck('id');
+
+            if ($studentIds->isNotEmpty()) {
+                $attendancesThisTerm = Attendance::whereBetween('date', [$termFrom, $termTo])
+                    ->whereIn('student_id', $studentIds)
+                    ->get(['student_id', 'status'])
+                    ->groupBy('student_id');
+
+                foreach ($attendancesThisTerm as $sid => $records) {
+                    $total   = $records->count();
+                    $present = $records->where('status', 'present')->count();
+                    if ($total > 0 && ($present / $total) * 100 < 80) {
+                        $chronicAbsentees++;
+                    }
+                }
+            }
+        }
+
         $stats = [
-            'total_students'   => $totalStudents,
-            'total_staff'      => $totalStaff,
-            'attendance_today' => $attendanceToday,
-            'fees_this_term'   => $feesThisTerm,
-            'fees_outstanding' => $feesOutstanding,
-            'overdue_count'    => $overdueCount,
+            'total_students'    => $totalStudents,
+            'total_staff'       => $totalStaff,
+            'attendance_today'  => $attendanceToday,
+            'fees_this_term'    => $feesThisTerm,
+            'fees_outstanding'  => $feesOutstanding,
+            'overdue_count'     => $overdueCount,
+            'chronic_absentees' => $chronicAbsentees,
         ];
 
         // ── Recent activity ──────────────────────────────────────────────────

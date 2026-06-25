@@ -57,6 +57,11 @@ final class Student extends Model
         return $this->hasMany(DisciplinaryRecord::class)->latest('date');
     }
 
+    public function feeDiscounts(): HasMany
+    {
+        return $this->hasMany(FeeDiscount::class);
+    }
+
     public function parents(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'parent_student', 'student_id', 'user_id')

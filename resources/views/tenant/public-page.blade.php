@@ -67,10 +67,18 @@
                 <span class="text-[19px] font-bold leading-7 text-text-darkest tracking-tight">{{ $schoolName }}</span>
             </div>
 
-            <a href="{{ route('tenant.login') }}"
-               class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors">
-                Login
-            </a>
+            <div class="flex items-center gap-2">
+                @if($profile?->admissions_open)
+                <a href="{{ request()->getSchemeAndHttpHost() }}/apply"
+                   class="px-4 py-2 text-sm font-medium bg-accent-muted text-accent border border-accent rounded-md hover:bg-accent hover:text-white transition-colors">
+                    Apply Now
+                </a>
+                @endif
+                <a href="{{ route('tenant.login') }}"
+                   class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors">
+                    Login
+                </a>
+            </div>
         </div>
     </header>
 

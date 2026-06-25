@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\SchoolProfile;
@@ -121,6 +122,174 @@ final class ReportCardService
         } catch (\Throwable $e) {
             Log::error('[ReportCardService.generatePdf] ' . $e->getMessage(), [
                 'exam_id'    => $exam->id,
+                'student_id' => $student->id,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Generate a cumulative transcript PDF for a student across all published exams.
+     * Saves to storage/{tenantId}/transcripts/{student_id}.pdf and returns the absolute path.
+     */
+    public function generateTranscript(Student $student): string
+    {
+        $tenantId  = tenant('id');
+        $disk      = Storage::disk('local');
+        $directory = "{$tenantId}/transcripts";
+        $path      = "{$directory}/{$student->id}.pdf";
+
+        try {
+            $scale = SchoolProfile::first()?->grading_scale
+                ?? config('skolet.default_grading_scale', []);
+
+            $rawResults = ExamResult::where('student_id', $student->id)
+                ->whereHas('exam', fn ($q) => $q->where('is_published', true))
+                ->with(['exam.term.academicYear', 'subject'])
+                ->get();
+
+            // Group: academicYear → term → exam
+            $groupedByYear = $rawResults
+                ->filter(fn ($r) => $r->exam?->term?->academicYear !== null)
+                ->groupBy(fn ($r) => $r->exam->term->academicYear->id)
+                ->map(function ($yearResults) use ($student, $scale) {
+                    $academicYear = $yearResults->first()->exam->term->academicYear;
+
+                    $termGroups = $yearResults
+                        ->groupBy(fn ($r) => $r->exam->term->id)
+                        ->map(function ($termResults) use ($student, $scale) {
+                            $term = $termResults->first()->exam->term;
+
+                            // Attendance % for this student during this term
+                            $attendancePct = null;
+                            if ($term->start_date) {
+                                $termTo = ($term->end_date && $term->end_date->isPast())
+                                    ? $term->end_date->toDateString()
+                                    : now()->toDateString();
+                                $att = Attendance::where('student_id', $student->id)
+                                    ->whereBetween('date', [$term->start_date->toDateString(), $termTo])
+                                    ->get();
+                                if ($att->isNotEmpty()) {
+                                    $attendancePct = round($att->where('status', 'present')->count() / $att->count() * 100, 1);
+                                }
+                            }
+
+                            // Group by exam
+                            $examGroups = $termResults
+                                ->groupBy(fn ($r) => $r->exam_id)
+                                ->map(function ($examResults) use ($scale) {
+                                    $exam = $examResults->first()->exam;
+                                    $rows = $examResults->map(function ($r) use ($scale) {
+                                        [$grade, $remark] = $this->applyScale((float) $r->marks, $scale);
+                                        return [
+                                            'subject' => $r->subject?->name ?? '—',
+                                            'marks'   => (float) $r->marks,
+                                            'grade'   => $grade,
+                                            'remark'  => $remark,
+                                        ];
+                                    })->sortBy('subject')->values();
+
+                                    $average = $rows->isNotEmpty() ? round($rows->avg('marks'), 1) : null;
+                                    [$avgGrade, $avgRemark] = $average !== null
+                                        ? $this->applyScale($average, $scale)
+                                        : [null, null];
+
+                                    return [
+                                        'exam'           => $exam,
+                                        'results'        => $rows,
+                                        'average'        => $average,
+                                        'average_grade'  => $avgGrade,
+                                        'average_remark' => $avgRemark,
+                                    ];
+                                })
+                                ->sortBy(fn ($e) => optional($e['exam']->start_date)->toDateString() ?? $e['exam']->created_at->toDateString())
+                                ->values();
+
+                            $termAvg = $termResults->pluck('marks')->isNotEmpty()
+                                ? round($termResults->pluck('marks')->avg(), 1)
+                                : null;
+                            [$termGrade, $termRemark] = $termAvg !== null
+                                ? $this->applyScale($termAvg, $scale)
+                                : [null, null];
+
+                            return [
+                                'term'           => $term,
+                                'attendance_pct' => $attendancePct,
+                                'exams'          => $examGroups,
+                                'term_average'   => $termAvg,
+                                'term_grade'     => $termGrade,
+                                'term_remark'    => $termRemark,
+                            ];
+                        })
+                        ->sortBy(fn ($t) => optional($t['term']->start_date)->toDateString() ?? $t['term']->name)
+                        ->values();
+
+                    $yearAvg = $yearResults->pluck('marks')->isNotEmpty()
+                        ? round($yearResults->pluck('marks')->avg(), 1)
+                        : null;
+                    [$yearGrade, $yearRemark] = $yearAvg !== null
+                        ? $this->applyScale($yearAvg, $scale)
+                        : [null, null];
+
+                    return [
+                        'academic_year' => $academicYear,
+                        'terms'         => $termGroups,
+                        'year_average'  => $yearAvg,
+                        'year_grade'    => $yearGrade,
+                        'year_remark'   => $yearRemark,
+                    ];
+                })
+                ->sortBy(fn ($y) => optional($y['academic_year']->start_date ?? null)->toDateString() ?? $y['academic_year']->name)
+                ->values();
+
+            $allMarks = $rawResults->pluck('marks');
+            $cumulativeAvg = $allMarks->isNotEmpty() ? round($allMarks->avg(), 1) : null;
+            [$cumGrade, $cumRemark] = $cumulativeAvg !== null
+                ? $this->applyScale($cumulativeAvg, $scale)
+                : [null, null];
+
+            $schoolProfile = SchoolProfile::first();
+            $logoBase64    = null;
+
+            if ($schoolProfile?->logo_path) {
+                try {
+                    $content = Storage::disk('public')->get($schoolProfile->logo_path);
+                    if ($content) {
+                        $ext      = strtolower(pathinfo($schoolProfile->logo_path, PATHINFO_EXTENSION));
+                        $mime     = match ($ext) {
+                            'jpg', 'jpeg' => 'image/jpeg',
+                            'png'         => 'image/png',
+                            'gif'         => 'image/gif',
+                            'webp'        => 'image/webp',
+                            'svg'         => 'image/svg+xml',
+                            default       => 'image/png',
+                        };
+                        $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
+                    }
+                } catch (\Throwable) {
+                    // Logo not critical
+                }
+            }
+
+            $student->loadMissing(['schoolClass', 'section']);
+
+            $pdf = Pdf::loadView('tenant.exams.transcript-pdf', [
+                'student'            => $student,
+                'years'              => $groupedByYear,
+                'cumulative_average' => $cumulativeAvg,
+                'cumulative_grade'   => $cumGrade,
+                'cumulative_remark'  => $cumRemark,
+                'scale'              => $scale,
+                'schoolProfile'      => $schoolProfile,
+                'logoBase64'         => $logoBase64,
+            ])->setPaper('a4', 'portrait');
+
+            $disk->makeDirectory($directory);
+            $disk->put($path, $pdf->output());
+
+            return storage_path("app/{$path}");
+        } catch (\Throwable $e) {
+            Log::error('[ReportCardService.generateTranscript] ' . $e->getMessage(), [
                 'student_id' => $student->id,
             ]);
             throw $e;

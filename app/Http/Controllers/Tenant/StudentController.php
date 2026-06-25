@@ -11,11 +11,16 @@ use App\Http\Requests\Tenant\ImportStudentsRequest;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Imports\StudentImport;
+use App\Models\Tenant\AdmissionApplication;
+use App\Models\Tenant\ExamResult;
+use App\Models\Tenant\FeeStructure;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\User;
 use App\Services\AdmissionNumberService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -54,7 +59,7 @@ final class StudentController extends Controller
         return view('tenant.students.index', compact('students', 'classes', 'anyClassHasSections'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $classes = SchoolClass::with('sections')->orderBy('order')->orderBy('name')->get();
         $classesJson = $classes->map(fn ($c) => [
@@ -63,7 +68,25 @@ final class StudentController extends Controller
             'sections' => $c->sections->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values(),
         ])->values()->toArray();
 
-        return view('tenant.students.create', compact('classes', 'classesJson'));
+        $application    = null;
+        $prefill        = [];
+
+        if ($request->filled('from_application')) {
+            $application = AdmissionApplication::find($request->input('from_application'));
+
+            if ($application && $application->isPending()) {
+                $prefill = [
+                    'full_name'        => $application->applicant_name,
+                    'date_of_birth'    => $application->date_of_birth?->format('Y-m-d'),
+                    'gender'           => $application->gender,
+                    'guardian_name'    => $application->guardian_name,
+                    'guardian_contact' => $application->guardian_contact,
+                    'guardian_email'   => $application->guardian_email,
+                ];
+            }
+        }
+
+        return view('tenant.students.create', compact('classes', 'classesJson', 'application', 'prefill'));
     }
 
     public function store(StoreStudentRequest $request): RedirectResponse
@@ -73,6 +96,18 @@ final class StudentController extends Controller
             $data['admission_no'] = $this->admissionNumberService->generate();
 
             $student = Student::create($data);
+
+            // If this student was created from an admission application, mark it accepted
+            if ($request->filled('from_application_id')) {
+                $application = AdmissionApplication::find($request->input('from_application_id'));
+                if ($application && $application->isPending()) {
+                    $application->update([
+                        'status'      => 'accepted',
+                        'reviewed_by' => Auth::id(),
+                        'reviewed_at' => now(),
+                    ]);
+                }
+            }
 
             return redirect(request()->getSchemeAndHttpHost() . '/students/create')
                 ->with('success', "Student \"{$student->full_name}\" added — Adm. No. {$student->admission_no}.");
@@ -89,7 +124,31 @@ final class StudentController extends Controller
 
         $disciplinaryRecords = $student->disciplinaryRecords()->with('reportedBy')->get();
 
-        return view('tenant.students.show', compact('student', 'disciplinaryRecords'));
+        $feeDiscounts = $student->feeDiscounts()
+            ->with(['feeStructure', 'approver'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Fee structures applicable to this student (for the discount "Applies To" select)
+        $studentFeeStructures = FeeStructure::where(function ($q) use ($student): void {
+            $q->where('target_class', 'all')
+              ->orWhere('target_class', $student->class_id);
+        })->orderBy('fee_item')->get(['id', 'fee_item', 'amount']);
+
+        $hasPublishedResults = ExamResult::where('student_id', $student->id)
+            ->whereHas('exam', fn ($q) => $q->where('is_published', true))
+            ->exists();
+
+        $user = Auth::user();
+        $canDownloadTranscript = $hasPublishedResults && (
+            $user->can('students.view') ||
+            ($student->user_id && $student->user_id === $user->id) ||
+            $student->parents->contains('id', $user->id)
+        );
+
+        return view('tenant.students.show', compact(
+            'student', 'disciplinaryRecords', 'feeDiscounts', 'studentFeeStructures', 'canDownloadTranscript'
+        ));
     }
 
     public function edit(Student $student): View

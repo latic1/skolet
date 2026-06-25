@@ -28,6 +28,7 @@ final class SchoolProfile extends Model
         'onboarding_completed',
         'onboarding_step',
         'notification_settings',
+        'admissions_open',
     ];
 
     protected $casts = [
@@ -35,6 +36,7 @@ final class SchoolProfile extends Model
         'onboarding_completed'  => 'boolean',
         'onboarding_step'       => 'integer',
         'notification_settings' => 'array',
+        'admissions_open'       => 'boolean',
     ];
 
     public function getActivitylogOptions(): LogOptions

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Tenant\AcademicYear;
+use App\Models\Tenant\FeeDiscount;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
 use App\Models\Tenant\SchoolProfile;
@@ -21,6 +22,7 @@ final class FeeStatusService
     /**
      * Load all fee structures applicable to a student's class and compute
      * the payment status for each item based on existing payment records.
+     * Active fee discounts are applied to reduce the effective amount.
      *
      * When $termId is provided: returns per-term fees for that term
      * plus annual fees for that term's academic year.
@@ -28,7 +30,7 @@ final class FeeStatusService
      * When $termId is null: returns all per-term fees plus annual fees
      * for the current academic year.
      *
-     * @return array<int, array{fee_structure: FeeStructure, paid_amount: float, outstanding: float, status: string, payments: \Illuminate\Support\Collection}>
+     * @return array<int, array{fee_structure: FeeStructure, original_amount: float, effective_amount: float, has_discount: bool, discounts: \Illuminate\Support\Collection, paid_amount: float, outstanding: float, status: string, payments: \Illuminate\Support\Collection}>
      */
     public function getStudentFeeItems(
         Student $student,
@@ -90,18 +92,52 @@ final class FeeStatusService
             ->get()
             ->groupBy('fee_structure_id');
 
+        // Load all active discounts for this student in one query
+        $today = today()->toDateString();
+        $allDiscounts = FeeDiscount::where('student_id', $student->id)
+            ->where(function ($q) use ($today): void {
+                $q->whereNull('valid_from')->orWhere('valid_from', '<=', $today);
+            })
+            ->where(function ($q) use ($today): void {
+                $q->whereNull('valid_until')->orWhere('valid_until', '>=', $today);
+            })
+            ->get();
+
+        // Blanket discounts (apply to all fee items)
+        $blanketDiscounts = $allDiscounts->whereNull('fee_structure_id');
+
         $items = [];
         foreach ($feeStructures as $fs) {
-            $fsPayments  = $payments->get($fs->id, collect());
-            $paidAmount  = (float) $fsPayments->sum('amount');
-            $outstanding = max(0.0, (float) $fs->amount - $paidAmount);
+            $fsPayments = $payments->get($fs->id, collect());
+            $paidAmount = (float) $fsPayments->sum('amount');
+
+            // Specific discounts for this fee structure + blanket discounts
+            $specificDiscounts = $allDiscounts->where('fee_structure_id', $fs->id);
+            $applicableDiscounts = $blanketDiscounts->merge($specificDiscounts)->values();
+
+            // Apply all applicable discounts (each reduces from the original amount)
+            $originalAmount = (float) $fs->amount;
+            $reduction = 0.0;
+            foreach ($applicableDiscounts as $discount) {
+                if ($discount->discount_type === 'percentage') {
+                    $reduction += $originalAmount * ((float) $discount->discount_value / 100);
+                } else {
+                    $reduction += (float) $discount->discount_value;
+                }
+            }
+            $effectiveAmount = max(0.0, $originalAmount - $reduction);
+            $outstanding     = max(0.0, $effectiveAmount - $paidAmount);
 
             $items[] = [
-                'fee_structure' => $fs,
-                'paid_amount'   => $paidAmount,
-                'outstanding'   => $outstanding,
-                'status'        => $this->computeStatus((float) $fs->amount, $paidAmount, $fs->due_date),
-                'payments'      => $fsPayments,
+                'fee_structure'    => $fs,
+                'original_amount'  => $originalAmount,
+                'effective_amount' => $effectiveAmount,
+                'has_discount'     => $applicableDiscounts->isNotEmpty(),
+                'discounts'        => $applicableDiscounts,
+                'paid_amount'      => $paidAmount,
+                'outstanding'      => $outstanding,
+                'status'           => $this->computeStatus($effectiveAmount, $paidAmount, $fs->due_date),
+                'payments'         => $fsPayments,
             ];
         }
 

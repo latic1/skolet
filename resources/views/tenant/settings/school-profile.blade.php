@@ -248,6 +248,24 @@
                 </div>
             </div>
 
+            {{-- Online Admissions Toggle --}}
+            <div class="border-t border-border pt-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h4 class="text-sm font-semibold text-text-primary">Online Admissions</h4>
+                        <p class="text-xs text-text-muted mt-0.5">When enabled, an "Apply Now" button appears on your public page linking to <code class="text-xs font-mono bg-surface-secondary px-1 py-0.5 rounded">/apply</code>.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                        <input type="hidden" name="admissions_open" value="0">
+                        <input type="checkbox" name="admissions_open" value="1"
+                               {{ old('admissions_open', $profile?->admissions_open) ? 'checked' : '' }}
+                               class="sr-only peer">
+                        <div class="w-10 h-6 bg-border-light peer-checked:bg-accent rounded-full transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent peer-focus:ring-offset-1"></div>
+                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+                    </label>
+                </div>
+            </div>
+
             <div class="pt-2">
                 <button type="submit"
                         :disabled="submitting"

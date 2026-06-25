@@ -1,16 +1,36 @@
 @extends('layouts.tenant')
 
 @section('title', 'Reports')
-
 @section('page-title', 'Reports')
 
+@push('head')
+{{-- Chart.js loaded before Alpine so x-init can reference it --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+@endpush
+
 @section('content')
-@php $host = request()->getSchemeAndHttpHost(); @endphp
+@php
+    $host = request()->getSchemeAndHttpHost();
+    $examsForJs = $exams->map(fn($e) => [
+        'id'      => $e->id,
+        'name'    => $e->name,
+        'term_id' => $e->term_id,
+    ])->values()->toArray();
+    $chartData = [
+        'labels'        => $analyticsReport ? collect($analyticsReport['subjects'])->pluck('subject_name')->values()->toArray() : [],
+        'avgScores'     => $analyticsReport ? collect($analyticsReport['subjects'])->pluck('avg_score')->values()->toArray() : [],
+        'passRates'     => $analyticsReport ? collect($analyticsReport['subjects'])->pluck('pass_rate')->values()->toArray() : [],
+        'trendLabels'   => collect($trendData)->pluck('exam_name')->values()->toArray(),
+        'trendAverages' => collect($trendData)->pluck('average')->values()->toArray(),
+    ];
+@endphp
 <div x-data="reportsPage(
     {{ Js::from($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'sections' => $c->sections->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values()])->values()) }},
     '{{ $selectedClassId }}',
     '{{ $selectedSection }}',
-    '{{ $activeTab }}'
+    '{{ $activeTab }}',
+    {{ Js::from($examsForJs) }},
+    {{ Js::from($chartData) }}
 )">
 
     {{-- Page header --}}
@@ -55,6 +75,24 @@
             type="button"
         >
             Fee Collection
+        </button>
+        <button
+            @click="activeTab = 'alerts'"
+            :class="activeTab === 'alerts'
+                ? 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-accent text-accent'
+                : 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-transparent text-text-secondary hover:text-text-primary'"
+            type="button"
+        >
+            Attendance Alerts
+        </button>
+        <button
+            @click="activeTab = 'academic'"
+            :class="activeTab === 'academic'
+                ? 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-accent text-accent'
+                : 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-transparent text-text-secondary hover:text-text-primary'"
+            type="button"
+        >
+            Academic Analytics
         </button>
     </div>
 
@@ -412,15 +450,414 @@
 
     </div>{{-- /fees tab --}}
 
+    {{-- ============================================================ --}}
+    {{-- ATTENDANCE ALERTS TAB                                        --}}
+    {{-- ============================================================ --}}
+    <div x-show="activeTab === 'alerts'" x-cloak>
+
+        {{-- Filter card --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card p-5 mb-5">
+            <form method="GET" action="{{ $host }}/reports" class="flex flex-wrap items-end gap-4">
+                <input type="hidden" name="tab" value="alerts">
+
+                {{-- Class --}}
+                <div class="flex-1 min-w-40">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Class</label>
+                    <select name="class_id" x-model="classId" @change="onClassChange()"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">Select class…</option>
+                        @foreach($classes as $class)
+                        <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Section (conditional) --}}
+                <div x-show="hasSections" x-cloak class="flex-1 min-w-35">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Section</label>
+                    <select name="section_id" x-model="sectionId"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">All sections</option>
+                        <template x-for="s in currentSections" :key="s.id">
+                            <option :value="s.id" :selected="s.id === sectionId" x-text="s.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                {{-- Term --}}
+                <div class="flex-1 min-w-40">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term</label>
+                    <select name="term_id"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">Select term…</option>
+                        @foreach($terms as $t)
+                        <option value="{{ $t->id }}" {{ $selectedTermId === $t->id ? 'selected' : '' }}>
+                            {{ $t->name }}{{ $t->academicYear ? ' (' . $t->academicYear->name . ')' : '' }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Threshold --}}
+                <div class="flex-1 min-w-40" x-data="{ thresh: {{ $selectedThreshold }} }">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">
+                        Absence threshold &mdash; <span class="text-error font-semibold" x-text="thresh + '%'"></span>
+                    </label>
+                    <input type="range" name="threshold" min="1" max="99" step="1"
+                           x-model.number="thresh"
+                           value="{{ $selectedThreshold }}"
+                           class="w-full h-1.5 bg-border rounded-full appearance-none cursor-pointer accent-accent">
+                    <div class="flex justify-between text-[10px] text-text-muted mt-0.5">
+                        <span>1%</span><span>Below this % present = alert</span><span>99%</span>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors shrink-0">
+                    Load Alerts
+                </button>
+            </form>
+        </div>
+
+        @if($absenteesReport !== null)
+
+        {{-- Bulk notify form --}}
+        @if(count($absenteesReport['rows']) > 0)
+        <form method="POST" action="{{ $host }}/attendance/notify-bulk" class="mb-4">
+            @csrf
+            <input type="hidden" name="term_id" value="{{ $absenteesReport['term']->id }}">
+            <input type="hidden" name="class_id" value="{{ $selectedClassId }}">
+            <input type="hidden" name="section_id" value="{{ $selectedSection }}">
+            <input type="hidden" name="threshold" value="{{ $absenteesReport['threshold'] }}">
+            <div class="flex items-center justify-between gap-4 bg-error-light border border-error rounded-xl px-5 py-3">
+                <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 text-error shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                    </svg>
+                    <p class="text-sm font-medium text-error">
+                        {{ count($absenteesReport['rows']) }} student(s) below {{ $absenteesReport['threshold'] }}% attendance
+                        &mdash; {{ $absenteesReport['term']->name }}
+                    </p>
+                </div>
+                <button type="submit"
+                        class="shrink-0 px-4 py-2 bg-error text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity">
+                    Notify All Guardians
+                </button>
+            </div>
+        </form>
+        @endif
+
+        {{-- Results table --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
+            {{-- Card header --}}
+            <div class="px-6 py-4 border-b border-border">
+                <h3 class="text-base font-semibold text-text-primary">
+                    Attendance Alerts — {{ $absenteesReport['class']->name }}{{ $absenteesReport['section'] ? ' / ' . $absenteesReport['section']->name : '' }}
+                </h3>
+                <p class="text-xs text-text-muted mt-0.5">
+                    {{ $absenteesReport['term']->name }} &middot;
+                    Students below {{ $absenteesReport['threshold'] }}% attendance
+                    @if(count($absenteesReport['rows']) === 0)
+                        &middot; <span class="text-success-foreground">No alerts — all students meet the threshold</span>
+                    @endif
+                </p>
+            </div>
+
+            @if(count($absenteesReport['rows']) > 0)
+            <div class="overflow-x-auto">
+                <table class="w-full" style="min-width:640px">
+                    <thead>
+                        <tr class="border-b border-border bg-surface-secondary">
+                            <th class="text-left px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Student</th>
+                            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Absences</th>
+                            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Days Marked</th>
+                            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">% Present</th>
+                            <th class="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary hidden md:table-cell">Guardian</th>
+                            <th class="px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($absenteesReport['rows'] as $row)
+                        @php
+                            $pct    = $row['percent_present'];
+                            $color  = $pct < 50 ? 'text-error' : ($pct < 70 ? 'text-warning' : 'text-text-secondary');
+                        @endphp
+                        <tr class="border-b border-border last:border-b-0 hover:bg-surface-secondary transition-colors">
+                            <td class="px-6 py-4">
+                                <a href="{{ $host }}/students/{{ $row['student']->id }}"
+                                   class="text-sm font-medium text-text-primary hover:text-accent transition-colors">
+                                    {{ $row['student']->full_name }}
+                                </a>
+                                @if($row['student']->admission_number)
+                                <p class="text-xs text-text-muted">{{ $row['student']->admission_number }}</p>
+                                @endif
+                            </td>
+                            <td class="px-4 py-4 text-sm font-semibold text-error text-center">{{ $row['absent'] }}</td>
+                            <td class="px-4 py-4 text-sm text-text-secondary text-center">{{ $row['days_marked'] }}</td>
+                            <td class="px-4 py-4 text-sm font-semibold text-center {{ $color }}">{{ $pct }}%</td>
+                            <td class="px-4 py-4 hidden md:table-cell">
+                                @if($row['guardian_name'])
+                                <p class="text-sm text-text-primary">{{ $row['guardian_name'] }}</p>
+                                @endif
+                                @if($row['guardian_contact'])
+                                <p class="text-xs text-text-muted">{{ $row['guardian_contact'] }}</p>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                @if($row['guardian_email'])
+                                <form method="POST" action="{{ $host }}/attendance/notify/{{ $row['student']->id }}">
+                                    @csrf
+                                    <input type="hidden" name="term_id" value="{{ $absenteesReport['term']->id }}">
+                                    <input type="hidden" name="percent_present" value="{{ $pct }}">
+                                    <button type="submit"
+                                            class="text-xs font-medium px-3 py-1.5 bg-surface border border-border text-text-secondary rounded-md hover:bg-surface-secondary hover:text-text-primary transition-colors">
+                                        Notify Guardian
+                                    </button>
+                                </form>
+                                @else
+                                <span class="text-xs text-text-muted italic">No email</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="w-10 h-10 rounded-xl bg-success-lightest flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5 text-success-foreground" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-text-primary mb-1">All students meet the threshold</p>
+                <p class="text-xs text-text-muted">No students are below {{ $absenteesReport['threshold'] }}% attendance for this term.</p>
+            </div>
+            @endif
+        </div>
+
+        @elseif($activeTab === 'alerts')
+        {{-- Initial state --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-14 h-14 rounded-xl bg-surface-secondary flex items-center justify-center mb-4">
+                <svg class="w-7 h-7 text-text-muted" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                </svg>
+            </div>
+            <p class="text-sm font-medium text-text-primary mb-1">No report loaded</p>
+            <p class="text-xs text-text-muted">Select a class and term above, then click Load Alerts.</p>
+        </div>
+        @endif
+
+    </div>{{-- /alerts tab --}}
+
+    {{-- ============================================================ --}}
+    {{-- ACADEMIC ANALYTICS TAB                                       --}}
+    {{-- ============================================================ --}}
+    <div x-show="activeTab === 'academic'" x-cloak>
+
+        {{-- Filter card --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card p-5 mb-5">
+            <form method="GET" action="{{ $host }}/reports" class="flex flex-wrap items-end gap-4">
+                <input type="hidden" name="tab" value="academic">
+
+                {{-- Term --}}
+                <div class="flex-1 min-w-40">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term</label>
+                    <select name="term_id" x-model="academicTermId"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">All terms</option>
+                        @foreach($terms as $t)
+                        <option value="{{ $t->id }}" {{ $selectedTermId === $t->id ? 'selected' : '' }}>
+                            {{ $t->name }}{{ $t->academicYear ? ' (' . $t->academicYear->name . ')' : '' }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Exam (filtered by term via Alpine) --}}
+                <div class="flex-1 min-w-40">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Exam</label>
+                    <select name="exam_id" x-model="academicExamId"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">— Select exam —</option>
+                        <template x-for="e in filteredExams" :key="e.id">
+                            <option :value="e.id" :selected="e.id === academicExamId" x-text="e.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                {{-- Class --}}
+                <div class="flex-1 min-w-40">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Class</label>
+                    <select name="class_id" x-model="classId" @change="onClassChange()"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">Select class…</option>
+                        @foreach($classes as $class)
+                        <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Section (conditional) --}}
+                <div x-show="hasSections" x-cloak class="flex-1 min-w-35">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Section</label>
+                    <select name="section_id" x-model="sectionId"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">All sections</option>
+                        <template x-for="s in currentSections" :key="s.id">
+                            <option :value="s.id" :selected="s.id === sectionId" x-text="s.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors shrink-0">
+                    Load Report
+                </button>
+            </form>
+        </div>
+
+        @if($analyticsReport !== null && count($analyticsReport['subjects']) > 0)
+        {{-- Results card --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card">
+
+            {{-- Card header --}}
+            <div class="px-6 py-4 border-b border-border flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-base font-semibold text-text-primary">
+                        {{ $analyticsReport['exam']?->name }}
+                        &mdash; {{ $analyticsReport['class']?->name }}{{ $analyticsReport['section'] ? ' / ' . $analyticsReport['section']->name : '' }}
+                    </h3>
+                    <p class="text-xs text-text-muted mt-0.5">
+                        Passing threshold: {{ $analyticsReport['pass_threshold'] }}%
+                        @if($analyticsReport['exam']?->term)
+                         &middot; {{ $analyticsReport['exam']->term->name }}
+                        @endif
+                    </p>
+                </div>
+                <a href="{{ $host }}/reports/academic/pdf?{{ http_build_query(['exam_id' => $selectedExamId, 'class_id' => $selectedClassId, 'section_id' => $selectedSection]) }}"
+                   class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-surface border border-border text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                    <svg class="w-3.5 h-3.5 text-error" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                    </svg>
+                    Export PDF
+                </a>
+            </div>
+
+            {{-- Charts grid --}}
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 border-b border-border">
+
+                {{-- Subject Averages --}}
+                <div class="bg-surface-secondary rounded-xl p-4">
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wide mb-3">Subject Averages</p>
+                    <div style="position:relative; height:{{ max(120, count($analyticsReport['subjects']) * 36) }}px">
+                        <canvas id="avgChart"></canvas>
+                    </div>
+                </div>
+
+                {{-- Pass Rate --}}
+                <div class="bg-surface-secondary rounded-xl p-4">
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wide mb-3">Pass Rate (%)</p>
+                    <div style="position:relative; height:{{ max(120, count($analyticsReport['subjects']) * 36) }}px">
+                        <canvas id="passChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            @if(count($trendData) > 1)
+            {{-- Class Trend --}}
+            <div class="p-6 border-b border-border">
+                <p class="text-xs font-medium text-text-secondary uppercase tracking-wide mb-3">Class Performance Trend</p>
+                <div style="position:relative; height:200px">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            @endif
+
+            {{-- Summary table --}}
+            <div class="overflow-x-auto">
+                <table class="w-full" style="min-width:600px">
+                    <thead>
+                        <tr class="border-b border-border bg-surface-secondary">
+                            <th class="text-left px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Subject</th>
+                            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Students</th>
+                            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Avg Score</th>
+                            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary hidden md:table-cell">Highest</th>
+                            <th class="text-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary hidden md:table-cell">Lowest</th>
+                            <th class="text-center px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Pass Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($analyticsReport['subjects'] as $row)
+                        @php
+                            $passOk = $row['pass_rate'] >= 50;
+                        @endphp
+                        <tr class="border-b border-border last:border-b-0 hover:bg-surface-secondary transition-colors">
+                            <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ $row['subject_name'] }}</td>
+                            <td class="px-4 py-4 text-sm text-text-secondary text-center">{{ $row['student_count'] }}</td>
+                            <td class="px-4 py-4 text-sm font-semibold text-text-primary text-center">{{ $row['avg_score'] }}</td>
+                            <td class="px-4 py-4 text-sm text-text-secondary text-center hidden md:table-cell">{{ $row['highest'] }}</td>
+                            <td class="px-4 py-4 text-sm text-text-secondary text-center hidden md:table-cell">{{ $row['lowest'] }}</td>
+                            <td class="px-6 py-4 text-sm font-semibold text-center">
+                                <span class="{{ $passOk ? 'text-success-foreground' : 'text-error' }}">
+                                    {{ $row['pass_rate'] }}%
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @elseif(count($trendData) > 0 && $analyticsReport === null)
+        {{-- Trend-only view (no exam selected) --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card p-6">
+            <p class="text-xs font-medium text-text-secondary uppercase tracking-wide mb-3">Class Performance Trend</p>
+            <div style="position:relative; height:220px">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        @elseif($activeTab === 'academic' && request()->filled('class_id'))
+        {{-- Filters applied but no data --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-12 h-12 rounded-xl bg-surface-secondary flex items-center justify-center mb-3">
+                <svg class="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+                </svg>
+            </div>
+            <p class="text-sm font-medium text-text-primary mb-1">No results found</p>
+            <p class="text-xs text-text-muted">No exam results exist for the selected filters.</p>
+        </div>
+
+        @elseif($activeTab === 'academic')
+        {{-- Initial state --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-14 h-14 rounded-xl bg-surface-secondary flex items-center justify-center mb-4">
+                <svg class="w-7 h-7 text-text-muted" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+                </svg>
+            </div>
+            <p class="text-sm font-medium text-text-primary mb-1">No report loaded</p>
+            <p class="text-xs text-text-muted">Select a class and exam above, then click Load Report.</p>
+        </div>
+        @endif
+
+    </div>{{-- /academic tab --}}
+
 </div>{{-- /x-data --}}
 @endsection
 
 @push('scripts')
 <script>
-Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab) => ({
+Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab, examsData, chartData) => ({
     activeTab,
     classId: selectedClassId || '',
     sectionId: selectedSectionId || '',
+    academicTermId: '{{ $selectedTermId }}',
+    academicExamId: '{{ $selectedExamId }}',
 
     get currentClass() {
         return classes.find(c => c.id === this.classId) || null;
@@ -431,8 +868,99 @@ Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeT
     get hasSections() {
         return this.currentSections.length > 0;
     },
+    get filteredExams() {
+        if (!this.academicTermId) return examsData;
+        return examsData.filter(e => e.term_id === this.academicTermId);
+    },
     onClassChange() {
         this.sectionId = '';
+    },
+
+    initAcademicCharts() {
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#2563eb';
+        const successColor = getComputedStyle(document.documentElement).getPropertyValue('--color-success-foreground').trim() || '#16a34a';
+
+        const commonBarOpts = (maxVal) => ({
+            type: 'bar',
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { min: 0, max: maxVal, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 } } },
+                    y: { ticks: { font: { size: 11 } }, grid: { display: false } },
+                },
+            },
+        });
+
+        const avgCanvas = document.getElementById('avgChart');
+        if (avgCanvas && chartData.labels.length) {
+            const opts = commonBarOpts(100);
+            new Chart(avgCanvas, {
+                ...opts,
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        data: chartData.avgScores,
+                        backgroundColor: accentColor,
+                        borderRadius: 4,
+                        barThickness: 14,
+                    }],
+                },
+            });
+        }
+
+        const passCanvas = document.getElementById('passChart');
+        if (passCanvas && chartData.labels.length) {
+            const opts = commonBarOpts(100);
+            new Chart(passCanvas, {
+                ...opts,
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        data: chartData.passRates,
+                        backgroundColor: successColor,
+                        borderRadius: 4,
+                        barThickness: 14,
+                    }],
+                },
+            });
+        }
+
+        const trendCanvas = document.getElementById('trendChart');
+        if (trendCanvas && chartData.trendLabels.length > 1) {
+            new Chart(trendCanvas, {
+                type: 'line',
+                data: {
+                    labels: chartData.trendLabels,
+                    datasets: [{
+                        data: chartData.trendAverages,
+                        borderColor: accentColor,
+                        backgroundColor: accentColor + '22',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 } } },
+                        y: { min: 0, max: 100, ticks: { font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    },
+                },
+            });
+        }
+    },
+
+    init() {
+        if (this.activeTab === 'academic') {
+            this.$nextTick(() => this.initAcademicCharts());
+        }
     },
 }));
 </script>

@@ -15,15 +15,24 @@ use App\Models\Tenant\StaffAttendance;
 use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\SubjectTeacherAssignment;
 use App\Models\Tenant\Student;
+use App\Models\Tenant\Term;
 use App\Notifications\AbsenceAlert;
+use App\Notifications\LowAttendanceAlert;
+use App\Services\AttendanceReportService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 final class AttendanceController extends Controller
 {
+    public function __construct(
+        private readonly AttendanceReportService $attendanceReportService,
+    ) {}
+
     public function index(): View
     {
         $user        = Auth::user();
@@ -247,6 +256,86 @@ final class AttendanceController extends Controller
             \Log::error('[attendance.saveStaff] ' . $e->getMessage());
 
             return back()->with('error', 'Could not save staff attendance. Please try again.');
+        }
+    }
+
+    public function notifyGuardian(Request $request, Student $student): RedirectResponse
+    {
+        abort_unless($request->user()->can('attendance.view'), 403);
+
+        $validated = $request->validate([
+            'term_id'         => ['required', 'uuid', 'exists:terms,id'],
+            'percent_present' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        if (! $student->guardian_email) {
+            return back()->with('error', "No guardian email on file for {$student->full_name}.");
+        }
+
+        $key = 'low-attendance-alert:' . $student->id . ':' . Auth::id();
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            return back()->with('error', 'Too many notifications sent for this student. Please wait before retrying.');
+        }
+        RateLimiter::hit($key, 3600);
+
+        try {
+            $term = Term::findOrFail($validated['term_id']);
+            Notification::route('mail', $student->guardian_email)
+                ->notify(new LowAttendanceAlert($student, (float) $validated['percent_present'], $term->name));
+
+            return back()->with('success', "Low attendance alert sent to guardian of {$student->full_name}.");
+        } catch (\Throwable $e) {
+            \Log::error('[AttendanceController::notifyGuardian] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not send notification. Please try again.');
+        }
+    }
+
+    public function notifyAll(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('attendance.view'), 403);
+
+        $validated = $request->validate([
+            'term_id'    => ['required', 'uuid', 'exists:terms,id'],
+            'class_id'   => ['required', 'string'],
+            'section_id' => ['nullable', 'string'],
+            'threshold'  => ['required', 'integer', 'min:1', 'max:99'],
+        ]);
+
+        $bulkKey = 'low-attendance-bulk:' . Auth::id();
+        if (RateLimiter::tooManyAttempts($bulkKey, 5)) {
+            return back()->with('error', 'Bulk notification rate limit reached. Please wait before sending again.');
+        }
+        RateLimiter::hit($bulkKey, 3600);
+
+        try {
+            $result = $this->attendanceReportService->buildChronicAbsentees(
+                $validated['term_id'],
+                $validated['class_id'],
+                $validated['section_id'] ?? null,
+                (int) $validated['threshold'],
+            );
+
+            if (! $result['success']) {
+                return back()->with('error', $result['error']);
+            }
+
+            $term  = $result['data']['term'];
+            $sent  = 0;
+            foreach ($result['data']['rows'] as $row) {
+                $student = $row['student'];
+                if ($student->guardian_email) {
+                    Notification::route('mail', $student->guardian_email)
+                        ->notify(new LowAttendanceAlert($student, $row['percent_present'], $term->name));
+                    $sent++;
+                }
+            }
+
+            return back()->with('success', "Low attendance alerts sent to {$sent} guardian(s).");
+        } catch (\Throwable $e) {
+            \Log::error('[AttendanceController::notifyAll] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not send bulk notifications. Please try again.');
         }
     }
 }

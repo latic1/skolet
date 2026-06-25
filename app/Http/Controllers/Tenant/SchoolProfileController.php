@@ -43,6 +43,7 @@ final class SchoolProfileController extends Controller
     public function update(UpdateSchoolProfileRequest $request): RedirectResponse
     {
         $data = collect($request->validated())->except('logo')->toArray();
+        $data['admissions_open'] = $request->boolean('admissions_open');
 
         $profile = SchoolProfile::first() ?? new SchoolProfile();
 

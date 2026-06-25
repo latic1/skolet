@@ -17,6 +17,22 @@
         <span class="text-text-primary font-medium">Add Student</span>
     </div>
 
+    {{-- Pre-fill notice from admission application --}}
+    @if($application && $application->isPending())
+    <div class="bg-accent-muted border border-accent rounded-xl px-5 py-4 flex items-start gap-3">
+        <svg class="w-4 h-4 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+            <p class="text-sm font-medium text-accent">Pre-filled from admission application</p>
+            <p class="text-xs text-text-secondary mt-0.5">
+                This form has been pre-filled with details from <strong>{{ $application->applicant_name }}</strong>'s application.
+                Saving this form will accept the application and create the student record.
+            </p>
+        </div>
+    </div>
+    @endif
+
     @if($errors->any())
     <div class="bg-error-light border border-error text-error text-sm px-4 py-3 rounded-xl flex items-start gap-3">
         <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,6 +52,9 @@
     <form method="POST" action="{{ $host }}/students" class="flex flex-col gap-6"
           x-data="{ submitting: false }" @submit="submitting = true">
         @csrf
+        @if($application && $application->isPending())
+        <input type="hidden" name="from_application_id" value="{{ $application->id }}">
+        @endif
 
         {{-- Personal Information --}}
         <div class="bg-surface border border-border rounded-2xl shadow-card p-6 flex flex-col gap-5">
@@ -44,7 +63,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-text-dark mb-1.5">Full Name <span class="text-error">*</span></label>
-                    <input type="text" name="full_name" value="{{ old('full_name') }}" required
+                    <input type="text" name="full_name" value="{{ old('full_name', $prefill['full_name'] ?? '') }}" required
                            placeholder="e.g. Jane Doe"
                            class="w-full px-3 py-2 bg-surface border @error('full_name') border-error @else border-border @enderror rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('full_name')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
@@ -52,7 +71,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-text-dark mb-1.5">Date of Birth</label>
-                    <input type="date" name="date_of_birth" value="{{ old('date_of_birth') }}"
+                    <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $prefill['date_of_birth'] ?? '') }}"
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('date_of_birth')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
@@ -62,9 +81,9 @@
                     <select name="gender"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                         <option value="">Not specified</option>
-                        <option value="male"   @selected(old('gender') === 'male')>Male</option>
-                        <option value="female" @selected(old('gender') === 'female')>Female</option>
-                        <option value="other"  @selected(old('gender') === 'other')>Other</option>
+                        <option value="male"   @selected(old('gender', $prefill['gender'] ?? '') === 'male')>Male</option>
+                        <option value="female" @selected(old('gender', $prefill['gender'] ?? '') === 'female')>Female</option>
+                        <option value="other"  @selected(old('gender', $prefill['gender'] ?? '') === 'other')>Other</option>
                     </select>
                     @error('gender')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
@@ -116,7 +135,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-text-dark mb-1.5">Guardian Name</label>
-                    <input type="text" name="guardian_name" value="{{ old('guardian_name') }}"
+                    <input type="text" name="guardian_name" value="{{ old('guardian_name', $prefill['guardian_name'] ?? '') }}"
                            placeholder="e.g. John Doe"
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('guardian_name')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
@@ -124,7 +143,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-text-dark mb-1.5">Guardian Contact <span class="text-error">*</span></label>
-                    <input type="text" name="guardian_contact" value="{{ old('guardian_contact') }}" required
+                    <input type="text" name="guardian_contact" value="{{ old('guardian_contact', $prefill['guardian_contact'] ?? '') }}" required
                            placeholder="e.g. 0244123456"
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('guardian_contact')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
@@ -132,7 +151,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-text-dark mb-1.5">Guardian Email</label>
-                    <input type="email" name="guardian_email" value="{{ old('guardian_email') }}"
+                    <input type="email" name="guardian_email" value="{{ old('guardian_email', $prefill['guardian_email'] ?? '') }}"
                            placeholder="e.g. guardian@example.com"
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     @error('guardian_email')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror

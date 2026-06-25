@@ -683,6 +683,31 @@ After building any component — update this file with the component name, file 
 
 ---
 
+### Behavior & Discipline Page
+**File:** `resources/views/tenant/behavior/index.blade.php`
+**Description:** Admin/teacher overview of all discipline records with filters and Log Incident modal. Also accessible as a card on the student profile.
+- Filter bar: standard filter card (`bg-surface border border-border rounded-2xl shadow-card p-5`); class + incident type selects + date from/to inputs + Filter/Clear buttons (same pattern as attendance filter)
+- Table: Settings CRUD Table Card with `overflow-x-auto`, `min-width: 750px`; columns: Student (name + class link) | Type badge | Date | Description (line-clamp-2, hidden below md) | Reported By (hidden below lg) | Parent Notified badge | Actions
+- Type badges: warning → `bg-warning-light text-warning`; detention/suspension → `bg-error-light text-error`; expulsion → `bg-error text-white`; commendation → `bg-success-lightest text-success-foreground`
+- Parent notified badge: `bg-success-lightest text-success-foreground` with checkmark icon
+- "Log Incident" modal: standard CRUD Modal pattern `max-w-lg`; scrollable body `overflow-y-auto flex-1`; student select (on main page) or hidden input (on student profile); type + date in 2-col grid; description textarea + action_taken textarea + "Notify parent" checkbox
+- Alpine: `behaviorPage()` — `showModal`, `submitting`, `form` (student_id/incident_type/description/action_taken/date/parent_notified); `openModal(prefilledStudentId)` + `close()`; `init()` re-opens modal on validation error using `old()` values
+
+---
+
+### Behavior Card on Student Profile
+**File:** `resources/views/tenant/students/show.blade.php`
+**Description:** Card appended at bottom of student profile, gated by `@can('behavior.view')`.
+- Card header: `px-6 py-4 border-b border-border` with title + record count subtitle + "Log Incident" button (gated by `behavior.create`)
+- Record row: `px-6 py-4` with flex layout — type badge (same color tokens) + description (line-clamp-2 default, full on expand) + action taken (shown on expand) + date/reported-by/parent-notified meta row
+- Expand toggle: `text-xs text-accent hover:text-accent-dark` "More"/"Less" button; per-row `x-data="{ expanded: false }"`
+- Delete: icon button `p-1 rounded text-text-muted hover:text-error hover:bg-error-light` (gated by `behavior.delete`)
+- Empty state: centered `text-sm text-text-muted` within the card body
+- Inline modal: same Log Incident modal but with `student_id` as `<input type="hidden">` pre-filled from `$student->id`; no student select
+- Alpine: `studentBehavior()` on the card wrapper — `showModal`, `submitting`, `form`
+
+---
+
 ### Announcements Audience Section (Modal)
 **File:** `resources/views/tenant/announcements/index.blade.php`
 **Description:** Audience targeting section added below `is_public` toggle in both add and edit announcement modals. Audience badge shown on each card.
@@ -694,3 +719,117 @@ After building any component — update this file with the component name, file 
 - Card badge (non-All): `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium` — Students: `bg-info-lightest text-info-foreground`; Parents: `bg-accent-muted text-accent`; Specific Classes: `bg-warning-light text-warning`; Specific Roles: `bg-surface-secondary text-text-secondary`; no badge for `all`
 - Modal uses `overflow-y-auto flex-1` scrollable body so audience section doesn't overflow on small screens
 - Alpine `announcementsPage(announcements, classes, roles)` — added `classes` (id+name) and `roles` (name strings) params; `form.audience_type` + `form.audience_ids: []` in form state; `openEdit()` restores both fields; `init()` restores from `old()` on validation error
+
+---
+
+### Expenses Page (Expense & Budget Management)
+**Files:** `resources/views/tenant/expenses/index.blade.php`, `resources/views/tenant/expenses/_form.blade.php`
+**Description:** Expense log page for accountant/admin. Summary strip (3 stat cards), filter bar, paginated table with Log/Edit modals and an inline Add Category modal.
+- Summary strip: `grid grid-cols-3 gap-4` — three `bg-surface border border-border rounded-2xl p-5 shadow-card` stat cards (This Month / This Term / YTD). Value: `text-[26px] font-semibold text-text-primary leading-none`, label: `text-xs font-medium text-text-muted uppercase tracking-wide mb-1`
+- Filter bar: standard filter card (`bg-surface border border-border rounded-2xl shadow-card p-5`); category select + date from/to inputs + Filter/Clear buttons; GET form
+- Table: Settings CRUD Table Card pattern with `overflow-x-auto` + `min-width: 700px`; columns: Date | Category (badge `bg-accent-muted text-accent`) | Description (`line-clamp-2`) | Amount (right-aligned, `font-semibold`) | Recorded By (`hidden md:table-cell`) | Receipt link (`hidden sm:table-cell`) | Actions
+- Receipt link: `text-xs font-medium text-accent hover:text-accent-dark` with paperclip SVG icon; only shown when `receipt_path` is set; links to `/expenses/receipt/{id}` (served by controller)
+- Log Expense / Edit modal: standard CRUD Modal pattern `max-w-lg` with `overflow-y-auto` scrollable body; dual `x-show="mode === 'add'"` / `x-show="mode === 'edit'"` forms; edit uses `:action="editAction"` template-literal binding + `@method('PUT')`; enctype `multipart/form-data` on both
+- `_form.blade.php` partial: sentinel hidden inputs `_expense_mode` + `_expense_id`; category select with `+ Add Category` inline button (triggers `showCategoryModal = true`); amount + date in `grid grid-cols-2 gap-4`; description text input; receipt file input (`file:bg-accent-muted file:text-accent`)
+- Add Category modal: `max-w-sm` nested modal with single name input; POST to `/expenses/categories`; `categorySubmitting` state for button disable
+- Alpine: `expensesPage(categories, expenses)` — `showModal`, `showCategoryModal`, `mode`, `submitting`, `categorySubmitting`, `editAction`, `form:{category_id,amount,date,description}`, `openAdd()`, `openEdit(data)`, `close()`, `init()` (re-opens modal on validation error via `old()` sentinel fields)
+
+### Fee Discounts Card (Student Profile)
+**Files:** `resources/views/tenant/students/show.blade.php`
+**Description:** Card on student profile listing active/expired fee discounts with an "Add Discount" modal. Visible to `fees.edit` or `fees.view`; add/remove actions gated to `fees.edit`.
+- Card: `bg-surface border border-border rounded-2xl shadow-card p-6` — same pattern as other profile cards
+- Card header: `flex items-center justify-between mb-5` with "Add Discount" button `px-3 py-1.5 bg-accent text-accent-foreground text-xs font-medium rounded-md`
+- Empty state: standard centered empty-state with icon + muted text
+- Table: `text-sm` with `min-width: 540px`; columns: Type (badge) | Value | Applies To | Reason (truncate with title) | Expiry | Remove action
+- Type badge: `bg-accent-muted text-accent` for percentage, `bg-warning-light text-warning` for fixed
+- Expired row: `opacity-50` on `<tr>` wrapper; Expired date shown in `text-error text-xs`; pending date shown in `text-text-muted text-xs`
+- Add Discount modal: standard CRUD Modal `max-w-md` centered fixed with backdrop click to close + Escape key handler. Fields: Discount Type select (percentage/fixed) | Value input (`:max` binding for percentage cap) | Applies To select (all fees or specific fee structure from `$studentFeeStructures`) | Reason text input | Valid From + Valid Until in `grid grid-cols-2 gap-4`
+- Validation error panel: `mx-6 mt-4 p-3 bg-error-light border border-error rounded-xl text-xs text-error` list
+- Modal re-open: `x-init` checks `$errors->hasAny([...])` (Blade) and sets `showModal = true`
+- Alpine: inline `x-data` on card div — `showModal`, `form:{fee_structure_id,discount_type,discount_value,reason,valid_from,valid_until}`, `init()`
+
+### Discounted Amount Cell (Fee Collection)
+**File:** `resources/views/tenant/fees/index.blade.php`
+**Description:** Amount column in the fee items table conditionally renders a discount indicator when `$item['has_discount']` is true.
+- Discounted: `flex flex-col gap-0.5` — original `text-xs text-text-muted line-through` above; effective amount `text-sm font-medium text-text-primary` inline with "Discounted" badge `bg-accent-muted text-accent px-1.5 py-0.5 rounded-full text-xs font-medium`
+- No discount: plain `text-sm text-text-primary font-medium` span
+- `$totalOwed` summary stat now uses `effective_amount` (discounted total) not `fee_structure.amount`
+
+### Academic Analytics Tab (Reports Page)
+**Files:** `resources/views/tenant/reports/index.blade.php`, `resources/views/tenant/reports/academic-analytics-pdf.blade.php`
+**Description:** 5th tab on the /reports page. Filter bar selects term → exam (filtered by term via Alpine) → class → section. Shows 2 horizontal bar charts + 1 line trend chart (Chart.js) plus a summary table. PDF export renders table-only.
+- Chart.js loaded via `@push('head')`: `<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>` (same CDN as dashboard)
+- Charts container: `grid grid-cols-1 lg:grid-cols-2 gap-6` within `p-6 border-b border-border` on the card
+- Chart wrappers: `bg-surface-secondary rounded-xl p-4`; dynamic height `max(120, subjectCount * 36)px` for bar charts, `200px` for trend line
+- Subject Averages chart: `type: 'bar'`, `indexAxis: 'y'`, accent color bars, `barThickness: 14`, `borderRadius: 4`
+- Pass Rate chart: same horizontal bar pattern, success color bars
+- Class Trend chart: `type: 'line'`, `tension: 0.3`, `fill: true`, accent color; shown only when `trendLabels.length > 1`
+- Chart colors via `getComputedStyle(document.documentElement).getPropertyValue('--color-accent')` — respects CSS token theming
+- Summary table: `min-width:600px`; columns: Subject | Students | Avg Score | Highest (hidden md) | Lowest (hidden md) | Pass Rate. Pass rate colored `text-success-foreground` or `text-error` based on ≥50%
+- Alpine additions to `reportsPage`: params `examsData` + `chartData`; computed `filteredExams` (filtered by `academicTermId`); `initAcademicCharts()` called from `init()` via `$nextTick` when tab is active; state `academicTermId`, `academicExamId`
+- Card header: exam + class/section title + "Export PDF" link button
+- Three empty states: initial (no filters), no-data (filters applied but no results), trend-only (no exam selected but term + class gives trend data)
+- PDF (`academic-analytics-pdf.blade.php`): A4 portrait; school header + meta block table + summary stats strip + per-subject table; pass threshold shown in meta; tfoot with averages row; no charts
+
+### Attendance Alerts Tab (Reports Page)
+**Files:** `resources/views/tenant/reports/index.blade.php`
+**Description:** 4th tab on /reports (between Fee Collection and Academic Analytics). Filter bar: class / section (conditional) / term / absence threshold range slider. Shows absentees table + bulk notify banner + per-row notify button.
+- Tab slug: `'alerts'`; x-show on Alpine `activeTab === 'alerts'`
+- Filter form: class select (x-model classId), section select (x-show hasSections), term select, threshold range slider with Alpine x-data + x-model.number for live % label
+- Threshold slider: `<input type="range" min="1" max="99">` with Alpine `{ thresh: N }` / `x-text="thresh + '%'"` for live label update
+- Bulk notify banner: `bg-error-light border border-error rounded-xl` strip with warning icon + count summary + `POST /attendance/notify-bulk` form button. Shown only when rows > 0.
+- Table columns: Student (name + admission_number subtext as link to student profile) | Absences (`text-error font-semibold`) | Days Marked | % Present (colored: `text-error` <50%, `text-warning` <70%, else `text-text-secondary`) | Guardian (hidden md, name + contact) | Action (Notify Guardian `POST /attendance/notify/{student}` button, or "No email" italic text)
+- Empty success state (no alerts): `bg-success-lightest` icon, "All students meet the threshold" message
+- Initial state (no filters): warning icon with "Select class and term to load alerts" prompt
+
+### Chronic Absentees Stat Card (Dashboard)
+**Files:** `resources/views/tenant/dashboard.blade.php`
+**Description:** Clickable stat card on admin (5th of 5) and teacher (3rd of 3) dashboard views, linking to `/reports?tab=alerts`.
+- Admin grid: changed from `grid-cols-2 xl:grid-cols-4` to `grid-cols-2 xl:grid-cols-5`
+- Teacher grid: changed from `grid-cols-2` to `grid-cols-2 xl:grid-cols-3`; card conditionally rendered with `@if($can['reports'])`
+- Card: `<a>` tag with `hover:border-error hover:bg-error-light transition-colors` hover state
+- Icon: warning triangle SVG in `bg-error-light` container (`w-8 h-8 rounded-lg`)
+- Count value: `text-error` when > 0, else `text-text-primary`; sub-label "below 80% this term"
+
+### Public Admission Application Form
+**Files:** `resources/views/tenant/apply.blade.php`, `resources/views/tenant/apply-confirmation.blade.php`
+**Description:** Standalone unauthenticated pages (no `@extends`). Same school navbar/logo pattern as `public-page.blade.php`.
+- Route: `GET /apply` (show) + `POST /apply` (store) — no auth required, uses tenant session
+- `apply.blade.php`: 3-section form — Student Info (name, DOB, gender, class select), Guardian Info (name, contact, email), Previous School (optional). Alpine `submitting` guard on submit button. Class select falls back to text input if no classes exist.
+- `apply-confirmation.blade.php`: success icon (`bg-success-lightest` circle) + data card with details grid + "email sent" accent notice (shown if guardian_email exists) + Back to School Page button. `noindex` meta.
+- Error display: inline `@error()` messages below each field; session error banner at top.
+
+### Admissions Admin Page
+**Files:** `resources/views/tenant/admissions/index.blade.php`
+**Description:** Paginated table of admission applications with filter bar and slide-over review panel.
+- Permission gate: `admissions.view` to view; `admissions.manage` to accept/reject
+- Filter bar: `bg-surface border border-border rounded-2xl` card with status select + class select
+- Table columns: Applicant (name + DOB subtext) | Class | Guardian (hidden md) | Date | Status badge | Actions
+- Status badges: pending = `bg-warning-light text-warning`, accepted = `bg-success-lightest text-success-foreground`, rejected = `bg-error-light text-error`
+- Review button: shown only for pending applications with `admissions.manage` permission
+- Review slide-over: right-side drawer (`ml-auto w-full max-w-md`) with Alpine `x-show="reviewId === '{id}'"`. Black/40 backdrop dismisses on click or Escape. Slide-in/out transitions via x-transition. Contains full detail DL grid + Accept form (POST /admissions/{id}/accept) + Reject toggle (Alpine `showReject` state, inline textarea + Confirm Rejection button).
+- Rejection flow: inline within the slide-over — `showReject` reveals textarea; submits `POST /admissions/{id}/reject` with `rejection_reason`
+
+### School Profile: Admissions Open Toggle
+**Files:** `resources/views/tenant/settings/school-profile.blade.php`
+**Description:** Toggle switch in the school profile form controlling online admissions visibility.
+- CSS-only toggle: `<input type="hidden" name="admissions_open" value="0">` + `<input type="checkbox" name="admissions_open" value="1" class="sr-only peer">` + custom div track (`w-10 h-6 bg-border-light peer-checked:bg-accent`) + thumb (`absolute left-1 top-1 w-4 h-4 bg-white peer-checked:translate-x-4`)
+- Label describes the `/apply` public URL with an inline `<code>` snippet
+- Positioned in the profile form before the Save Profile button
+
+### Student Transcript PDF
+**Files:** `resources/views/tenant/exams/transcript-pdf.blade.php`
+**Description:** A4 portrait dompdf PDF showing a student's complete academic history across all published exams.
+- Section hierarchy: school header (logo + "STUDENT TRANSCRIPT") → student info grid (3-col, 2 rows) → for each academic year: blue year banner with inline year average → for each term: blue-left-border term header with attendance pill + term average → for each exam: gray exam label row + results table → blue year cumulative row → navy overall cumulative block → grading scale key → 3-col signature area.
+- Attendance pill color: green (`#ecfdf5`) ≥80%, orange (`#fff7ed`) ≥60%, red (`#fef2f2`) <60%.
+- Grade badges: 20×20px circles, color-coded by grade letter (A/B/C/D-F).
+- Overall cumulative block: `background: #1e3a8a`, large 22px avg score on right, subdued label on left.
+- dompdf-safe CSS: table-based layout throughout (no flexbox/grid). DejaVu Sans font.
+
+### Student Show: Download Transcript Button
+**Files:** `resources/views/tenant/students/show.blade.php`
+**Description:** "Transcript" action button in the profile header card's action button row.
+- Shown conditionally via `$canDownloadTranscript` boolean (passed from controller). True when student has at least one published exam result AND the viewer is admin / owns the student record / is a linked parent.
+- Style: same as Edit button — `bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary`
+- Icon: download arrow SVG (`M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5…`)
+- Rendered before the Edit button in the flex row

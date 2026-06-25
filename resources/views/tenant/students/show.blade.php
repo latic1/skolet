@@ -57,6 +57,15 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 shrink-0">
+                @if($canDownloadTranscript)
+                <a href="{{ $host }}/students/{{ $student->id }}/transcript"
+                   class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Transcript
+                </a>
+                @endif
                 @can('students.edit')
                 <a href="{{ $host }}/students/{{ $student->id }}/edit"
                    class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
@@ -146,6 +155,225 @@
             </div>
         </dl>
     </div>
+
+    {{-- Fee Discounts --}}
+    @canany(['fees.edit', 'fees.view'])
+    <div class="bg-surface border border-border rounded-2xl shadow-card p-6"
+         x-data="{
+            showModal: false,
+            form: { fee_structure_id: '', discount_type: 'percentage', discount_value: '', reason: '', valid_from: '', valid_until: '' },
+            init() {
+                @if($errors->hasAny(['discount_type','discount_value','reason','fee_structure_id','valid_from','valid_until']))
+                this.showModal = true;
+                @endif
+            }
+         }">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-base font-semibold text-text-primary">Fee Discounts</h3>
+            @can('fees.edit')
+            <button type="button" @click="showModal = true"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground text-xs font-medium rounded-md hover:bg-accent-dark transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Discount
+            </button>
+            @endcan
+        </div>
+
+        @if($feeDiscounts->isEmpty())
+        <div class="flex flex-col items-center justify-center py-8 text-center">
+            <div class="w-10 h-10 rounded-xl bg-surface-secondary flex items-center justify-center mx-auto mb-3">
+                <svg class="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+            </div>
+            <p class="text-sm text-text-muted">No fee discounts applied.</p>
+        </div>
+        @else
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm" style="min-width: 540px">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Type</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Value</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Applies To</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Reason</th>
+                        <th class="text-left text-xs font-medium text-text-muted uppercase tracking-wide pb-2 pr-4">Expiry</th>
+                        @can('fees.edit')<th class="pb-2"></th>@endcan
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    @foreach($feeDiscounts as $discount)
+                    @php
+                        $today   = today();
+                        $expired = $discount->valid_until && $discount->valid_until->lt($today);
+                        $pending = $discount->valid_from && $discount->valid_from->gt($today);
+                    @endphp
+                    <tr class="{{ $expired ? 'opacity-50' : '' }}">
+                        <td class="py-2.5 pr-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $discount->discount_type === 'percentage' ? 'bg-accent-muted text-accent' : 'bg-warning-light text-warning' }}">
+                                {{ $discount->discount_type === 'percentage' ? 'Percentage' : 'Fixed' }}
+                            </span>
+                        </td>
+                        <td class="py-2.5 pr-4 font-medium text-text-primary">
+                            {{ $discount->discount_type === 'percentage'
+                                ? number_format((float)$discount->discount_value, 0) . '%'
+                                : number_format((float)$discount->discount_value, 2) }}
+                        </td>
+                        <td class="py-2.5 pr-4 text-text-secondary">
+                            {{ $discount->feeStructure ? $discount->feeStructure->fee_item : 'All fees' }}
+                        </td>
+                        <td class="py-2.5 pr-4 text-text-secondary max-w-xs truncate" title="{{ $discount->reason }}">
+                            {{ $discount->reason }}
+                        </td>
+                        <td class="py-2.5 pr-4 text-text-secondary">
+                            @if($expired)
+                                <span class="text-error text-xs">Expired {{ $discount->valid_until->format('M j, Y') }}</span>
+                            @elseif($pending)
+                                <span class="text-text-muted text-xs">From {{ $discount->valid_from->format('M j, Y') }}</span>
+                            @elseif($discount->valid_until)
+                                {{ $discount->valid_until->format('M j, Y') }}
+                            @else
+                                <span class="text-text-muted text-xs">No expiry</span>
+                            @endif
+                        </td>
+                        @can('fees.edit')
+                        <td class="py-2.5 text-right">
+                            <form method="POST" action="{{ $host }}/students/{{ $student->id }}/discounts/{{ $discount->id }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Remove this discount from {{ addslashes($student->full_name) }}?')"
+                                        class="text-xs text-error hover:text-red-700 transition-colors">
+                                    Remove
+                                </button>
+                            </form>
+                        </td>
+                        @endcan
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+        {{-- Add Discount Modal --}}
+        @can('fees.edit')
+        <div x-show="showModal" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+             @keydown.escape.window="showModal = false">
+            <div class="absolute inset-0 bg-black/50" @click="showModal = false"></div>
+            <div class="relative bg-surface rounded-2xl shadow-2xl w-full max-w-md z-10"
+                 @click.stop>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+                    <h4 class="text-sm font-semibold text-text-primary">Add Fee Discount</h4>
+                    <button type="button" @click="showModal = false"
+                            class="p-1 rounded-md text-text-muted hover:bg-surface-secondary hover:text-text-primary transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                @if($errors->hasAny(['discount_type','discount_value','reason','fee_structure_id','valid_from','valid_until']))
+                <div class="mx-6 mt-4 p-3 bg-error-light border border-error rounded-xl text-xs text-error">
+                    <ul class="space-y-0.5">
+                        @foreach($errors->only(['discount_type','discount_value','reason','fee_structure_id','valid_from','valid_until']) as $msgs)
+                            @foreach($msgs as $msg)
+                            <li>{{ $msg }}</li>
+                            @endforeach
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
+                <form method="POST" action="{{ $host }}/students/{{ $student->id }}/discounts"
+                      class="px-6 py-5 flex flex-col gap-4">
+                    @csrf
+
+                    {{-- Discount Type --}}
+                    <div class="flex flex-col gap-1.5">
+                        <label class="block text-sm font-medium text-text-dark">Discount Type <span class="text-error">*</span></label>
+                        <select name="discount_type" x-model="form.discount_type" required
+                                class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent {{ $errors->has('discount_type') ? 'border-error' : '' }}">
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="fixed">Fixed Amount</option>
+                        </select>
+                    </div>
+
+                    {{-- Value --}}
+                    <div class="flex flex-col gap-1.5">
+                        <label class="block text-sm font-medium text-text-dark">
+                            Value <span class="text-error">*</span>
+                            <span class="text-xs text-text-muted font-normal" x-show="form.discount_type === 'percentage'">(max 100)</span>
+                        </label>
+                        <input type="number" name="discount_value" x-model="form.discount_value"
+                               required min="0.01" step="0.01"
+                               :max="form.discount_type === 'percentage' ? 100 : undefined"
+                               placeholder="e.g. 50"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent {{ $errors->has('discount_value') ? 'border-error' : '' }}">
+                        @error('discount_value')
+                        <p class="text-xs text-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Applies To --}}
+                    <div class="flex flex-col gap-1.5">
+                        <label class="block text-sm font-medium text-text-dark">Applies To</label>
+                        <select name="fee_structure_id" x-model="form.fee_structure_id"
+                                class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent {{ $errors->has('fee_structure_id') ? 'border-error' : '' }}">
+                            <option value="">All fees (blanket discount)</option>
+                            @foreach($studentFeeStructures as $fs)
+                            <option value="{{ $fs->id }}">{{ $fs->fee_item }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Reason --}}
+                    <div class="flex flex-col gap-1.5">
+                        <label class="block text-sm font-medium text-text-dark">Reason <span class="text-error">*</span></label>
+                        <input type="text" name="reason" x-model="form.reason" required maxlength="500"
+                               placeholder="e.g. Scholarship, Financial hardship waiver"
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent {{ $errors->has('reason') ? 'border-error' : '' }}">
+                        @error('reason')
+                        <p class="text-xs text-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Valid From + Valid Until --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="block text-sm font-medium text-text-dark">Valid From <span class="text-xs text-text-muted font-normal">(optional)</span></label>
+                            <input type="date" name="valid_from" x-model="form.valid_from"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent {{ $errors->has('valid_from') ? 'border-error' : '' }}">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="block text-sm font-medium text-text-dark">Valid Until <span class="text-xs text-text-muted font-normal">(optional)</span></label>
+                            <input type="date" name="valid_until" x-model="form.valid_until"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent {{ $errors->has('valid_until') ? 'border-error' : '' }}">
+                            @error('valid_until')
+                            <p class="text-xs text-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" @click="showModal = false"
+                                class="px-4 py-2 text-sm font-medium text-text-secondary border border-border rounded-md hover:bg-surface-secondary transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors">
+                            Add Discount
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @endcan
+    </div>
+    @endcanany
 
     {{-- Login Account --}}
     @can('students.edit')

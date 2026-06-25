@@ -155,7 +155,7 @@
                     <p class="text-xs text-text-muted">{{ $selectedStudent->admission_no }} · {{ $selectedStudent->schoolClass?->name ?? '—' }}{{ $selectedStudent->section ? ' · ' . $selectedStudent->section->name : '' }}</p>
                 </div>
                 @php
-                    $totalOwed  = collect($feeItems)->sum('fee_structure.amount');
+                    $totalOwed  = collect($feeItems)->sum('effective_amount');
                     $totalPaid  = collect($feeItems)->sum('paid_amount');
                     $totalOutstanding = collect($feeItems)->sum('outstanding');
                 @endphp
@@ -243,13 +243,16 @@
                         <tbody>
                             @foreach($feeItems as $item)
                             @php
-                                $fs          = $item['fee_structure'];
-                                $status      = $item['status'];
-                                $outstanding = $item['outstanding'];
-                                $paidAmount  = $item['paid_amount'];
-                                $payments    = $item['payments'];
-                                $isOverdue   = $status === 'overdue';
-                                $badgeClass  = match($status) {
+                                $fs              = $item['fee_structure'];
+                                $status          = $item['status'];
+                                $outstanding     = $item['outstanding'];
+                                $paidAmount      = $item['paid_amount'];
+                                $payments        = $item['payments'];
+                                $hasDiscount     = $item['has_discount'] ?? false;
+                                $originalAmount  = $item['original_amount'] ?? (float) $fs->amount;
+                                $effectiveAmount = $item['effective_amount'] ?? $originalAmount;
+                                $isOverdue       = $status === 'overdue';
+                                $badgeClass      = match($status) {
                                     'paid'    => 'bg-success-lightest text-success-foreground',
                                     'partial' => 'bg-warning-light text-warning',
                                     default   => 'bg-error-light text-error', // unpaid + overdue
@@ -278,7 +281,19 @@
                                 <td class="px-6 py-4 text-sm text-text-primary hidden md:table-cell">
                                     {{ $fs->term?->name ?? '—' }}{{ $fs->term?->academicYear ? ' · ' . $fs->term->academicYear->name : '' }}
                                 </td>
-                                <td class="px-6 py-4 text-sm text-text-primary font-medium">{{ number_format((float) $fs->amount, 2) }}</td>
+                                <td class="px-6 py-4">
+                                    @if($hasDiscount)
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-xs text-text-muted line-through">{{ number_format($originalAmount, 2) }}</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-sm font-medium text-text-primary">{{ number_format($effectiveAmount, 2) }}</span>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent">Discounted</span>
+                                        </div>
+                                    </div>
+                                    @else
+                                    <span class="text-sm text-text-primary font-medium">{{ number_format($originalAmount, 2) }}</span>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4 text-sm text-success-foreground font-medium">{{ number_format($paidAmount, 2) }}</td>
                                 <td class="px-6 py-4 text-sm font-medium {{ $outstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ number_format($outstanding, 2) }}</td>
                                 <td class="px-6 py-4">

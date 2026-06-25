@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Exports\AttendanceReportExport;
 use App\Exports\FeeCollectionReportExport;
 use App\Http\Controllers\Controller;
+use App\Models\Tenant\Exam;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
 use App\Models\Tenant\SchoolClass;
@@ -14,6 +15,7 @@ use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Term;
 use App\Services\AttendanceReportService;
+use App\Services\ExamAnalyticsService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +29,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ReportController extends Controller
 {
-    public function __construct(private readonly AttendanceReportService $attendanceService) {}
+    public function __construct(
+        private readonly AttendanceReportService $attendanceService,
+        private readonly ExamAnalyticsService $examAnalyticsService,
+    ) {}
+
+    private const DEFAULT_THRESHOLD = 80;
 
     public function index(Request $request): View
     {
@@ -35,8 +42,13 @@ final class ReportController extends Controller
         $terms     = Term::with('academicYear')->latest()->get();
         $activeTab = $request->query('tab', 'attendance');
 
-        $attendanceReport = null;
-        $feeReport        = null;
+        $attendanceReport  = null;
+        $feeReport         = null;
+        $analyticsReport   = null;
+        $trendData         = [];
+        $exams             = collect();
+        $absenteesReport   = null;
+        $selectedThreshold = (int) $request->input('threshold', self::DEFAULT_THRESHOLD);
 
         if (
             $activeTab === 'attendance'
@@ -72,17 +84,66 @@ final class ReportController extends Controller
             }
         }
 
+        if ($activeTab === 'alerts' && $request->filled('class_id') && $request->filled('term_id')) {
+            $result = $this->attendanceService->buildChronicAbsentees(
+                $request->input('term_id'),
+                $request->input('class_id'),
+                $request->input('section_id') ?: null,
+                $selectedThreshold,
+            );
+
+            if ($result['success']) {
+                $absenteesReport = $result['data'];
+            } else {
+                session()->flash('error', $result['error']);
+            }
+        }
+
+        if ($activeTab === 'academic') {
+            $exams = Exam::with('term')->orderBy('name')->get();
+
+            if ($request->filled('class_id')) {
+                $classId   = $request->input('class_id');
+                $sectionId = $request->input('section_id') ?: null;
+                $examId    = $request->input('exam_id');
+                $termId    = $request->input('term_id');
+
+                try {
+                    if ($examId) {
+                        $analyticsReport = $this->examAnalyticsService->buildSubjectReport($examId, $classId, $sectionId);
+                        // Infer term from exam if no term_id supplied
+                        if (! $termId) {
+                            $termId = $analyticsReport['exam']?->term_id;
+                        }
+                    }
+
+                    if ($termId) {
+                        $trendData = $this->examAnalyticsService->buildClassTrend($classId, $sectionId, $termId);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('[ReportController::index/academic] ' . $e->getMessage());
+                    session()->flash('error', 'Could not load academic analytics.');
+                }
+            }
+        }
+
         return view('tenant.reports.index', [
-            'classes'          => $classes,
-            'terms'            => $terms,
-            'activeTab'        => $activeTab,
-            'attendanceReport' => $attendanceReport,
-            'feeReport'        => $feeReport,
-            'selectedClassId'  => $request->input('class_id', ''),
-            'selectedSection'  => $request->input('section_id', ''),
-            'dateFrom'         => $request->input('date_from', ''),
-            'dateTo'           => $request->input('date_to', ''),
-            'selectedTermId'   => $request->input('term_id', ''),
+            'classes'           => $classes,
+            'terms'             => $terms,
+            'exams'             => $exams,
+            'activeTab'         => $activeTab,
+            'attendanceReport'  => $attendanceReport,
+            'feeReport'         => $feeReport,
+            'analyticsReport'   => $analyticsReport,
+            'trendData'         => $trendData,
+            'absenteesReport'   => $absenteesReport,
+            'selectedThreshold' => $selectedThreshold,
+            'selectedClassId'   => $request->input('class_id', ''),
+            'selectedSection'   => $request->input('section_id', ''),
+            'dateFrom'          => $request->input('date_from', ''),
+            'dateTo'            => $request->input('date_to', ''),
+            'selectedTermId'    => $request->input('term_id', ''),
+            'selectedExamId'    => $request->input('exam_id', ''),
         ]);
     }
 
@@ -186,6 +247,41 @@ final class ReportController extends Controller
         } catch (\Throwable $e) {
             Log::error('[ReportController::feesExcel] ' . $e->getMessage());
             return back()->with('error', 'Could not generate Excel file. Please try again.');
+        }
+    }
+
+    public function academicPdf(Request $request): StreamedResponse|RedirectResponse
+    {
+        $validated = $request->validate([
+            'exam_id'    => ['required', 'uuid', 'exists:exams,id'],
+            'class_id'   => ['required', 'string'],
+            'section_id' => ['nullable', 'string'],
+        ]);
+
+        try {
+            $report     = $this->examAnalyticsService->buildSubjectReport(
+                $validated['exam_id'],
+                $validated['class_id'],
+                $validated['section_id'] ?? null,
+            );
+            $profile    = SchoolProfile::first();
+            $logoBase64 = $this->encodeLogoBase64($profile);
+
+            $pdf = Pdf::loadView('tenant.reports.academic-analytics-pdf', [
+                'report'     => $report,
+                'profile'    => $profile,
+                'logoBase64' => $logoBase64,
+            ])->setPaper('a4', 'portrait');
+
+            $className = $report['class']?->name ?? 'class';
+            $examName  = $report['exam']?->name ?? 'exam';
+            $slug      = $this->slugify($className . '-' . $examName);
+
+            return $pdf->download("academic-analytics-{$slug}.pdf");
+        } catch (\Throwable $e) {
+            Log::error('[ReportController::academicPdf] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not generate PDF. Please try again.');
         }
     }
 

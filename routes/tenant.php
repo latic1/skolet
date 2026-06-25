@@ -34,6 +34,11 @@ use App\Http\Controllers\Tenant\ParentStudentController;
 use App\Http\Controllers\Tenant\ParentPortalController;
 use App\Http\Controllers\Tenant\AssignmentController;
 use App\Http\Controllers\Tenant\DisciplinaryController;
+use App\Http\Controllers\Tenant\ExpenseController;
+use App\Http\Controllers\Tenant\AdmissionController;
+use App\Http\Controllers\Tenant\FeeDiscountController;
+use App\Http\Controllers\Tenant\PublicApplicationController;
+use App\Http\Controllers\Tenant\TranscriptController;
 use App\Http\Controllers\Tenant\SubmissionController;
 use App\Http\Controllers\Tenant\UserNotificationsController;
 use Illuminate\Support\Facades\Route;
@@ -80,6 +85,8 @@ Route::domain('{subdomain}.' . $appHost)
 
         // --- Public (unauthenticated) -------------------------------------
         Route::get('/', [PublicPageController::class, 'index'])->name('public');
+        Route::get('/apply', [PublicApplicationController::class, 'show'])->name('apply.show');
+        Route::post('/apply', [PublicApplicationController::class, 'store'])->name('apply.store');
 
         // School logo — served directly from tenant storage (StorageDriver scopes
         // uploads to storage/tenant{id}/app/public/, so the standard symlink can't
@@ -91,6 +98,7 @@ Route::domain('{subdomain}.' . $appHost)
             $content = implode("\n", [
                 'User-agent: *',
                 'Allow: /',
+                'Allow: /apply',
                 'Disallow: /dashboard',
                 'Disallow: /students',
                 'Disallow: /staff',
@@ -164,6 +172,7 @@ Route::domain('{subdomain}.' . $appHost)
             // Wildcard routes come last so literal paths above take precedence
             Route::middleware('permission:students.view')->group(function () {
                 Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
+                Route::get('/students/{student}/transcript', [TranscriptController::class, 'download'])->name('students.transcript');
             });
             Route::middleware('permission:students.edit')->group(function () {
                 Route::get('/students/promote', [StudentPromotionController::class, 'index'])->name('students.promote');
@@ -174,6 +183,11 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::delete('/students/{student}/login', [StudentController::class, 'revokeLogin'])->name('students.login.revoke');
                 Route::post('/students/{student}/parents', [ParentStudentController::class, 'store'])->name('students.parents.store');
                 Route::delete('/students/{student}/parents/{parentUser}', [ParentStudentController::class, 'destroy'])->name('students.parents.destroy');
+            });
+            // Fee discounts — gated by fees.edit (accountant / admin only)
+            Route::middleware('permission:fees.edit')->group(function () {
+                Route::post('/students/{student}/discounts', [FeeDiscountController::class, 'store'])->name('students.discounts.store');
+                Route::delete('/students/{student}/discounts/{discount}', [FeeDiscountController::class, 'destroy'])->name('students.discounts.destroy');
             });
             Route::middleware('permission:students.delete')->group(function () {
                 Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
@@ -207,6 +221,8 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
                 Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
                 Route::get('/attendance/staff', [AttendanceController::class, 'staff'])->name('attendance.staff');
+                Route::post('/attendance/notify/{student}', [AttendanceController::class, 'notifyGuardian'])->name('attendance.notify.guardian');
+                Route::post('/attendance/notify-bulk', [AttendanceController::class, 'notifyAll'])->name('attendance.notify.bulk');
             });
             Route::middleware('permission:attendance.edit')->group(function () {
                 Route::post('/attendance', [AttendanceController::class, 'save'])->name('attendance.save');
@@ -274,6 +290,22 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::delete('/behavior/{disciplinaryRecord}', [DisciplinaryController::class, 'destroy'])->name('behavior.destroy');
             });
 
+            // Expenses
+            Route::middleware('permission:expenses.view')->group(function () {
+                Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+                Route::get('/expenses/receipt/{expense}', [ExpenseController::class, 'receipt'])->name('expenses.receipt');
+            });
+            Route::middleware('permission:expenses.create')->group(function () {
+                Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+                Route::post('/expenses/categories', [ExpenseController::class, 'storeCategory'])->name('expenses.categories.store');
+            });
+            Route::middleware('permission:expenses.edit')->group(function () {
+                Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+            });
+            Route::middleware('permission:expenses.delete')->group(function () {
+                Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+            });
+
             // Fees — index accessible to all auth users; controller dispatches by permission
             // (admin/accountant → tabbed admin view; student/parent → own fees view)
             Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
@@ -296,12 +328,21 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::delete('/fees/{feeStructure}', [FeeController::class, 'destroy'])->name('fees.destroy');
             });
 
+            Route::middleware('permission:admissions.view')->group(function () {
+                Route::get('/admissions', [AdmissionController::class, 'index'])->name('admissions.index');
+            });
+            Route::middleware('permission:admissions.manage')->group(function () {
+                Route::post('/admissions/{application}/accept', [AdmissionController::class, 'accept'])->name('admissions.accept');
+                Route::post('/admissions/{application}/reject', [AdmissionController::class, 'reject'])->name('admissions.reject');
+            });
+
             Route::middleware('permission:reports.view')->group(function () {
                 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
                 Route::get('/reports/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('reports.attendance.pdf');
                 Route::get('/reports/attendance/excel', [ReportController::class, 'attendanceExcel'])->name('reports.attendance.excel');
                 Route::get('/reports/fees/pdf', [ReportController::class, 'feesPdf'])->name('reports.fees.pdf');
                 Route::get('/reports/fees/excel', [ReportController::class, 'feesExcel'])->name('reports.fees.excel');
+                Route::get('/reports/academic/pdf', [ReportController::class, 'academicPdf'])->name('reports.academic.pdf');
             });
 
             Route::middleware('permission:settings.manage')->group(function () {

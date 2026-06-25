@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** 9 — Growth Features (in progress)
-**Last completed:** Feature 37 — Targeted Announcements & Notification Centre (audience_type + audience_ids columns on announcements; notifications table + TenantNotification model; SendAnnouncementNotifications queued job; UserNotificationsController; /notifications route with paginated list; audience section in announcement modal with radio picker + class/role multi-select; announcement filtering per user audience; functional topbar bell with unread badge + dropdown + mark-read + mark-all-read)
+**Last completed:** Feature 43 — Student Transcript Generation (ReportCardService::generateTranscript groups all published ExamResults by year→term→exam, fetches per-term attendance %, computes per-exam/year/cumulative averages; saves PDF to storage/{tenant}/transcripts/{student_id}.pdf; TranscriptController::download with admin/student/parent authorization; GET /students/{student}/transcript under students.view; transcript-pdf.blade.php multi-section A4 PDF with year banners, term headers with attendance pill, exam results tables, year cumulative rows, overall cumulative block; "Download Transcript" button on student show page)
 **Next:** Feature 33 — Staff Leave Management
 
 ---
@@ -79,14 +79,14 @@ Update this file after every completed feature. Any AI agent reading this should
 - [ ] 33 Staff Leave Management
 - [x] 34 Parent Portal (parent_student pivot many-to-many; admin creates/links/unlinks parent accounts on student profile; parent role gets dedicated /my-children portal with child selector, fee status, attendance summary, published exam results; /dashboard and /fees redirect parents to portal; "My Children" sidebar nav for parent role)
 - [x] 35 Homework & Assignment Management (assignments + assignment_submissions tables; AssignmentController + SubmissionController; 5 new permissions seeded per role; multi-role /assignments view — teacher/admin CRUD + grading modal, student Pending/Submitted/Overdue tabs with inline submit form; sidebar nav item; dashboard badges for teachers/students)
-- [ ] 36 Disciplinary & Behavior Tracking
+- [x] 36 Disciplinary & Behavior Tracking
 - [x] 37 Targeted Announcements & Notification Centre
-- [ ] 38 Expense & Budget Management
-- [ ] 39 Scholarship & Fee Waiver Management
-- [ ] 40 Academic Performance Analytics
-- [ ] 41 Attendance Analytics & Chronic Absentee Reports
-- [ ] 42 Online Admission Application
-- [ ] 43 Student Transcript Generation
+- [x] 38 Expense & Budget Management
+- [x] 39 Scholarship & Fee Waiver Management
+- [x] 40 Academic Performance Analytics
+- [x] 41 Attendance Analytics & Chronic Absentee Reports
+- [x] 42 Online Admission Application
+- [x] 43 Student Transcript Generation
 - [ ] 44 Multi-Currency & Locale Support
 - [ ] 45 Data Export, Backup & Privacy Tools
 - [ ] 46 REST API (Sanctum)
@@ -1197,6 +1197,247 @@ Applied consistent submit-disable pattern (Alpine `submitting` state, `@submit="
 **No new permissions needed** — announcements are already visible to all authenticated users; the audience filter is a presentation/targeting control, not an authorization control.
 
 **Action required**: Run `php artisan tenants:migrate` to create the `notifications` table and add audience columns to `announcements`.
+
+---
+
+### 36 — Disciplinary & Behavior Tracking
+
+**Migration** (`database/migrations/tenant/2026_06_25_000001_create_disciplinary_records_table.php`):
+- uuid PK, `student_id` FK→students (cascade), `reported_by` FK→users (cascade), `incident_type` enum (warning/detention/suspension/expulsion/commendation), `description` text, `action_taken` text nullable, `date` date, `parent_notified` boolean default false, timestamps. Composite index on [student_id, date].
+
+**Model** (`app/Models/Tenant/DisciplinaryRecord.php`): `HasUuids`, `LogsActivity`, fillable, casts (date → date, parent_notified → boolean), `student()` BelongsTo, `reportedBy()` BelongsTo User.
+
+**Student model** updated: `disciplinaryRecords()` HasMany → `DisciplinaryRecord::class`, ordered by date descending.
+
+**Permissions** added to `TenantProvisioningService::seedPermissions()`:
+- `behavior.view`, `behavior.create`, `behavior.edit`, `behavior.delete`
+- school_admin: all; teacher: view + create; others: none
+
+**Notification** (`app/Notifications/DisciplinaryIncidentNotification.php`): `ShouldQueue` + Queueable. Sends formatted `MailMessage` to guardian email (via `AnonymousNotifiable`) when `parent_notified = true`. Includes incident type, date, description, action taken.
+
+**DisciplinaryController** (`app/Http/Controllers/Tenant/DisciplinaryController.php`):
+- `index()` — paginated (25) records with eager-loaded student.schoolClass + reportedBy; filter by class_id, incident_type, date_from, date_to via query params. Passes `$classes` and `$students` to view.
+- `store()` — validates all fields; sets `reported_by = Auth::id()`; creates record; conditionally dispatches `DisciplinaryIncidentNotification` via `AnonymousNotifiable` if `parent_notified = true` and guardian email exists.
+- `destroy(DisciplinaryRecord $disciplinaryRecord)` — deletes record; redirects back with success flash.
+
+**Routes** (`routes/tenant.php`):
+- `GET /behavior` → `DisciplinaryController::index` → `behavior.index` (permission: behavior.view)
+- `POST /behavior` → `DisciplinaryController::store` → `behavior.store` (permission: behavior.create)
+- `DELETE /behavior/{disciplinaryRecord}` → `DisciplinaryController::destroy` → `behavior.destroy` (permission: behavior.delete)
+
+**Views**:
+- `resources/views/tenant/behavior/index.blade.php` — filter bar (class, incident type, date range) + filter/clear button; paginated table (student name/class, type badge, date, description preview, reported by, parent notified badge, delete button); "Log Incident" modal (student select + type + date + description + action taken + notify parent checkbox); Alpine `behaviorPage()` — showModal/submitting/form; re-opens modal with old() on validation error; empty state.
+- `resources/views/tenant/students/show.blade.php` — new "Behavior & Discipline" card at bottom, gated by `@can('behavior.view')`; lists all discipline records with type badge + truncated description (expandable) + date + reported by + parent notified; per-record expand/collapse + delete form; "Log Incident" button opens pre-filled modal (student_id hardcoded, no student select); `studentBehavior()` Alpine component; inline modal within the card section.
+
+**Sidebar**: "Behavior" nav item added between Assignments and Announcements, gated by `behavior.view`, uses warning triangle SVG icon.
+
+**StudentController::show()** updated: loads `$student->disciplinaryRecords()->with('reportedBy')->get()` and passes as `$disciplinaryRecords`.
+
+**Action required**: Run `php artisan tenants:migrate` to create the `disciplinary_records` table. For existing tenants also run `php artisan permission:cache-reset` then grant the 4 new behavior permissions via the Roles & Permissions UI.
+
+---
+
+### 38 — Expense & Budget Management
+
+**Migrations** (`database/migrations/tenant/`):
+- `2026_06_25_000002_create_expense_categories_table.php` — uuid PK, name string unique, timestamps.
+- `2026_06_25_000003_create_expenses_table.php` — uuid PK, category_id FK→expense_categories (cascade), amount decimal:2, date date, description string, receipt_path string nullable, recorded_by FK→users (cascade), timestamps. Composite index on [date, category_id].
+
+**Models**: `app/Models/Tenant/ExpenseCategory.php` (HasUuids, fillable name, expenses() HasMany). `app/Models/Tenant/Expense.php` (HasUuids, LogsActivity log_name='expense', fillable, casts amount/date, category() BelongsTo, recordedBy() BelongsTo User).
+
+**Permissions** added to `TenantProvisioningService::seedPermissions()`:
+- `expenses.view`, `expenses.create`, `expenses.edit`, `expenses.delete`
+- school_admin: all; accountant: all; others: none.
+
+**Default categories seeded** in `TenantProvisioningService::seedExpenseCategories()`: Salaries, Utilities, Supplies, Maintenance, Events, Other — using `firstOrCreate` (safe for existing tenants run manually).
+
+**Form Requests** (`app/Http/Requests/Tenant/`): `StoreExpenseCategoryRequest` (expenses.create, name unique), `StoreExpenseRequest` (expenses.create), `UpdateExpenseRequest` (expenses.edit). All validate category_id exists, amount numeric min:0.01, date before_or_equal:today, receipt file optional (jpg/jpeg/png/pdf max 5MB).
+
+**Controller** (`app/Http/Controllers/Tenant/ExpenseController.php`): `index()` — paginated (25) with category + date filters; computes totalThisMonth, totalThisTerm (via current Term dates), totalYtd. `store()` — handles optional receipt upload stored at `expenses/receipts/{tenantId}/` on local disk. `update()` — replaces receipt if new file uploaded. `destroy()` — deletes receipt file if exists. `receipt(Expense)` — streams file from local disk (gated by expenses.view). `storeCategory(StoreExpenseCategoryRequest)` — creates new ExpenseCategory.
+
+**Routes** (`routes/tenant.php`): `GET /expenses` (expenses.view), `GET /expenses/receipt/{expense}` (expenses.view), `POST /expenses` (expenses.create), `POST /expenses/categories` (expenses.create), `PUT /expenses/{expense}` (expenses.edit), `DELETE /expenses/{expense}` (expenses.delete). All literal `/expenses/receipt/{expense}` registered before `{expense}` wildcard.
+
+**Sidebar**: "Expenses" nav item added between Behavior and Announcements, gated by `expenses.view`, uses wallet/money SVG icon.
+
+**View** (`resources/views/tenant/expenses/index.blade.php`): Summary strip (3 stat cards: This Month / This Term / YTD). Filter bar: category select + date from/to. Paginated expense table (Date / Category badge / Description / Amount / Recorded By / Receipt link / Edit+Delete actions). Log Expense modal + Edit modal (shared `_form.blade.php` partial). Add Category inline modal (accessible from the category dropdown in the form). Alpine `expensesPage(categories, expenses)` — openAdd/openEdit/close + showCategoryModal. Modals re-open on validation error via `old()` sentinel fields.
+
+**Receipt storage**: `expenses/receipts/{tenantId}/{filename}` on local disk. Served via controller, never via public URL. Supports JPG, PNG, PDF.
+
+**Action required**: Run `php artisan tenants:migrate` to create `expense_categories` and `expenses` tables. For existing tenants: run `php artisan permission:cache-reset` then add the 4 new expense permissions via the Roles & Permissions UI (or tinker). To seed default categories for existing tenants: run inside `$tenant->run()` calling `(new TenantProvisioningService)->seedExpenseCategories()`.
+
+---
+
+### 39 — Scholarship & Fee Waiver Management
+
+**Migration** (`database/migrations/tenant/2026_06_25_000004_create_fee_discounts_table.php`): uuid PK, student_id FK→students (cascade), fee_structure_id FK→fee_structures nullable (cascade), discount_type enum['percentage','fixed'], discount_value decimal:2, reason text, approved_by FK→users (cascade), valid_from date nullable, valid_until date nullable, timestamps. Index on student_id and (student_id, fee_structure_id).
+
+**Model**: `app/Models/Tenant/FeeDiscount.php` (HasUuids, fillable all fields, casts discount_value/valid_from/valid_until, student() BelongsTo, feeStructure() BelongsTo, approver() BelongsTo User with 'approved_by'). `Student` model gained `feeDiscounts(): HasMany`.
+
+**Form Request**: `app/Http/Requests/Tenant/StoreFeeDiscountRequest.php` — authorizes `fees.edit`; validates discount_type (required, in: percentage/fixed), discount_value (numeric min:0.01, max:100 when type=percentage), reason (required max:500), fee_structure_id (nullable uuid exists:fee_structures), valid_from/valid_until (date, valid_until after_or_equal:valid_from).
+
+**Controller**: `app/Http/Controllers/Tenant/FeeDiscountController.php` — `store(StoreFeeDiscountRequest, Student)`: creates discount with `approved_by = Auth::id()`, redirects to student profile. `destroy(Request, Student, FeeDiscount)`: gates on `fees.edit`, deletes, redirects to student profile.
+
+**FeeStatusService** (`app/Services/FeeStatusService.php`) updated:
+- Imports `FeeDiscount`
+- After loading payments, queries all active discounts for the student in one query (valid_from ≤ today or null, valid_until ≥ today or null).
+- For each fee structure, merges blanket discounts (fee_structure_id null) + specific discounts for that fee_structure_id.
+- Computes reduction as sum of (percentage × original_amount) and fixed amounts; `effective_amount = max(0, original_amount − reduction)`.
+- `outstanding = max(0, effective_amount − paid_amount)`; `status = computeStatus(effective_amount, paid_amount, due_date)`.
+- Return array now includes `original_amount`, `effective_amount`, `has_discount`, `discounts` in addition to existing keys.
+
+**StudentController::show** updated: loads `feeDiscounts` (with feeStructure + approver), loads `studentFeeStructures` (fee items applicable to the student's class — for the "Applies To" select). Both passed to view.
+
+**Student profile view** (`resources/views/tenant/students/show.blade.php`): "Fee Discounts" card added between Academic Details and Login Account (visible to `fees.edit` or `fees.view`). Table: Type badge | Value | Applies To | Reason | Expiry (with expired/pending/active states). "Add Discount" button (fees.edit only) opens Alpine modal. Expired rows rendered at 50% opacity. Add Discount modal: discount type select (percentage/fixed), value input (max=100 when percentage), Applies To select (all fees or specific fee structure from studentFeeStructures), Reason input, Valid From + Valid Until date pair. Modal re-opens on validation error via `x-init` checking `$errors->hasAny(...)`.
+
+**Fee collection view** (`resources/views/tenant/fees/index.blade.php`):
+- `$totalOwed` now sums `effective_amount` (not `fee_structure.amount`) — shows discounted total.
+- Amount column: when `has_discount=true`, shows struck-through original (text-muted line-through) + effective amount + "Discounted" badge (bg-accent-muted text-accent). When no discount, shows amount normally.
+- `@php` extraction block now also captures `has_discount`, `original_amount`, `effective_amount` with safe defaults.
+
+**Routes** (`routes/tenant.php`): `POST /students/{student}/discounts` (fees.edit) → students.discounts.store; `DELETE /students/{student}/discounts/{discount}` (fees.edit) → students.discounts.destroy.
+
+**No new permissions** required — discount CRUD uses existing `fees.edit` permission.
+
+**Action required**: Run `php artisan tenants:migrate` to add the `fee_discounts` table to all tenant databases.
+
+---
+
+### 40 — Academic Performance Analytics
+
+**Service** `app/Services/ExamAnalyticsService.php`:
+- `buildSubjectReport(string $examId, string $classId, ?string $sectionId): array` — loads active students for class/section, queries exam_results, groups by subject_id, computes avg/highest/lowest/pass_rate per subject. Pass threshold derived from grading scale: sorted by min ascending, second band's min (e.g. 40 for default scale).
+- `buildClassTrend(string $classId, ?string $sectionId, string $termId): array` — loads all exams for the term ordered by start_date, per-exam average across all students in class/section; returns `[{exam_name, average}]`.
+- Both methods query active students only (`status = 'active'`). Return empty structures when no students or no results.
+- Pass threshold: `collect($scale)->sortBy('min')->values()->get(1)['min']` — second-lowest band's min, defaults to 40.
+
+**ReportController** updated:
+- Constructor now injects `ExamAnalyticsService`.
+- `index()` handles `tab=academic`: loads all exams; if `class_id` filled, calls `buildSubjectReport` (when `exam_id` set) and `buildClassTrend` (when `term_id` set or inferred from exam). Passes `$exams`, `$analyticsReport`, `$trendData`, `$selectedExamId` to view.
+- `academicPdf(Request $request)`: validates exam_id+class_id+section_id, renders `academic-analytics-pdf.blade.php` as A4 portrait PDF.
+
+**Route**: `GET /reports/academic/pdf` → `reports.academic.pdf` under `permission:reports.view`.
+
+**View** `resources/views/tenant/reports/index.blade.php`:
+- Chart.js CDN added via `@push('head')`.
+- `reportsPage` Alpine component now accepts 2 new params: `examsData` (JSON array {id,name,term_id}) and `chartData` (JSON {labels,avgScores,passRates,trendLabels,trendAverages}).
+- Computed `filteredExams` filters `examsData` by `academicTermId`.
+- `initAcademicCharts()` method: initializes avgChart (horizontal bar, accent color), passChart (horizontal bar, success color), trendChart (line, accent color, only when trendLabels > 1). Called from `init()` when `activeTab === 'academic'` via `$nextTick`.
+- Chart canvases sized dynamically: `height = max(120, subjectCount * 36)px` for bar charts, `200px` for trend.
+- "Academic Analytics" 5th tab button added.
+- Academic tab: filter form (term/exam/class/section selects); charts grid (2-col lg); summary table; 3 empty states (initial / no data / trend-only).
+- Chart colors use `getComputedStyle` on CSS variables (`--color-accent`, `--color-success-foreground`).
+
+**PDF view** `resources/views/tenant/reports/academic-analytics-pdf.blade.php`: A4 portrait, no charts. School header + meta block (exam/class/term/threshold) + summary stats strip + per-subject table (Subject | Students | Avg | Highest | Lowest | Pass Rate) with tfoot averages row. Pass rate colored green/red per ≥50% threshold.
+
+**Pass threshold decision**: using `min` of second-lowest grade band (not a configurable field). For default scale this is 40%. If the school configures a different grading scale, the threshold auto-updates. This is simpler than adding a dedicated "passing grade" setting.
+
+---
+
+### 41 — Attendance Analytics & Chronic Absentee Reports
+
+**`AttendanceReportService::buildChronicAbsentees(string $termId, string $classId, ?string $sectionId, int $threshold = 80): array`**:
+- Loads `Term` to get `start_date` → `end_date` (capped at today if term end_date is in the future).
+- Queries active students for class/section, loads all attendances within that date range in a single query.
+- Per student: computes `absent`, `days_marked`, `percent_present`. Includes only students below `$threshold`.
+- Rows sorted ascending by `percent_present` (worst attendance first).
+- Returns standard `['success', 'data', 'error']` envelope. Data keys: `term`, `class`, `section`, `threshold`, `rows[]`.
+
+**`LowAttendanceAlert` notification** (`app/Notifications/LowAttendanceAlert.php`):
+- Constructor: `Student $student`, `float $percentPresent`, `string $termName`.
+- Queued mail via `ShouldQueue`. Subject: "Low Attendance Alert — {name}". Body includes attendance rate + term name + call to action.
+
+**`AttendanceController::notifyGuardian(Request, Student)`**:
+- Permission check: `attendance.view`. Validates `term_id` (uuid, exists:terms) + `percent_present`.
+- Rate-limited: 3 attempts per student-user pair per hour (key: `low-attendance-alert:{studentId}:{userId}`).
+- Dispatches `LowAttendanceAlert` to `$student->guardian_email`. Returns redirect with flash.
+
+**`AttendanceController::notifyAll(Request)`**:
+- Rate-limited: 5 bulk dispatches per user per hour (key: `low-attendance-bulk:{userId}`).
+- Calls `buildChronicAbsentees` to get the filtered list, then dispatches `LowAttendanceAlert` for each student with a guardian email. Returns count sent.
+
+**Routes** (under `permission:attendance.view`):
+- `POST /attendance/notify/{student}` → `attendance.notify.guardian`
+- `POST /attendance/notify-bulk` → `attendance.notify.bulk`
+
+**Reports page "Attendance Alerts" tab** (4th tab, between Fee Collection and Academic Analytics):
+- Filter form: class / section / term / threshold range slider (1–99, default 80).
+- Results card: header with class + section + term + threshold summary. Table columns: Student (name + admission no) | Absences | Days Marked | % Present (colored red <50%, warning <70%) | Guardian (name + contact, hidden md) | Action (Notify Guardian button per-row if guardian_email exists).
+- "Notify All Guardians" bulk banner shown above table when rows > 0: red alert strip with count summary + POST form button.
+- Empty success state when all students meet threshold.
+- Initial state when no filters applied.
+
+**Dashboard stat card**:
+- Admin view (5th card in `grid-cols-2 xl:grid-cols-5`): clickable `<a>` card linking to `/reports?tab=alerts`. Shows chronic absentees count in red when > 0 else primary color. Hover: red border + light red background.
+- Teacher view (3rd card in `grid-cols-2 xl:grid-cols-3`): same card, conditionally rendered only when `$can['reports']`.
+- DashboardController: queries all active student IDs, loads attendances for current term date range in one query, groups by student_id, counts students with `(present/total)*100 < 80`. Stored in `$stats['chronic_absentees']`.
+
+**Threshold slider design**: `<input type="range">` with Alpine `x-data="{ thresh: N }"` + `x-model.number`; live label update shows `thresh%` via `x-text`. The submitted `threshold` value is used server-side.
+
+---
+
+### 42 — Online Admission Application
+
+**Migrations**:
+- `2026_06_25_000005_create_admission_applications_table` — uuid PK, applicant_name, date_of_birth nullable, gender nullable, class_applying_for, guardian_name, guardian_contact, guardian_email nullable, previous_school nullable, status enum['pending','accepted','rejected'] default 'pending', notes nullable, reviewed_by FK→users nullable on delete set null, reviewed_at nullable, rejection_reason nullable. Indexes on status, (status, class_applying_for).
+- `2026_06_25_000006_add_admissions_open_to_school_profile` — adds boolean `admissions_open` default false to `school_profile`.
+
+**Permissions**: `admissions.view`, `admissions.manage` added to `TenantProvisioningService::seedPermissions()` and `SeedTenantPermissions` command. `school_admin` gets both via `$all`. No other role gets them by default.
+
+**Model**: `AdmissionApplication` — HasUuids, fillable all columns, casts date_of_birth+reviewed_at, `reviewer()` BelongsTo User, `isPending()` / `isAccepted()` / `isRejected()` helpers.
+
+**`PublicApplicationController`** (no auth):
+- `GET /apply` — loads `SchoolProfile` + `SchoolClass` list, returns `tenant.apply` view.
+- `POST /apply` — validates all fields, creates `AdmissionApplication`, dispatches `AdmissionConfirmation` to `guardian_email` if provided, returns `tenant.apply-confirmation` view (not a redirect, so confirmation data is available).
+
+**`AdmissionController`** (under `admissions.manage`):
+- `GET /admissions` — paginated table with status + class filters.
+- `POST /admissions/{application}/accept` — guards that application is pending, redirects to `/students/create?from_application={id}`.
+- `POST /admissions/{application}/reject` — validates `rejection_reason`, updates application to rejected, dispatches `AdmissionRejected` notification.
+
+**`StudentController` changes**:
+- `create(Request)` — now type-hinted to accept Request. If `?from_application={id}` present + application is pending, builds `$prefill` array (full_name, date_of_birth, gender, guardian_name, guardian_contact, guardian_email) and passes `$application` + `$prefill` to view. Both are `null` when no application.
+- `store()` — if `from_application_id` hidden field is present, finds the application and marks it accepted with `reviewed_by = Auth::id()`.
+
+**Notifications**:
+- `AdmissionConfirmation` — queued mail to guardian on submission. Includes applicant name + class applied for.
+- `AdmissionRejected` — queued mail to guardian on rejection. Includes rejection_reason if set.
+
+**Views**:
+- `tenant/apply.blade.php` — standalone (no layout extension). School navbar with logo + Login button. Three sections: Student Info (name, DOB, gender, class select or text fallback) + Guardian Info (name, contact, email) + Previous School. Alpine `submitting` guard on submit.
+- `tenant/apply-confirmation.blade.php` — standalone. Success icon + confirmation card with all submitted details + "email sent" accent notice + "Back to School Page" button. `noindex` meta.
+- `tenant/admissions/index.blade.php` — tenant layout. Filter bar (status + class). Table with Review button per pending application. Review opens an Alpine slide-over panel (right-side drawer) with full details + Accept form (POST to `/admissions/{id}/accept`) + Reject section (Alpine toggled, inline rejection_reason textarea + Confirm Rejection submit).
+
+**School profile settings**: `admissions_open` toggle added as a CSS-only checkbox (`<input type="hidden" value="0">` + `<input type="checkbox" value="1">`). Controller reads via `$request->boolean('admissions_open')`.
+
+**Public page**: "Apply Now" button added in header navbar next to Login, shown only when `$profile?->admissions_open` is true. Style: `bg-accent-muted text-accent border border-accent` outline button.
+
+**Sidebar nav**: Admissions item added before Reports, uses `admissions.view` permission gate.
+
+**Robots.txt**: `Allow: /apply` added alongside `Allow: /`.
+
+**Accept flow design choice**: `accept` action only redirects (does not mark accepted). The application is marked accepted in `StudentController::store()` when the student is actually saved — this avoids accepting applications where the admin abandoned the form.
+
+---
+
+### 43 — Student Transcript Generation
+
+**`ReportCardService::generateTranscript(Student)`**:
+- Queries `ExamResult::where('student_id', …)->whereHas('exam', fn($q) => $q->where('is_published', true))->with(['exam.term.academicYear', 'subject'])`. Only results with a non-null `exam.term.academicYear` are included.
+- Groups by academicYear.id → term.id → exam.id using Collection `groupBy()` chains.
+- Sorts years by `academicYear.start_date` ASC; terms by `term.start_date` ASC; exams by `exam.start_date` ASC within each term.
+- Attendance per term: queries `Attendance::where('student_id', …)->whereBetween('date', [term.start_date, cappedEndDate])` directly (single student — efficient). Caps end date at today if term.end_date is future.
+- Computes average marks at 3 levels: per-exam, per-term (all results in that term), per-year, and cumulative.
+- Saves PDF to `storage/{tenantId}/transcripts/{student_id}.pdf`. Overwrites on each download (always fresh).
+- Returns absolute storage path.
+
+**`TranscriptController::download(Student)`**:
+- Authorization: admin (`students.view` permission) always allowed. Own student (`student->user_id === Auth::id()`). Parent (loaded already via `$student->parents` relationship — `$student->parents->contains('id', $user->id)`).
+- No separate permission gate on the route — sits inside `students.view` middleware group, which all authenticated users with at least student view access have.
+- Returns `response()->download($path, $filename, ['Content-Type' => 'application/pdf'])`.
+
+**Show view button**: `$canDownloadTranscript` boolean passed from `StudentController::show()`. Computed from `$hasPublishedResults && (isAdmin || isOwn || isParent)`. Button is a simple `<a href="…/transcript">` link — not a form POST.
+
+**PDF design**: DejaVu Sans font, A4 portrait. Section hierarchy: year banner (blue) → term sub-header (blue-left-border) → exam label row (gray) → results table → year cumulative row (blue). Overall cumulative block at bottom (navy). Attendance shown as color-coded pill: green ≥80%, orange ≥60%, red <60%.
 
 ---
 

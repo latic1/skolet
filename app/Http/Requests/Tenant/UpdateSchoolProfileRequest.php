@@ -24,6 +24,7 @@ final class UpdateSchoolProfileRequest extends FormRequest
             'website'           => ['nullable', 'url', 'max:255'],
             'logo'              => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp,svg', 'max:2048'],
             'admission_pattern' => ['nullable', 'string', 'max:100'],
+            'admissions_open'   => ['boolean'],
         ];
     }
 }
