@@ -626,3 +626,71 @@ After building any component — update this file with the component name, file 
 - Password card fields: current_password (autocomplete="current-password"), new_password + new_password_confirmation in `sm:grid-cols-2` grid
 - Submit buttons: Alpine `submitting: false` state; `@submit="submitting = true"` on form; `:disabled="submitting"` + loading text on button
 - Success flash: handled by the global toast in `layouts/tenant.blade.php` (triggers on `session('success')` or `session('error')`)
+
+---
+
+### Assignments Page (Multi-Role)
+**Files:** `resources/views/tenant/assignments/index.blade.php`, `resources/views/tenant/assignments/_form.blade.php`
+**Description:** Multi-role page. Students see 3-tab view (Pending/Submitted/Overdue). Teachers/admins see a CRUD table with submissions modal. Parent role gets a simple informational card.
+- Student tabs: same Settings Sub-Nav pattern — tab badge with count; Pending tab shows card-per-assignment with inline submit form (toggled); Submitted tab shows grade + feedback; Overdue tab styled with `border-error`
+- Submit form (student): `x-data="{ showSubmit: false, submitting: false }"` — textarea + file input (`file:bg-accent-muted file:text-accent`) + submit/cancel buttons; submit-disable pattern
+- Teacher/admin table: Settings CRUD Table Card pattern (`min-width: 700px` in `overflow-x-auto`); submission count badge `bg-warning-light text-warning` when ungraded exist; "View Submissions" opens Submissions Modal
+- "Create Assignment" button: primary button `bg-accent text-accent-foreground` gated by `@can('assignments.create')`
+- Create/Edit modal: standard CRUD Modal pattern `max-w-lg`; `_form.blade.php` partial inside both add + edit forms; edit uses `:action` template literal binding + hidden `_method=PUT`
+- Submissions modal: `max-w-2xl`, scrollable body `overflow-y-auto`; inline grading form per submission row (marks number input + feedback text input + Save Grade button); graded badge `bg-accent-muted text-accent`; "Not graded" badge `bg-surface-secondary text-text-secondary`
+- Admin filter bar: standard filter card (`bg-surface border border-border rounded-2xl shadow-card p-5`); class + teacher selects; Clear link shown when filter active
+- Due date past styling: `text-error` on past due dates + "Past"/"Today" suffix badges
+- Dashboard badge (teacher): `bg-warning-light border border-warning rounded-2xl px-5 py-3.5` clickable banner linking to /assignments
+- Dashboard badge (student): same pattern with clock icon for "X assignments due within 3 days"
+- Alpine component: `assignmentsPage(classes, subjects, sections, staff, canManageAll)` — `showModal`, `showSubmissions`, `mode`, `submitting`, `form`, `currentAssignment`, `currentSections` + `hasSections` getters, `openAdd()`, `openEdit(data)`, `openSubmissions(assignment)`, `close()`
+
+---
+
+### Notification Bell (Topbar)
+**File:** `resources/views/layouts/tenant.blade.php`
+**Description:** Functional notification bell in the topbar with unread badge, recent-5 dropdown, mark-read, and mark-all-read.
+- Wrapper: `relative` div with `x-data="{ open: false }" @click.outside="open = false"`
+- Bell button: `relative p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-secondary transition-colors`
+- Unread badge (when count > 0): `absolute top-1 right-1 min-w-[16px] h-4 bg-error text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none` — shows count or "9+" cap
+- Dropdown: `absolute right-0 top-full mt-2 w-80 bg-surface border border-border rounded-xl shadow-xl z-50 overflow-hidden` — same structure as User Account Dropdown
+- Dropdown header: `flex items-center justify-between px-4 py-3 border-b border-border` — title `text-sm font-semibold text-text-primary` + "Mark all as read" PATCH form (hidden when no unread)
+- Notification item: `flex items-start gap-3 px-4 py-3` with `bg-accent-muted/20` tint when unread
+- Unread dot: `w-2 h-2 rounded-full bg-accent` (unread) vs transparent placeholder (read) — `mt-1.5`
+- Message text: `text-sm font-semibold text-text-primary` (unread) / `text-sm font-medium text-text-dark` (read); relative time `text-xs text-text-muted`
+- Mark read button (✓): `text-xs text-text-muted hover:text-text-primary transition-colors`; PATCH form inside dropdown item
+- Notification items area: `max-h-72 overflow-y-auto divide-y divide-border`
+- Empty state: `py-8 px-4 text-center` with `text-sm text-text-muted`
+- Footer: `border-t border-border px-4 py-3` with "View all notifications →" link `text-xs font-medium text-accent hover:text-accent-dark`
+- PHP data: `@php` block queries `TenantNotification` (unread count + latest 5); wrapped in `try/catch (\Throwable)` so pages render even if tenancy not yet initialized
+
+---
+
+### Notifications Page
+**File:** `resources/views/tenant/notifications/index.blade.php`
+**Description:** Paginated list of the logged-in user's notifications. No Alpine needed — server-rendered with PATCH forms for mark-read.
+- Page header: `flex items-center justify-between gap-4` — total count subtitle + "Mark all as read" button (hidden when list is empty)
+- "Mark all as read": standard secondary button (`px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary`) as a PATCH form
+- List card: `bg-surface border border-border rounded-2xl shadow-card divide-y divide-border overflow-hidden`
+- Notification row: `flex items-start gap-4 px-5 py-4`; unread rows get `bg-accent-muted/20` tint + `hover:bg-surface-secondary`
+- Unread dot: `w-2 h-2 rounded-full bg-accent mt-1.5` (same as topbar bell pattern)
+- Message: `text-sm font-semibold text-text-primary` (unread) / `font-medium text-text-dark` (read)
+- Body snippet: `text-xs text-text-muted mt-0.5 line-clamp-2` (max 120 chars)
+- Relative time: `text-xs text-text-muted mt-1`
+- "View →" link: `text-xs font-medium text-accent hover:text-accent-dark` — links to /announcements
+- "Mark read" button: `text-xs text-text-muted hover:text-text-primary`; PATCH form; only shown when `read_at` is null
+- Empty state: bell icon in `w-12 h-12 rounded-xl bg-accent-muted` on `bg-surface border border-border rounded-2xl shadow-card`
+- Pagination: `{{ $notifications->links() }}` only when `hasPages()`
+
+---
+
+### Announcements Audience Section (Modal)
+**File:** `resources/views/tenant/announcements/index.blade.php`
+**Description:** Audience targeting section added below `is_public` toggle in both add and edit announcement modals. Audience badge shown on each card.
+- Section wrapper: `border-t border-border pt-4` with label `text-sm font-medium text-text-dark mb-2`
+- Radio options: `flex flex-col gap-2`; each row `flex items-center gap-2.5 cursor-pointer`; radio `w-4 h-4 text-accent focus:ring-accent border-border`; label `text-sm text-text-primary`
+- 5 audience options: `all` (All School), `all_students`, `all_parents`, `class` (Specific Class), `role` (Specific Role)
+- Class multi-select: `x-show="form.audience_type === 'class'"`, `<select name="audience_ids[]" multiple x-model="form.audience_ids"` — `style="min-height: 100px"` + hint "Hold Ctrl / Cmd to select multiple classes"
+- Role multi-select: same pattern for `form.audience_type === 'role'`; option label uses JS `.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())` for display
+- Card badge (non-All): `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium` — Students: `bg-info-lightest text-info-foreground`; Parents: `bg-accent-muted text-accent`; Specific Classes: `bg-warning-light text-warning`; Specific Roles: `bg-surface-secondary text-text-secondary`; no badge for `all`
+- Modal uses `overflow-y-auto flex-1` scrollable body so audience section doesn't overflow on small screens
+- Alpine `announcementsPage(announcements, classes, roles)` — added `classes` (id+name) and `roles` (name strings) params; `form.audience_type` + `form.audience_ids: []` in form state; `openEdit()` restores both fields; `init()` restores from `old()` on validation error

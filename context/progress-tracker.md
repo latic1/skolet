@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** 9 — Growth Features (in progress)
-**Last completed:** Feature 34 — Parent Portal (parent_student pivot table; ParentStudentController for admins to create/link/unlink parent accounts on student profiles; ParentPortalController + portal view showing all children with attendance summary, fee status, and published exam results; parents redirected from /fees and /dashboard to /my-children; sidebar "My Children" nav item for parent role)
+**Last completed:** Feature 37 — Targeted Announcements & Notification Centre (audience_type + audience_ids columns on announcements; notifications table + TenantNotification model; SendAnnouncementNotifications queued job; UserNotificationsController; /notifications route with paginated list; audience section in announcement modal with radio picker + class/role multi-select; announcement filtering per user audience; functional topbar bell with unread badge + dropdown + mark-read + mark-all-read)
 **Next:** Feature 33 — Staff Leave Management
 
 ---
@@ -78,9 +78,9 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 32 Subject-Teacher Assignments (subject_teacher_assignments table; add/remove on staff profile; attendance + exam marks scoped to assigned classes/subjects for teachers)
 - [ ] 33 Staff Leave Management
 - [x] 34 Parent Portal (parent_student pivot many-to-many; admin creates/links/unlinks parent accounts on student profile; parent role gets dedicated /my-children portal with child selector, fee status, attendance summary, published exam results; /dashboard and /fees redirect parents to portal; "My Children" sidebar nav for parent role)
-- [ ] 35 Homework & Assignment Management
+- [x] 35 Homework & Assignment Management (assignments + assignment_submissions tables; AssignmentController + SubmissionController; 5 new permissions seeded per role; multi-role /assignments view — teacher/admin CRUD + grading modal, student Pending/Submitted/Overdue tabs with inline submit form; sidebar nav item; dashboard badges for teachers/students)
 - [ ] 36 Disciplinary & Behavior Tracking
-- [ ] 37 Targeted Announcements & Notification Centre
+- [x] 37 Targeted Announcements & Notification Centre
 - [ ] 38 Expense & Budget Management
 - [ ] 39 Scholarship & Fee Waiver Management
 - [ ] 40 Academic Performance Analytics
@@ -1124,6 +1124,79 @@ Applied consistent submit-disable pattern (Alpine `submitting` state, `@submit="
 **Cleanup**: Removed stale Breeze tests (`tests/Feature/Auth/*`, `tests/Feature/ProfileTest.php`).
 
 **Result**: `33 passed, 43 skipped, 0 failed` in dev environment. All 43 tenant tests pass in CI with MySQL.
+
+---
+
+### 35 — Homework & Assignment Management
+
+**Migrations** (`database/migrations/tenant/`):
+- `2026_06_24_000004_create_assignments_table.php` — uuid PK, teacher_id FK→staff, subject_id FK, class_id FK, section_id FK nullable, title, description (text), due_date (datetime), total_marks (decimal nullable), timestamps.
+- `2026_06_24_000005_create_assignment_submissions_table.php` — uuid PK, assignment_id FK, student_id FK, submission_text (text nullable), file_path (string nullable), submitted_at (timestamp), marks_awarded (decimal nullable), feedback (text nullable), timestamps. Unique constraint on [assignment_id, student_id].
+
+**Models**: `app/Models/Tenant/Assignment.php` (HasUuids, LogsActivity, relationships to Staff/Subject/SchoolClass/Section/AssignmentSubmission). `app/Models/Tenant/AssignmentSubmission.php` (HasUuids, BelongsTo Assignment + Student).
+
+**Permissions** (added to `TenantProvisioningService::seedPermissions()`):
+- `assignments.view`, `assignments.create`, `assignments.edit`, `assignments.delete`, `assignments.submit`
+- school_admin: all; teacher: view/create/edit/delete (not submit); student: view/submit; parent: view only.
+
+**Controllers**:
+- `AssignmentController`: `index()` dispatches to student card view (Pending/Submitted/Overdue) or teacher/admin table view. `store()`, `update()`, `destroy()` with teacher-scope guard (teachers can only CRUD their own assignments). `submissionFile()` serves uploaded files.
+- `SubmissionController`: `store()` — student submits text or file upload (stored at `tenant{id}/assignments/{assignment_id}/{student_id}/...`). `grade()` — teacher/admin saves marks_awarded + feedback via PATCH.
+
+**Routes** (`routes/tenant.php`): `GET /assignments` (assignments.view), `POST /assignments` (assignments.create), `PUT /assignments/{assignment}` (assignments.edit), `DELETE /assignments/{assignment}` (assignments.delete), `POST /assignments/{assignment}/submit` (assignments.submit), `PATCH /submissions/{submission}/grade` (assignments.edit).
+
+**Views** (`resources/views/tenant/assignments/`):
+- `index.blade.php` — multi-role: student gets 3-tab view (Pending/Submitted/Overdue) with inline submit form; teacher/admin gets CRUD table with submission count badges and View Submissions modal (inline grading form per submission); admin gets class/teacher filter bar.
+- `_form.blade.php` — shared form partial (title, description, subject_id, class_id, section_id conditional via Alpine, due_date + total_marks 2-col, admin-only teacher select).
+
+**Sidebar**: "Assignments" nav item added between Fees/My Children and Announcements, gated by `assignments.view`.
+
+**Dashboard badges**: Teacher sees "X submissions waiting to be graded" warning banner linking to /assignments. Student sees "X assignments due within 3 days" warning banner. Both computed in `DashboardController::index()`.
+
+**Action required**: Run `php artisan tenants:migrate` to create `assignments` and `assignment_submissions` tables. For existing tenants, also run `php artisan permission:cache-reset` then add the new permissions via the Roles & Permissions UI or tinker (existing tenants do not auto-receive new permissions seeded by TenantProvisioningService).
+
+---
+
+### 37 — Targeted Announcements & Notification Centre
+
+**Migrations** (`database/migrations/tenant/`):
+- `2026_06_24_000006_add_audience_to_announcements.php` — adds `audience_type` (string, default 'all') and `audience_ids` (JSON, nullable) to `announcements`.
+- `2026_06_24_000007_create_notifications_table.php` — uuid PK, `user_id` FK→users (cascade), `announcement_id` FK→announcements (set null on delete), `type` string (default 'announcement'), `message` string, `data` JSON nullable, `read_at` timestamp nullable, timestamps. Composite index on [user_id, read_at].
+
+**Model** `app/Models/Tenant/TenantNotification.php`: `HasUuids`, table = 'notifications', fillable + casts (data: array, read_at: datetime), `user()` + `announcement()` BelongsTo.
+
+**Announcement model** updated: `audience_type` + `audience_ids` added to `$fillable`; `audience_ids` cast to `array`.
+
+**Form requests** (`StoreAnnouncementRequest`, `UpdateAnnouncementRequest`) updated: `audience_type` (string, in:all,all_students,all_parents,class,role), `audience_ids` (nullable, array), `audience_ids.*` (string).
+
+**Job** `app/Jobs/SendAnnouncementNotifications.php` (ShouldQueue): receives `$announcementId` + `$tenantId`. In `handle()`, runs `$tenant->run()` to query within the tenant context. Resolves target user IDs based on `audience_type`: `all` → all users, `all_students`/`all_parents` → role scoped, `class` → Student::whereIn('class_id')->whereNotNull('user_id'), `role` → User::role(). Bulk-inserts `notifications` rows in chunks of 100.
+
+**AnnouncementController** updated:
+- `index()` — admins see all announcements; non-admins see only announcements matching their role/class via audience_type filter (whereJsonContains for class_id and role names).
+- `store()`/`update()` — saves `audience_type` and `audience_ids` (clears audience_ids for non-class/role types); dispatches `SendAnnouncementNotifications`.
+- Passes `$classes` (SchoolClass ordered by order) and `$roles` (Role names) to view.
+
+**UserNotificationsController** (`app/Http/Controllers/Tenant/UserNotificationsController.php`):
+- `index()` — paginated (20) list of current user's notifications, eager-loads announcement.
+- `markRead(TenantNotification)` — 403 if not own; sets `read_at`; returns JSON if wantsJson, else redirect.
+- `markAllRead()` — bulk update `read_at` for current user.
+
+**Routes** (all under `auth` middleware in `routes/tenant.php`):
+- `GET /notifications` → `UserNotificationsController::index` → `tenant.notifications.index`
+- `PATCH /notifications/read-all` → `markAllRead` → `tenant.notifications.read-all`
+- `PATCH /notifications/{notification}/read` → `markRead` → `tenant.notifications.read`
+
+**Views**:
+- `announcements/index.blade.php` — modal scrollable body; Audience section added below `is_public` toggle: 5 radio options (All School / All Students / All Parents / Specific Class / Specific Role) + conditional class multi-select + role multi-select (both x-show, x-model="form.audience_ids"). Alpine `announcementsPage` updated to accept `classes` + `roles` params, initialise audience in form, restore audience on validation error via `old()`. Audience badge shown on each card (Students/Parents/Specific Classes/Specific Roles).
+- `notifications/index.blade.php` (new) — paginated list; unread dot (blue circle) + bold message; announcement body snippet; relative time; "View →" link to announcements; per-item "Mark read" form; "Mark all as read" button in page header. Empty state with bell icon.
+
+**layouts/tenant.blade.php** updated — notification bell placeholder replaced with:
+- `@php` block: queries `TenantNotification` count (unread) + latest 5, wrapped in try/catch for safety.
+- `<div x-data="{ open: false }">` dropdown: bell button with red badge when unread count > 0. Dropdown: header with "Mark all as read" form (shown when unread > 0), scrollable list (max-h-72) of 5 recent notifications with unread dot + message + time + ✓ mark-read form, empty state, "View all notifications →" link at bottom.
+
+**No new permissions needed** — announcements are already visible to all authenticated users; the audience filter is a presentation/targeting control, not an authorization control.
+
+**Action required**: Run `php artisan tenants:migrate` to create the `notifications` table and add audience columns to `announcements`.
 
 ---
 

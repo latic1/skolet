@@ -1,19 +1,19 @@
 # AGENTS.md
 
-Entry point for any AI agent (Claude Code or otherwise) working on SchoolFlow. Read this first, every session.
+Entry point for any AI agent (Claude Code or otherwise) working on Skolet. Read this first, every session.
 
 ---
 
 ## Project
 
-SchoolFlow — a multi-tenant SaaS school management system. Laravel 11 + Livewire + Tailwind v4, with `stancl/tenancy` providing per-school isolated databases on subdomains.
+Skolet — a multi-tenant SaaS school management system. Laravel 11 + Livewire + Tailwind v4, with `stancl/tenancy` providing per-school isolated databases on subdomains.
 
 ---
 
 ## Read These First, In Order
 
 1. **`context/progress-tracker.md`** — what's done, what's in progress, what's next. Always check this before starting work.
-2. **`context/project-overview.md`** — what SchoolFlow is, scope, roles, MVP feature list.
+2. **`context/project-overview.md`** — what Skolet is, scope, roles, MVP feature list.
 3. **`context/architecture.md`** — stack, folder structure, database schema, data flow, invariants.
 4. **`context/build-plan.md`** — the phase-by-phase build order. Find the current feature here before implementing it.
 5. **`context/code-standards.md`** — PHP/Laravel conventions, naming, error handling, approved dependencies.
