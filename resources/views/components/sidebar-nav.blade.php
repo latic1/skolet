@@ -72,7 +72,7 @@
             'label'      => 'Fees',
             'route'      => 'tenant.fees.index',
             'path'       => '/fees',
-            'permission' => null,
+            'permission' => 'fees.view',
             'icon'       => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>',
         ],
         [
@@ -108,7 +108,7 @@
             'label'      => 'Announcements',
             'route'      => 'tenant.announcements.index',
             'path'       => '/announcements',
-            'permission' => null,
+            'permission' => 'announcements.view',
             'icon'       => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>',
         ],
         [

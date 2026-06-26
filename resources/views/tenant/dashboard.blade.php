@@ -144,9 +144,9 @@
                         </svg>
                     </div>
                 </div>
-                <p class="text-[30px] font-semibold text-text-primary leading-none mb-1"><span class="text-lg font-medium text-text-muted">GH₵</span> {{ number_format($stats['fees_this_term'], 2) }}</p>
+                <p class="text-[30px] font-semibold text-text-primary leading-none mb-1"><span class="text-lg font-medium text-text-muted">{{ $currencySymbol }}</span> {{ number_format($stats['fees_this_term'], 2) }}</p>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs text-text-muted">GH₵ {{ number_format($stats['fees_outstanding'], 2) }} outstanding</span>
+                    <span class="text-xs text-text-muted">{{ format_money($stats['fees_outstanding'], $currencySymbol) }} outstanding</span>
                     @if(($stats['overdue_count'] ?? 0) > 0)
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-error-light text-error">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -379,7 +379,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="text-[30px] font-semibold text-text-primary leading-none mb-1"><span class="text-lg font-medium text-text-muted">GH₵</span> {{ number_format($stats['fees_this_term'], 2) }}</p>
+                <p class="text-[30px] font-semibold text-text-primary leading-none mb-1"><span class="text-lg font-medium text-text-muted">{{ $currencySymbol }}</span> {{ number_format($stats['fees_this_term'], 2) }}</p>
                 <span class="text-xs text-text-muted">this term</span>
             </div>
             <div class="bg-surface border border-border rounded-2xl p-5 shadow-card">
@@ -391,7 +391,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="text-[30px] font-semibold text-text-primary leading-none mb-1"><span class="text-lg font-medium text-text-muted">GH₵</span> {{ number_format($stats['fees_outstanding'], 2) }}</p>
+                <p class="text-[30px] font-semibold text-text-primary leading-none mb-1"><span class="text-lg font-medium text-text-muted">{{ $currencySymbol }}</span> {{ number_format($stats['fees_outstanding'], 2) }}</p>
                 <div class="flex items-center gap-2 flex-wrap mt-1">
                     <span class="text-xs text-text-muted">awaiting collection</span>
                     @if(($stats['overdue_count'] ?? 0) > 0)

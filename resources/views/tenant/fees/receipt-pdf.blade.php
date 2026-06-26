@@ -1,3 +1,4 @@
+@php $currencySymbol = $schoolProfile?->currency_symbol ?? '₵'; @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -276,7 +277,7 @@
         <div class="amount-label">Amount Paid</div>
         <div style="font-size: 10px; color: #6a7282; margin-top: 2px;">{{ $payment->feeStructure?->fee_item ?? 'Fee Payment' }}</div>
     </div>
-    <div class="amount-value">{{ number_format((float) $payment->amount, 2) }}</div>
+    <div class="amount-value">{{ format_money((float) $payment->amount, $currencySymbol) }}</div>
 </div>
 
 {{-- ── Two-column: Student | Payment info ── --}}
@@ -329,11 +330,11 @@
     </tr>
     <tr>
         <td class="detail-label">Total Fee Amount</td>
-        <td class="detail-value">{{ number_format((float) ($payment->feeStructure?->amount ?? 0), 2) }}</td>
+        <td class="detail-value">{{ format_money((float) ($payment->feeStructure?->amount ?? 0), $currencySymbol) }}</td>
     </tr>
     <tr>
         <td class="detail-label">Amount Paid (this receipt)</td>
-        <td class="detail-value" style="color: #007a55; font-weight: 700;">{{ number_format((float) $payment->amount, 2) }}</td>
+        <td class="detail-value" style="color: #007a55; font-weight: 700;">{{ format_money((float) $payment->amount, $currencySymbol) }}</td>
     </tr>
     @if($fs?->due_date)
     <tr>

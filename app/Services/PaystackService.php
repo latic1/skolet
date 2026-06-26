@@ -57,7 +57,7 @@ final class PaystackService
                     'amount'       => $amountInSmallestUnit,
                     'reference'    => $reference,
                     'callback_url' => $callbackUrl,
-                    'currency'     => config('paystack.currency', 'GHS'),
+                    'currency'     => \App\Models\Tenant\SchoolProfile::first()?->currency_code ?? config('paystack.currency', 'GHS'),
                     'metadata'     => $metadata,
                 ],
             ]);

@@ -22,12 +22,15 @@ class AppServiceProvider extends ServiceProvider
                 $tenancy = app(\Stancl\Tenancy\Tenancy::class);
 
                 if ($tenancy->initialized) {
-                    $view->with('schoolProfile', \App\Models\Tenant\SchoolProfile::first());
+                    $profile = \App\Models\Tenant\SchoolProfile::first();
+                    $view->with('schoolProfile', $profile);
+                    $view->with('currencySymbol', $profile?->currency_symbol ?? '₵');
                     return;
                 }
             } catch (\Throwable) {}
 
             $view->with('schoolProfile', null);
+            $view->with('currencySymbol', '₵');
         });
 
         // 5 login attempts per minute, keyed by IP + email to prevent brute-forcing.

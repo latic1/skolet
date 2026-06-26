@@ -41,6 +41,7 @@ use App\Http\Controllers\Tenant\PublicApplicationController;
 use App\Http\Controllers\Tenant\TranscriptController;
 use App\Http\Controllers\Tenant\SubmissionController;
 use App\Http\Controllers\Tenant\UserNotificationsController;
+use App\Http\Controllers\Tenant\PrivacyController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -163,6 +164,7 @@ Route::domain('{subdomain}.' . $appHost)
             Route::middleware('permission:students.view')->group(function () {
                 Route::get('/students', [StudentController::class, 'index'])->name('students.index');
                 Route::get('/students/import/template', [StudentController::class, 'downloadTemplate'])->name('students.import.template');
+                Route::get('/students/trash', [StudentController::class, 'trash'])->name('students.trash');
             });
             Route::middleware('permission:students.create')->group(function () {
                 Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
@@ -191,12 +193,19 @@ Route::domain('{subdomain}.' . $appHost)
             });
             Route::middleware('permission:students.delete')->group(function () {
                 Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+                Route::post('/students/{id}/restore', [StudentController::class, 'restore'])->name('students.restore');
+                Route::delete('/students/{id}/force-delete', [StudentController::class, 'forceDelete'])->name('students.force-delete');
+            });
+            Route::middleware('permission:students.edit')->group(function () {
+                Route::post('/students/{student}/anonymize', [StudentController::class, 'anonymize'])->name('students.anonymize');
+                Route::post('/students/{student}/export', [StudentController::class, 'exportData'])->name('students.export');
             });
 
             // Staff — literal paths before {staff} wildcard to avoid route conflicts
             Route::middleware('permission:staff.view')->group(function () {
                 Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
                 Route::get('/staff/import/template', [StaffController::class, 'downloadTemplate'])->name('staff.import.template');
+                Route::get('/staff/trash', [StaffController::class, 'trash'])->name('staff.trash');
             });
             Route::middleware('permission:staff.create')->group(function () {
                 Route::get('/staff/create', [StaffController::class, 'create'])->name('staff.create');
@@ -215,6 +224,8 @@ Route::domain('{subdomain}.' . $appHost)
             });
             Route::middleware('permission:staff.delete')->group(function () {
                 Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])->name('staff.destroy');
+                Route::post('/staff/{id}/restore', [StaffController::class, 'restore'])->name('staff.restore');
+                Route::delete('/staff/{id}/force-delete', [StaffController::class, 'forceDelete'])->name('staff.force-delete');
             });
 
             Route::middleware('permission:attendance.view')->group(function () {
@@ -405,6 +416,13 @@ Route::domain('{subdomain}.' . $appHost)
 
                 // Audit Log
                 Route::get('/settings/audit-log', [AuditLogController::class, 'index'])->name('settings.audit-log');
+
+                // Data & Privacy
+                Route::get('/settings/privacy', [PrivacyController::class, 'index'])->name('settings.privacy');
+                Route::post('/settings/privacy/export', [PrivacyController::class, 'requestFullExport'])->name('settings.privacy.export');
             });
+
+            // Export download — requires auth + settings.manage (checked in controller)
+            Route::get('/export/download/{token}', [PrivacyController::class, 'download'])->name('export.download');
         });
     });

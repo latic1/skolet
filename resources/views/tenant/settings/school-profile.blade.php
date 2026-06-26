@@ -34,6 +34,10 @@
            class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
             Audit Log
         </a>
+        <a href="{{ $host }}/settings/privacy"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Data &amp; Privacy
+        </a>
     </div>
 
     {{-- Flash messages --}}
@@ -245,6 +249,37 @@
                         <p><span class="font-mono text-text-dark">{YY}</span> — 2-digit year (e.g. {{ now()->format('y') }})</p>
                         <p><span class="font-mono text-text-dark">{SEQ:4}</span> — sequence padded to N digits (e.g. 0001, 0042)</p>
                     </div>
+                </div>
+            </div>
+
+            {{-- Currency --}}
+            <div class="border-t border-border pt-6">
+                <h4 class="text-sm font-semibold text-text-primary mb-1">Currency</h4>
+                <p class="text-xs text-text-muted mb-3">Used for all fee and expense displays across the app.</p>
+                <div class="max-w-xs">
+                    <select name="currency_code" id="currency_code"
+                            x-data="{
+                                options: {
+                                    'GHS': '₵',
+                                    'NGN': '₦',
+                                    'KES': 'KSh',
+                                    'USD': '$',
+                                    'EUR': '€',
+                                },
+                                selected: '{{ old('currency_code', $profile?->currency_code ?? 'GHS') }}',
+                                get symbol() { return this.options[this.selected] ?? '₵'; }
+                            }"
+                            x-model="selected"
+                            @change="$el.form.querySelector('#currency_symbol').value = symbol"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                        <option value="GHS" @selected(old('currency_code', $profile?->currency_code ?? 'GHS') === 'GHS')>GHS — Ghanaian Cedi (₵)</option>
+                        <option value="NGN" @selected(old('currency_code', $profile?->currency_code) === 'NGN')>NGN — Nigerian Naira (₦)</option>
+                        <option value="KES" @selected(old('currency_code', $profile?->currency_code) === 'KES')>KES — Kenyan Shilling (KSh)</option>
+                        <option value="USD" @selected(old('currency_code', $profile?->currency_code) === 'USD')>USD — US Dollar ($)</option>
+                        <option value="EUR" @selected(old('currency_code', $profile?->currency_code) === 'EUR')>EUR — Euro (€)</option>
+                    </select>
+                    <input type="hidden" name="currency_symbol" id="currency_symbol"
+                           value="{{ old('currency_symbol', $profile?->currency_symbol ?? '₵') }}">
                 </div>
             </div>
 

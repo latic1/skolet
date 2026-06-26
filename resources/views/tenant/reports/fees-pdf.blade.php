@@ -1,3 +1,4 @@
+@php $currencySymbol = $profile?->currency_symbol ?? '₵'; @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,16 +95,16 @@
     <div class="summary-row">
         <div class="summary-cell">
             <div class="summary-label">Total Expected</div>
-            <div class="summary-value" style="color:#101828">{{ number_format($report['total_expected'], 2) }}</div>
+            <div class="summary-value" style="color:#101828">{{ format_money($report['total_expected'], $currencySymbol) }}</div>
         </div>
         <div class="summary-cell">
             <div class="summary-label">Total Collected</div>
-            <div class="summary-value" style="color:#059669">{{ number_format($report['total_collected'], 2) }}</div>
+            <div class="summary-value" style="color:#059669">{{ format_money($report['total_collected'], $currencySymbol) }}</div>
         </div>
         <div class="summary-cell">
             <div class="summary-label">Outstanding</div>
             <div class="summary-value" style="color:{{ $report['total_outstanding'] > 0 ? '#dc2626' : '#059669' }}">
-                {{ number_format($report['total_outstanding'], 2) }}
+                {{ format_money($report['total_outstanding'], $currencySymbol) }}
             </div>
         </div>
     </div>
@@ -129,14 +130,14 @@
                     <tr>
                         <td style="font-weight:600">{{ $row['class']->name }}</td>
                         <td>{{ $row['fee_structure']->fee_item }}</td>
-                        <td class="right" style="color:#6a7282">{{ number_format((float)$row['fee_structure']->amount, 2) }}</td>
+                        <td class="right" style="color:#6a7282">{{ format_money((float)$row['fee_structure']->amount, $currencySymbol) }}</td>
                         <td class="center" style="color:#6a7282">{{ $row['student_count'] }}</td>
-                        <td class="right">{{ number_format($row['expected'], 2) }}</td>
+                        <td class="right">{{ format_money($row['expected'], $currencySymbol) }}</td>
                         <td class="right" style="{{ $row['collected'] > 0 ? 'color:#059669;font-weight:600' : 'color:#99a1af' }}">
-                            {{ number_format($row['collected'], 2) }}
+                            {{ format_money($row['collected'], $currencySymbol) }}
                         </td>
                         <td class="right {{ $row['outstanding'] > 0 ? 'owed' : 'cleared' }}">
-                            {{ $row['outstanding'] > 0 ? number_format($row['outstanding'], 2) : 'Cleared' }}
+                            {{ $row['outstanding'] > 0 ? format_money($row['outstanding'], $currencySymbol) : 'Cleared' }}
                         </td>
                     </tr>
                 @endforeach
@@ -144,10 +145,10 @@
             <tfoot>
                 <tr>
                     <td colspan="4" style="font-weight:bold">TOTAL</td>
-                    <td class="right">{{ number_format($report['total_expected'], 2) }}</td>
-                    <td class="right" style="color:#059669">{{ number_format($report['total_collected'], 2) }}</td>
+                    <td class="right">{{ format_money($report['total_expected'], $currencySymbol) }}</td>
+                    <td class="right" style="color:#059669">{{ format_money($report['total_collected'], $currencySymbol) }}</td>
                     <td class="right" style="color:{{ $report['total_outstanding'] > 0 ? '#dc2626' : '#059669' }}">
-                        {{ number_format($report['total_outstanding'], 2) }}
+                        {{ format_money($report['total_outstanding'], $currencySymbol) }}
                     </td>
                 </tr>
             </tfoot>

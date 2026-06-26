@@ -75,15 +75,15 @@
         <div class="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-border">
             <div class="text-center">
                 <p class="text-xs text-text-muted mb-1">Total Owed</p>
-                <p class="text-base font-semibold text-text-primary">{{ number_format($totalOwed, 2) }}</p>
+                <p class="text-base font-semibold text-text-primary">{{ format_money($totalOwed, $currencySymbol) }}</p>
             </div>
             <div class="text-center border-x border-border">
                 <p class="text-xs text-text-muted mb-1">Paid</p>
-                <p class="text-base font-semibold text-success-foreground">{{ number_format($totalPaid, 2) }}</p>
+                <p class="text-base font-semibold text-success-foreground">{{ format_money($totalPaid, $currencySymbol) }}</p>
             </div>
             <div class="text-center">
                 <p class="text-xs text-text-muted mb-1">Outstanding</p>
-                <p class="text-base font-semibold {{ $totalOutstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ number_format($totalOutstanding, 2) }}</p>
+                <p class="text-base font-semibold {{ $totalOutstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ format_money($totalOutstanding, $currencySymbol) }}</p>
             </div>
         </div>
     </div>
@@ -158,10 +158,10 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 text-sm text-text-primary hidden sm:table-cell">{{ $fs->term?->name ?? '—' }}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ number_format((float) $fs->amount, 2) }}</td>
-                        <td class="px-6 py-4 text-sm text-success-foreground font-medium hidden md:table-cell">{{ number_format($paidAmount, 2) }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ format_money((float) $fs->amount, $currencySymbol) }}</td>
+                        <td class="px-6 py-4 text-sm text-success-foreground font-medium hidden md:table-cell">{{ format_money($paidAmount, $currencySymbol) }}</td>
                         <td class="px-6 py-4 text-sm font-medium hidden md:table-cell {{ $outstanding > 0 ? 'text-error' : 'text-text-muted' }}">
-                            {{ number_format($outstanding, 2) }}
+                            {{ format_money($outstanding, $currencySymbol) }}
                         </td>
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badgeClass }}">
@@ -203,9 +203,9 @@
                         <td class="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wide hidden sm:table-cell">Total</td>
                         <td class="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wide sm:hidden">Total</td>
                         <td class="hidden sm:table-cell"></td>
-                        <td class="px-6 py-3 text-sm font-semibold text-text-primary">{{ number_format($totalOwed, 2) }}</td>
-                        <td class="px-6 py-3 text-sm font-semibold text-success-foreground hidden md:table-cell">{{ number_format($totalPaid, 2) }}</td>
-                        <td class="px-6 py-3 text-sm font-semibold hidden md:table-cell {{ $totalOutstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ number_format($totalOutstanding, 2) }}</td>
+                        <td class="px-6 py-3 text-sm font-semibold text-text-primary">{{ format_money($totalOwed, $currencySymbol) }}</td>
+                        <td class="px-6 py-3 text-sm font-semibold text-success-foreground hidden md:table-cell">{{ format_money($totalPaid, $currencySymbol) }}</td>
+                        <td class="px-6 py-3 text-sm font-semibold hidden md:table-cell {{ $totalOutstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ format_money($totalOutstanding, $currencySymbol) }}</td>
                         <td class="px-6 py-3"></td>
                         <td class="px-6 py-3"></td>
                     </tr>
@@ -225,7 +225,7 @@
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
         </svg>
         <p class="text-sm text-error">
-            You have <strong>{{ $overdueItems->count() }} overdue {{ Str::plural('fee item', $overdueItems->count()) }}</strong> with a total outstanding of <strong>{{ number_format($overdueItems->sum('outstanding'), 2) }}</strong>.
+            You have <strong>{{ $overdueItems->count() }} overdue {{ Str::plural('fee item', $overdueItems->count()) }}</strong> with a total outstanding of <strong>{{ format_money($overdueItems->sum('outstanding'), $currencySymbol) }}</strong>.
             Please pay immediately to avoid penalties.
         </p>
     </div>
@@ -236,7 +236,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <p class="text-sm text-accent">
-            You have an outstanding balance of <strong>{{ number_format($totalOutstanding, 2) }}</strong>.
+            You have an outstanding balance of <strong>{{ format_money($totalOutstanding, $currencySymbol) }}</strong>.
             Click <strong>Pay Now</strong> on any outstanding item to pay online via Paystack.
         </p>
     </div>

@@ -161,15 +161,55 @@ final class StaffController extends Controller
     public function destroy(Staff $staff): RedirectResponse
     {
         try {
-            // Deleting the user cascades to the staff record via FK onDelete cascade
-            $staff->user->delete();
+            $name = $staff->full_name;
+            $staff->delete();
+            $staff->user?->delete();
 
             return redirect(request()->getSchemeAndHttpHost() . '/staff')
-                ->with('success', 'Staff member removed successfully.');
+                ->with('success', $name . ' moved to trash.');
         } catch (\Throwable $e) {
             \Log::error('[staff.destroy] ' . $e->getMessage());
 
             return back()->with('error', 'Could not remove staff member. Please try again.');
+        }
+    }
+
+    public function trash(): View
+    {
+        $staff = Staff::onlyTrashed()->latest('deleted_at')->get();
+
+        return view('tenant.staff.trash', compact('staff'));
+    }
+
+    public function restore(string $id): RedirectResponse
+    {
+        try {
+            $member = Staff::onlyTrashed()->findOrFail($id);
+            $member->restore();
+            User::onlyTrashed()->where('id', $member->user_id)->restore();
+
+            return redirect(request()->getSchemeAndHttpHost() . '/staff')
+                ->with('success', $member->full_name . ' restored successfully.');
+        } catch (\Throwable $e) {
+            \Log::error('[staff.restore] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not restore staff member. Please try again.');
+        }
+    }
+
+    public function forceDelete(string $id): RedirectResponse
+    {
+        try {
+            $member = Staff::onlyTrashed()->findOrFail($id);
+            $member->forceDelete();
+            User::onlyTrashed()->where('id', $member->user_id)->forceDelete();
+
+            return redirect(request()->getSchemeAndHttpHost() . '/staff/trash')
+                ->with('success', 'Staff member permanently deleted.');
+        } catch (\Throwable $e) {
+            \Log::error('[staff.forceDelete] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not permanently delete staff member. Please try again.');
         }
     }
 

@@ -359,16 +359,16 @@
                 <div class="grid grid-cols-3 gap-0 border-b border-border">
                     <div class="px-6 py-4 border-r border-border">
                         <p class="text-xs text-text-muted uppercase tracking-wide font-medium mb-1">Total Expected</p>
-                        <p class="text-lg font-semibold text-text-primary">{{ number_format($feeReport['total_expected'], 2) }}</p>
+                        <p class="text-lg font-semibold text-text-primary">{{ format_money($feeReport['total_expected'], $currencySymbol) }}</p>
                     </div>
                     <div class="px-6 py-4 border-r border-border">
                         <p class="text-xs text-text-muted uppercase tracking-wide font-medium mb-1">Total Collected</p>
-                        <p class="text-lg font-semibold text-success-foreground">{{ number_format($feeReport['total_collected'], 2) }}</p>
+                        <p class="text-lg font-semibold text-success-foreground">{{ format_money($feeReport['total_collected'], $currencySymbol) }}</p>
                     </div>
                     <div class="px-6 py-4">
                         <p class="text-xs text-text-muted uppercase tracking-wide font-medium mb-1">Outstanding</p>
                         <p class="text-lg font-semibold {{ $feeReport['total_outstanding'] > 0 ? 'text-error' : 'text-success-foreground' }}">
-                            {{ number_format($feeReport['total_outstanding'], 2) }}
+                            {{ format_money($feeReport['total_outstanding'], $currencySymbol) }}
                         </p>
                     </div>
                 </div>
@@ -399,17 +399,17 @@
                                     <tr class="border-b border-border last:border-b-0 hover:bg-surface-secondary transition-colors">
                                         <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ $row['class']->name }}</td>
                                         <td class="px-6 py-4 text-sm text-text-primary">{{ $row['fee_structure']->fee_item }}</td>
-                                        <td class="px-4 py-4 text-sm text-text-muted text-right hidden md:table-cell">{{ number_format((float)$row['fee_structure']->amount, 2) }}</td>
+                                        <td class="px-4 py-4 text-sm text-text-muted text-right hidden md:table-cell">{{ format_money((float)$row['fee_structure']->amount, $currencySymbol) }}</td>
                                         <td class="px-4 py-4 text-sm text-text-muted text-center hidden md:table-cell">{{ $row['student_count'] }}</td>
-                                        <td class="px-4 py-4 text-sm text-text-primary text-right">{{ number_format($row['expected'], 2) }}</td>
+                                        <td class="px-4 py-4 text-sm text-text-primary text-right">{{ format_money($row['expected'], $currencySymbol) }}</td>
                                         <td class="px-4 py-4 text-sm text-right">
                                             <span class="{{ $row['collected'] > 0 ? 'text-success-foreground font-medium' : 'text-text-muted' }}">
-                                                {{ number_format($row['collected'], 2) }}
+                                                {{ format_money($row['collected'], $currencySymbol) }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 text-sm text-right">
                                             @if($row['outstanding'] > 0)
-                                                <span class="text-error font-medium">{{ number_format($row['outstanding'], 2) }}</span>
+                                                <span class="text-error font-medium">{{ format_money($row['outstanding'], $currencySymbol) }}</span>
                                             @else
                                                 <span class="inline-flex items-center gap-1 text-success-foreground font-medium">
                                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
@@ -425,10 +425,10 @@
                                     <td class="px-6 py-4 text-sm font-semibold text-text-primary" colspan="2">Total</td>
                                     <td class="hidden md:table-cell"></td>
                                     <td class="hidden md:table-cell"></td>
-                                    <td class="px-4 py-4 text-sm font-semibold text-text-primary text-right">{{ number_format($feeReport['total_expected'], 2) }}</td>
-                                    <td class="px-4 py-4 text-sm font-semibold text-success-foreground text-right">{{ number_format($feeReport['total_collected'], 2) }}</td>
+                                    <td class="px-4 py-4 text-sm font-semibold text-text-primary text-right">{{ format_money($feeReport['total_expected'], $currencySymbol) }}</td>
+                                    <td class="px-4 py-4 text-sm font-semibold text-success-foreground text-right">{{ format_money($feeReport['total_collected'], $currencySymbol) }}</td>
                                     <td class="px-6 py-4 text-sm font-semibold text-right {{ $feeReport['total_outstanding'] > 0 ? 'text-error' : 'text-success-foreground' }}">
-                                        {{ number_format($feeReport['total_outstanding'], 2) }}
+                                        {{ format_money($feeReport['total_outstanding'], $currencySymbol) }}
                                     </td>
                                 </tr>
                             </tfoot>

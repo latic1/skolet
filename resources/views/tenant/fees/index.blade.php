@@ -162,15 +162,15 @@
                 <div class="hidden sm:flex items-center gap-6 text-right shrink-0">
                     <div>
                         <p class="text-xs text-text-muted">Total Owed</p>
-                        <p class="text-sm font-semibold text-text-primary">{{ number_format($totalOwed, 2) }}</p>
+                        <p class="text-sm font-semibold text-text-primary">{{ format_money($totalOwed, $currencySymbol) }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-text-muted">Paid</p>
-                        <p class="text-sm font-semibold text-success-foreground">{{ number_format($totalPaid, 2) }}</p>
+                        <p class="text-sm font-semibold text-success-foreground">{{ format_money($totalPaid, $currencySymbol) }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-text-muted">Outstanding</p>
-                        <p class="text-sm font-semibold text-error">{{ number_format($totalOutstanding, 2) }}</p>
+                        <p class="text-sm font-semibold text-error">{{ format_money($totalOutstanding, $currencySymbol) }}</p>
                     </div>
                 </div>
                 @can('fees.view')
@@ -197,15 +197,15 @@
             <div class="sm:hidden grid grid-cols-3 gap-3">
                 <div class="bg-surface border border-border rounded-xl p-3 text-center shadow-card">
                     <p class="text-xs text-text-muted mb-1">Total Owed</p>
-                    <p class="text-sm font-semibold text-text-primary">{{ number_format($totalOwed, 2) }}</p>
+                    <p class="text-sm font-semibold text-text-primary">{{ format_money($totalOwed, $currencySymbol) }}</p>
                 </div>
                 <div class="bg-surface border border-border rounded-xl p-3 text-center shadow-card">
                     <p class="text-xs text-text-muted mb-1">Paid</p>
-                    <p class="text-sm font-semibold text-success-foreground">{{ number_format($totalPaid, 2) }}</p>
+                    <p class="text-sm font-semibold text-success-foreground">{{ format_money($totalPaid, $currencySymbol) }}</p>
                 </div>
                 <div class="bg-surface border border-border rounded-xl p-3 text-center shadow-card">
                     <p class="text-xs text-text-muted mb-1">Outstanding</p>
-                    <p class="text-sm font-semibold text-error">{{ number_format($totalOutstanding, 2) }}</p>
+                    <p class="text-sm font-semibold text-error">{{ format_money($totalOutstanding, $currencySymbol) }}</p>
                 </div>
             </div>
 
@@ -284,18 +284,18 @@
                                 <td class="px-6 py-4">
                                     @if($hasDiscount)
                                     <div class="flex flex-col gap-0.5">
-                                        <span class="text-xs text-text-muted line-through">{{ number_format($originalAmount, 2) }}</span>
+                                        <span class="text-xs text-text-muted line-through">{{ format_money($originalAmount, $currencySymbol) }}</span>
                                         <div class="flex items-center gap-1.5">
-                                            <span class="text-sm font-medium text-text-primary">{{ number_format($effectiveAmount, 2) }}</span>
+                                            <span class="text-sm font-medium text-text-primary">{{ format_money($effectiveAmount, $currencySymbol) }}</span>
                                             <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent">Discounted</span>
                                         </div>
                                     </div>
                                     @else
-                                    <span class="text-sm text-text-primary font-medium">{{ number_format($originalAmount, 2) }}</span>
+                                    <span class="text-sm text-text-primary font-medium">{{ format_money($originalAmount, $currencySymbol) }}</span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-sm text-success-foreground font-medium">{{ number_format($paidAmount, 2) }}</td>
-                                <td class="px-6 py-4 text-sm font-medium {{ $outstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ number_format($outstanding, 2) }}</td>
+                                <td class="px-6 py-4 text-sm text-success-foreground font-medium">{{ format_money($paidAmount, $currencySymbol) }}</td>
+                                <td class="px-6 py-4 text-sm font-medium {{ $outstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ format_money($outstanding, $currencySymbol) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badgeClass }}">
                                         {{ ucfirst($status) }}
@@ -320,11 +320,11 @@
                                         @foreach($payments as $pmt)
                                         <a href="{{ $host }}/fees/receipt/{{ $pmt->id }}"
                                            class="inline-flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-surface-secondary whitespace-nowrap"
-                                           title="Download receipt for {{ $pmt->payment_method === 'paystack' ? 'Paystack' : 'cash' }} payment of {{ number_format((float)$pmt->amount, 2) }} on {{ $pmt->paid_at?->format('M j') }}">
+                                           title="Download receipt for {{ $pmt->payment_method === 'paystack' ? 'Paystack' : 'cash' }} payment of {{ format_money((float)$pmt->amount, $currencySymbol) }} on {{ $pmt->paid_at?->format('M j') }}">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                             </svg>
-                                            Receipt ({{ number_format((float)$pmt->amount, 2) }})
+                                            Receipt ({{ format_money((float)$pmt->amount, $currencySymbol) }})
                                         </a>
                                         @endforeach
                                     </div>
@@ -496,7 +496,7 @@
                             @foreach($feeStructures as $fee)
                             <tr class="border-b border-border last:border-b-0 hover:bg-surface-secondary transition-colors">
                                 <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ $fee->fee_item }}</td>
-                                <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ number_format((float) $fee->amount, 2) }}</td>
+                                <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ format_money((float) $fee->amount, $currencySymbol) }}</td>
                                 <td class="px-6 py-4 text-sm text-text-primary">
                                     @if($fee->target_class === 'all')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-secondary">All Classes</span>

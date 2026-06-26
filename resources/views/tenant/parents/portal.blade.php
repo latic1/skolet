@@ -154,7 +154,7 @@
                 <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <span class="text-sm text-text-primary">{{ $item['label'] }}</span>
                     <span class="flex items-center gap-2">
-                        <span class="text-sm font-medium text-text-primary">GH₵ {{ number_format($item['amount'], 2) }}</span>
+                        <span class="text-sm font-medium text-text-primary">{{ format_money($item['amount'], $currencySymbol) }}</span>
                         @if($isPaid)
                         <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-success-lightest text-success-foreground">Paid</span>
                         @else
@@ -167,7 +167,7 @@
                 <div class="mt-2 pt-2 border-t border-border flex justify-between">
                     <span class="text-sm font-semibold text-text-primary">Balance</span>
                     <span class="text-sm font-bold {{ $balance > 0 ? 'text-error' : 'text-success-foreground' }}">
-                        GH₵ {{ number_format(abs($balance), 2) }}
+                        {{ format_money(abs($balance), $currencySymbol) }}
                         {{ $balance > 0 ? 'owing' : ($balance < 0 ? 'overpaid' : 'settled') }}
                     </span>
                 </div>

@@ -29,6 +29,8 @@ final class SchoolProfile extends Model
         'onboarding_step',
         'notification_settings',
         'admissions_open',
+        'currency_code',
+        'currency_symbol',
     ];
 
     protected $casts = [

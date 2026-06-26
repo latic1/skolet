@@ -11,6 +11,7 @@ use App\Http\Requests\Tenant\ImportStudentsRequest;
 use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Imports\StudentImport;
+use App\Jobs\ExportStudentDataJob;
 use App\Models\Tenant\AdmissionApplication;
 use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\FeeStructure;
@@ -184,12 +185,86 @@ final class StudentController extends Controller
             $student->delete();
 
             return redirect(request()->getSchemeAndHttpHost() . '/students')
-                ->with('success', 'Student removed successfully.');
+                ->with('success', $student->full_name . ' moved to trash.');
         } catch (\Throwable $e) {
             \Log::error('[students.destroy] ' . $e->getMessage());
 
             return back()->with('error', 'Could not remove student. Please try again.');
         }
+    }
+
+    public function trash(): View
+    {
+        $students = Student::onlyTrashed()->with('schoolClass')->latest('deleted_at')->get();
+
+        return view('tenant.students.trash', compact('students'));
+    }
+
+    public function restore(string $id): RedirectResponse
+    {
+        try {
+            $student = Student::onlyTrashed()->findOrFail($id);
+            $student->restore();
+
+            return redirect(request()->getSchemeAndHttpHost() . '/students')
+                ->with('success', $student->full_name . ' restored successfully.');
+        } catch (\Throwable $e) {
+            \Log::error('[students.restore] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not restore student. Please try again.');
+        }
+    }
+
+    public function forceDelete(string $id): RedirectResponse
+    {
+        try {
+            $student = Student::onlyTrashed()->findOrFail($id);
+            $student->forceDelete();
+
+            return redirect(request()->getSchemeAndHttpHost() . '/students/trash')
+                ->with('success', 'Student permanently deleted.');
+        } catch (\Throwable $e) {
+            \Log::error('[students.forceDelete] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not permanently delete student. Please try again.');
+        }
+    }
+
+    public function anonymize(Student $student): RedirectResponse
+    {
+        try {
+            $student->update([
+                'full_name'       => 'Deleted Student',
+                'guardian_name'   => 'Removed',
+                'guardian_contact' => '000',
+                'guardian_email'  => null,
+                'photo_path'      => null,
+                'address'         => null,
+                'medical_notes'   => null,
+            ]);
+
+            return redirect(request()->getSchemeAndHttpHost() . '/students/' . $student->id)
+                ->with('success', 'Student personal data anonymised. Academic records preserved.');
+        } catch (\Throwable $e) {
+            \Log::error('[students.anonymize] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not anonymise student. Please try again.');
+        }
+    }
+
+    public function exportData(Request $request, Student $student): RedirectResponse
+    {
+        $user = Auth::user();
+
+        ExportStudentDataJob::dispatch(
+            studentId: $student->id,
+            tenantId: tenant()->getTenantKey(),
+            tenantHost: $request->getSchemeAndHttpHost(),
+            adminEmail: $user->email,
+            adminName: $user->name,
+        );
+
+        return back()->with('success', 'Export requested. We will email you at ' . $user->email . ' when it\'s ready.');
     }
 
     public function import(ImportStudentsRequest $request): RedirectResponse

@@ -47,15 +47,15 @@
     <div class="grid grid-cols-3 gap-4">
         <div class="bg-surface border border-border rounded-2xl p-5 shadow-card">
             <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">This Month</p>
-            <p class="text-[26px] font-semibold text-text-primary leading-none">{{ number_format($totalThisMonth, 2) }}</p>
+            <p class="text-[26px] font-semibold text-text-primary leading-none">{{ format_money($totalThisMonth, $currencySymbol) }}</p>
         </div>
         <div class="bg-surface border border-border rounded-2xl p-5 shadow-card">
             <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">This Term</p>
-            <p class="text-[26px] font-semibold text-text-primary leading-none">{{ number_format($totalThisTerm, 2) }}</p>
+            <p class="text-[26px] font-semibold text-text-primary leading-none">{{ format_money($totalThisTerm, $currencySymbol) }}</p>
         </div>
         <div class="bg-surface border border-border rounded-2xl p-5 shadow-card">
             <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">YTD Total</p>
-            <p class="text-[26px] font-semibold text-text-primary leading-none">{{ number_format($totalYtd, 2) }}</p>
+            <p class="text-[26px] font-semibold text-text-primary leading-none">{{ format_money($totalYtd, $currencySymbol) }}</p>
         </div>
     </div>
 
@@ -142,7 +142,7 @@
                             <span class="line-clamp-2">{{ $expense->description }}</span>
                         </td>
                         <td class="px-6 py-4 text-sm font-semibold text-text-primary text-right whitespace-nowrap">
-                            {{ number_format($expense->amount, 2) }}
+                            {{ format_money($expense->amount, $currencySymbol) }}
                         </td>
                         <td class="px-6 py-4 text-sm text-text-secondary hidden md:table-cell">
                             {{ $expense->recordedBy?->name ?? '—' }}

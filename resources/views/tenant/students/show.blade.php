@@ -74,13 +74,34 @@
                     </svg>
                     Edit
                 </a>
+                <form method="POST" action="{{ $host }}/students/{{ $student->id }}/export">
+                    @csrf
+                    <button type="submit"
+                            class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Export Data
+                    </button>
+                </form>
+                <form method="POST" action="{{ $host }}/students/{{ $student->id }}/anonymize"
+                      onsubmit="return confirm('Anonymise personal data for {{ addslashes($student->full_name) }}? Their name and contact info will be replaced with placeholders. Academic records are preserved. This cannot be undone.')">
+                    @csrf
+                    <button type="submit"
+                            class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-secondary rounded-md hover:bg-surface-secondary transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                        </svg>
+                        Anonymise
+                    </button>
+                </form>
                 @endcan
                 @can('students.delete')
                 <form method="POST" action="{{ $host }}/students/{{ $student->id }}">
                     @csrf
                     @method('DELETE')
                     <button type="submit"
-                            onclick="return confirm('Remove {{ addslashes($student->full_name) }}? This cannot be undone.')"
+                            onclick="return confirm('Move {{ addslashes($student->full_name) }} to trash?')"
                             class="flex items-center gap-2 px-4 py-2 bg-error-light text-error text-sm font-medium rounded-md hover:bg-red-100 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -219,7 +240,7 @@
                         <td class="py-2.5 pr-4 font-medium text-text-primary">
                             {{ $discount->discount_type === 'percentage'
                                 ? number_format((float)$discount->discount_value, 0) . '%'
-                                : number_format((float)$discount->discount_value, 2) }}
+                                : format_money((float)$discount->discount_value, $currencySymbol) }}
                         </td>
                         <td class="py-2.5 pr-4 text-text-secondary">
                             {{ $discount->feeStructure ? $discount->feeStructure->fee_item : 'All fees' }}

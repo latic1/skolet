@@ -1,3 +1,4 @@
+@php $currencySymbol = $schoolProfile?->currency_symbol ?? '₵'; @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,9 +166,9 @@ table.fees .center { text-align: center; }
             <tr>
                 <td>{{ $fs->fee_item }}</td>
                 <td><span class="badge {{ $isAnnual ? 'badge-annual' : '' }}" style="{{ $isAnnual ? '' : 'background:#e8f4fd;color:#1e40af;' }}">{{ $isAnnual ? 'Annual' : 'Term' }}</span></td>
-                <td class="right">{{ number_format((float) $fs->amount, 2) }}</td>
-                <td class="right">{{ number_format($item['paid_amount'], 2) }}</td>
-                <td class="right" style="{{ $item['outstanding'] > 0 ? 'color:#991b1b;' : '' }}">{{ number_format($item['outstanding'], 2) }}</td>
+                <td class="right">{{ format_money((float) $fs->amount, $currencySymbol) }}</td>
+                <td class="right">{{ format_money($item['paid_amount'], $currencySymbol) }}</td>
+                <td class="right" style="{{ $item['outstanding'] > 0 ? 'color:#991b1b;' : '' }}">{{ format_money($item['outstanding'], $currencySymbol) }}</td>
                 <td class="center"><span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span></td>
             </tr>
             @endforeach
@@ -175,16 +176,16 @@ table.fees .center { text-align: center; }
             @if($arrearsTotal > 0)
             <tr class="arrears-row">
                 <td colspan="4" style="font-style:italic;">Arrears (previous terms)</td>
-                <td class="right">{{ number_format($arrearsTotal, 2) }}</td>
+                <td class="right">{{ format_money($arrearsTotal, $currencySymbol) }}</td>
                 <td></td>
             </tr>
             @endif
 
             <tr class="totals-row">
                 <td colspan="2">Total</td>
-                <td class="right">{{ number_format($totalOwed, 2) }}</td>
-                <td class="right">{{ number_format($totalPaid, 2) }}</td>
-                <td class="right" style="{{ $grandOutstanding > 0 ? 'color:#991b1b;' : 'color:#065f46;' }}">{{ number_format($grandOutstanding, 2) }}</td>
+                <td class="right">{{ format_money($totalOwed, $currencySymbol) }}</td>
+                <td class="right">{{ format_money($totalPaid, $currencySymbol) }}</td>
+                <td class="right" style="{{ $grandOutstanding > 0 ? 'color:#991b1b;' : 'color:#065f46;' }}">{{ format_money($grandOutstanding, $currencySymbol) }}</td>
                 <td></td>
             </tr>
         </tbody>

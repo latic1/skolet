@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('skolet:sync-student-counts')->daily();
         $schedule->command('skolet:send-fee-overdue-reminders')->weekly();
         $schedule->command('activitylog:clean')->monthly();
+        $schedule->command('schoolflow:purge-deleted')->monthly();
     }
 
     /**
