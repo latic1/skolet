@@ -14,8 +14,8 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid('staff_id')->unique()->constrained('staff')->cascadeOnDelete();
             $table->decimal('gross', 15, 2)->default(0);
-            $table->json('allowances')->default('{}');
-            $table->json('deductions')->default('{}');
+            $table->json('allowances')->nullable();
+            $table->json('deductions')->nullable();
             $table->date('effective_from')->nullable();
             $table->timestamps();
         });

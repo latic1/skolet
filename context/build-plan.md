@@ -552,10 +552,10 @@ Available to every authenticated user, regardless of role or permissions — thi
 | Phase 5 — Fees & Payments                  | 4        |
 | Phase 6 — Communication & Public Page      | 2        |
 | Phase 7 — Reports & Super Admin            | 3        |
-| Phase 8 — Platform Foundation (MVP Gaps)   | 9        |
+| Phase 8 — Platform Foundation (MVP Gaps)   | 10       |
 | Phase 9 — Growth Features                  | 15       |
 | Phase 10 — Competitive Advantages          | 9        |
-| **Total**                                  | **58**   |
+| **Total**                                  | **59**   |
 
 ---
 
@@ -798,6 +798,152 @@ These are the critical gaps that block production use and business growth. Build
   - `tests/Unit/AdmissionNumberServiceTest.php` — generates correct pattern, handles concurrent counter increments
 - Model factories: `StudentFactory`, `StaffFactory`, `ExamFactory`, `FeeStructureFactory`, `FeePaymentFactory`, `AttendanceFactory` under `database/factories/Tenant/`
 - GitHub Actions: `.github/workflows/tests.yml` — runs `php artisan test --parallel` on push/PR to main; uses SQLite for tenant DB in CI
+
+---
+
+### 31b Extended Test Coverage — High-Priority Features
+
+Adds test files for the 19 completed features that have meaningful business logic but zero test coverage. Each file follows the same PestPHP + `RefreshDatabase` pattern established in Feature 31.
+
+**New test files:**
+
+- `tests/Feature/Tenant/StaffTest.php`
+  - Staff can be created, updated, soft-deleted, and restored
+  - Staff bulk import validates rows and aborts on error
+  - Staff linked user account is created on staff creation
+
+- `tests/Feature/Tenant/TimetableTest.php`
+  - Timetable slot can be created for class + period + subject + teacher
+  - Conflict detection: same teacher assigned to two classes in the same period returns a warning
+  - Timetable slots are scoped per class/section
+
+- `tests/Feature/Tenant/PaystackTest.php`
+  - `PaystackService::initializeTransaction()` returns authorization URL on success (HTTP mock)
+  - `PaystackService::verifyTransaction()` returns verified amount and metadata on success (HTTP mock)
+  - Webhook handler rejects requests with invalid HMAC signature
+  - Duplicate webhook (same `paystack_ref`) does not create a second `fee_payments` row
+
+- `tests/Feature/Tenant/ReceiptTest.php`
+  - Receipt PDF route returns a PDF response for a valid `fee_payments` record
+  - Term Bill PDF route returns a PDF response for a student with fee items
+  - Term Bill includes arrears from previous terms
+
+- `tests/Feature/Central/SuperAdminTest.php`
+  - Super Admin can list all tenants
+  - Super Admin can toggle a tenant's enabled/disabled status
+  - Impersonation creates an `impersonation_logs` row and redirects to tenant subdomain
+  - Impersonation session expires after 1 hour
+  - Non-super-admin cannot access `/super-admin` routes (403)
+
+- `tests/Unit/GradingScaleTest.php`
+  - Custom grading scale overrides the default config scale in `ReportCardService`
+  - Saving a scale with overlapping bands returns a validation error
+  - Saving a scale that doesn't cover 0–100 returns a validation error
+
+- `tests/Feature/Tenant/StudentPromotionTest.php`
+  - Promoting a student updates `students.class_id` to the next class in order
+  - Retaining a student leaves `students.class_id` unchanged
+  - Graduating a student sets `students.status = 'graduated'`
+  - Promotion creates a `student_class_history` row for each student
+  - Attempting to promote when no next class exists returns an error
+
+- `tests/Feature/Tenant/NotificationTest.php`
+  - Absence alert notification is dispatched when student is marked absent and setting is enabled
+  - Payment confirmation notification is dispatched after cash payment
+  - Notifications are NOT dispatched when the event type is disabled in `notification_settings`
+  - Fee overdue reminder command queues notifications for overdue students
+
+- `tests/Feature/Tenant/SubjectTeacherAssignmentTest.php`
+  - Assignment can be created for teacher + subject + class + academic year
+  - Duplicate assignment (same teacher/subject/class/year) is rejected by unique constraint
+  - Teacher can only enter marks for subjects they are assigned to
+  - Teacher sees only assigned classes on the attendance page
+
+- `tests/Feature/Tenant/LeaveTest.php`
+  - Staff can submit a leave request
+  - School admin can approve a leave request
+  - School admin can reject a leave request with a reason
+  - Approved leave pre-fills staff attendance as "On Leave" for the covered dates
+  - Staff cannot approve their own leave request (403)
+
+- `tests/Feature/Tenant/ParentPortalTest.php`
+  - Parent login account is created and linked to a student via `parent_student` pivot
+  - Parent can view linked child's fee status
+  - Parent cannot view another student's fee status (403)
+  - Revoking a parent login detaches the pivot row
+  - Parent with multiple children can switch selected child via session
+
+- `tests/Feature/Tenant/AssignmentTest.php`
+  - Teacher can create an assignment for their class
+  - Student can submit an assignment before the due date
+  - Teacher can grade a submission (marks + feedback saved)
+  - Student cannot submit after the due date
+  - Teacher cannot manage assignments for a class they are not assigned to
+
+- `tests/Feature/Tenant/ExpenseTest.php`
+  - Expense can be created with category, amount, date, description
+  - Expense category is created inline if it doesn't exist
+  - Monthly total is computed correctly from `expenses` table
+  - Accountant can create and view expenses; teacher cannot (403)
+
+- `tests/Feature/Tenant/FeeDiscountTest.php`
+  - Percentage discount reduces the effective amount in `FeeStatusService`
+  - Fixed discount reduces the effective amount correctly
+  - Blanket discount (null `fee_structure_id`) applies to all fee items for the student
+  - Expired discount (past `valid_until`) is not applied
+  - Discounted amount is reflected in Paystack checkout amount
+
+- `tests/Unit/ExamAnalyticsServiceTest.php`
+  - `buildSubjectReport()` returns correct avg, min, max, pass_rate for a class
+  - `buildClassTrend()` returns one entry per exam in the term in chronological order
+  - Pass rate is computed against the school's configured passing threshold
+
+- `tests/Feature/Tenant/TranscriptTest.php`
+  - Transcript PDF route returns a PDF response for a student with published exam results
+  - Unpublished exam results are excluded from the transcript
+  - Student can download their own transcript
+  - Student cannot download another student's transcript (403)
+
+- `tests/Feature/Tenant/ApiTest.php`
+  - Unauthenticated request to `/api/v1/students` returns 401
+  - Authenticated request with valid Sanctum token returns paginated student list
+  - Token with read-only scope cannot POST to `/api/v1/attendance` (403)
+  - Rate limiter returns 429 after 60 requests per minute
+  - Token revocation via `DELETE /account/tokens/{id}` invalidates subsequent API calls
+
+- `tests/Feature/Tenant/PayrollTest.php`
+  - Running payroll creates one `payroll_items` row per active staff with a salary structure
+  - Staff without a salary structure are excluded from the run
+  - Running payroll for the same month/year twice returns an error
+  - `PayrollService` computes SSNIT (5.5%), Tier 2 (5%), PAYE correctly for a known gross
+  - Net pay equals gross + allowances − SSNIT − Tier 2 − PAYE − other deductions
+  - Mark-as-paid updates `payment_status` to `paid` and saves `payment_method` + `paid_at`
+
+- `tests/Unit/PayrollTaxTest.php`
+  - PAYE is zero for gross below the first taxable band
+  - PAYE is computed progressively across multiple bands for a mid-range gross
+  - PAYE is computed at the top rate for a high-earner gross
+  - SSNIT employee = 5.5% of gross
+  - Tier 2 employee = 5% of gross
+  - Employer SSNIT = 13% of gross
+  - Employer Tier 2 = 5% of gross
+
+- `tests/Feature/Tenant/FinancialSummaryTest.php`
+  - `FinancialSummaryService` returns correct income total from `fee_payments`
+  - Expense total matches sum of `expenses` in the date range
+  - Net balance = income − expenses (positive and negative cases)
+  - Monthly trend array contains one entry per month in the range
+
+**New factories needed:**
+- `StaffFactory` (if not already created in Feature 31)
+- `LeaveRequestFactory`
+- `AssignmentFactory`
+- `ExpenseFactory`
+- `PayrollRunFactory`, `PayrollItemFactory`
+- `SalaryStructureFactory`
+- `WebhookFactory`
+
+**Feature count update:** adds 20 test files covering 19 features (PayrollTest + PayrollTaxTest split for clarity).
 
 ---
 
