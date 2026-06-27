@@ -4,6 +4,8 @@
 
 @section('content')
 @php
+    $base = request()->getSchemeAndHttpHost();
+
     $classesJson  = $classes->map(fn($c) => [
         'id'       => $c->id,
         'name'     => $c->name,
@@ -33,7 +35,7 @@
             <p class="text-sm text-text-muted mt-0.5">Track lessons taught and weekly teaching plans</p>
         </div>
         @if($canManage && $currentStaff)
-        <a href="{{ route('tenant.register.pdf', [$currentStaff, now()->format('Y-m')]) }}"
+        <a href="{{ $base . '/register/pdf/' . $currentStaff->id . '/' . now()->format('Y-m') }}"
            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-surface border border-border text-text-secondary hover:bg-muted/30 transition-colors">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Export Monthly PDF
@@ -78,7 +80,7 @@
 
         {{-- Filter bar --}}
         <div class="bg-surface border border-border rounded-2xl shadow-card p-5">
-            <form method="GET" action="{{ route('tenant.register.index') }}" class="flex flex-wrap items-end gap-3">
+            <form method="GET" action="{{ $base . '/register' }}" class="flex flex-wrap items-end gap-3">
                 <input type="hidden" name="tab" value="register">
 
                 @if($canManage)
@@ -150,7 +152,7 @@
                     <p class="text-xs text-text-muted mb-4">
                         {{ \Carbon\Carbon::parse($selectedDate)->format('l, d M Y') }}
                     </p>
-                    <form method="POST" action="{{ route('tenant.register.store') }}" class="flex flex-col gap-4">
+                    <form method="POST" action="{{ $base . '/register' }}" class="flex flex-col gap-4">
                         @csrf
                         <input type="hidden" name="class_id" value="{{ $selectedClassId }}">
                         <input type="hidden" name="section_id" value="{{ $selectedSectionId ?: '' }}">
@@ -245,7 +247,7 @@
             <div class="flex flex-wrap items-center justify-between gap-4">
                 {{-- Week range display + prev/next --}}
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('tenant.register.index', ['tab' => 'plans', 'week_start' => $weekStart->copy()->subWeek()->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
+                    <a href="{{ $base . '/register?' . http_build_query(['tab' => 'plans', 'week_start' => $weekStart->copy()->subWeek()->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
                        class="p-2 rounded-lg border border-border text-text-secondary hover:bg-muted/30 transition-colors">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     </a>
@@ -261,11 +263,11 @@
                             @endforeach
                         </div>
                     </div>
-                    <a href="{{ route('tenant.register.index', ['tab' => 'plans', 'week_start' => $weekStart->copy()->addWeek()->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
+                    <a href="{{ $base . '/register?' . http_build_query(['tab' => 'plans', 'week_start' => $weekStart->copy()->addWeek()->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
                        class="p-2 rounded-lg border border-border text-text-secondary hover:bg-muted/30 transition-colors">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
-                    <a href="{{ route('tenant.register.index', ['tab' => 'plans', 'week_start' => now()->startOfWeek(Carbon::MONDAY)->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
+                    <a href="{{ $base . '/register?' . http_build_query(['tab' => 'plans', 'week_start' => now()->startOfWeek(Carbon::MONDAY)->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
                        class="px-3 py-1 text-xs font-medium rounded-lg border border-border text-text-secondary hover:bg-muted/30 transition-colors">
                         This week
                     </a>
@@ -274,7 +276,7 @@
                 <div class="flex items-center gap-3">
                     {{-- Admin teacher filter --}}
                     @if($canManage)
-                    <form method="GET" action="{{ route('tenant.register.index') }}" class="flex items-end gap-2">
+                    <form method="GET" action="{{ $base . '/register' }}" class="flex items-end gap-2">
                         <input type="hidden" name="tab" value="plans">
                         <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
                         <select name="plan_teacher_id"
@@ -337,7 +339,7 @@
                                 class="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-muted/30 transition-colors">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         </button>
-                        <form method="POST" action="{{ route('tenant.lesson-plan.destroy', $plan) }}"
+                        <form method="POST" action="{{ $base . '/lesson-plans/' . $plan->id }}"
                               onsubmit="return confirm('Delete this lesson plan?')">
                             @csrf @method('DELETE')
                             <button type="submit"
@@ -365,7 +367,7 @@
 
                 {{-- Edit view --}}
                 @can('register.create')
-                <form x-show="editing" method="POST" action="{{ route('tenant.lesson-plan.update', $plan) }}"
+                <form x-show="editing" method="POST" action="{{ $base . '/lesson-plans/' . $plan->id }}"
                       class="flex flex-col gap-3" x-cloak>
                     @csrf @method('PATCH')
                     <div class="flex flex-col gap-1">
@@ -404,7 +406,7 @@
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <form method="POST" action="{{ route('tenant.lesson-plan.store') }}"
+            <form method="POST" action="{{ $base . '/lesson-plans' }}"
                   class="flex flex-col gap-4 p-6 overflow-y-auto max-h-[80vh]">
                 @csrf
 

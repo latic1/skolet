@@ -4,6 +4,7 @@
 
 @section('content')
 @php
+    $base = request()->getSchemeAndHttpHost();
     $leaveTypes = [
         'sick'      => 'Sick Leave',
         'annual'    => 'Annual Leave',
@@ -72,7 +73,7 @@
                 <div class="bg-surface border border-border rounded-2xl shadow-card p-6">
                     <h2 class="text-base font-semibold text-text-primary mb-4">New Leave Request</h2>
                     @if($currentStaff)
-                    <form method="POST" action="{{ route('tenant.leave.store') }}" class="flex flex-col gap-4">
+                    <form method="POST" action="{{ $base . '/leave' }}" class="flex flex-col gap-4">
                         @csrf
                         <div class="flex flex-col gap-1.5">
                             <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Leave Type</label>
@@ -242,7 +243,7 @@
                             <td class="px-6 py-3.5 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     {{-- Approve --}}
-                                    <form method="POST" action="{{ route('tenant.leave.approve', $req) }}"
+                                    <form method="POST" action="{{ $base . '/leave/' . $req->id . '/approve' }}"
                                           onsubmit="return confirm('Approve this leave request?')">
                                         @csrf @method('PATCH')
                                         <button type="submit"
@@ -264,7 +265,7 @@
                                      x-transition:enter-start="opacity-0 -translate-y-1"
                                      x-transition:enter-end="opacity-100 translate-y-0"
                                      class="mt-2 flex flex-col gap-2 items-end">
-                                    <form method="POST" action="{{ route('tenant.leave.reject', $req) }}"
+                                    <form method="POST" action="{{ $base . '/leave/' . $req->id . '/reject' }}"
                                           class="w-full max-w-xs"
                                           @submit.prevent="if(rejectReason.trim()) $el.submit()">
                                         @csrf @method('PATCH')

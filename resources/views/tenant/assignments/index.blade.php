@@ -261,7 +261,7 @@
         {{ Js::from($subjects->values()) }},
         {{ Js::from($sections->values()) }},
         {{ Js::from($staff->values()) }},
-        {{ Js::json($canManageAll) }}
+        {{ Js::from($canManageAll) }}
     )">
 
         {{-- Page header --}}

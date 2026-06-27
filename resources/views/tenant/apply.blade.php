@@ -33,7 +33,7 @@
                 @endif
                 <span class="text-[19px] font-bold leading-7 text-text-darkest tracking-tight">{{ $schoolName }}</span>
             </a>
-            <a href="{{ route('tenant.login') }}"
+            <a href="{{ request()->getSchemeAndHttpHost() . '/login' }}"
                class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors">
                 Login
             </a>

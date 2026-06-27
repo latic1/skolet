@@ -145,8 +145,8 @@
                                         staff_name:     @js($staff->full_name),
                                         gross:          {{ $s?->gross ?? 0 }},
                                         effective_from: '{{ $s?->effective_from?->format('Y-m-d') ?? '' }}',
-                                        allowances:     @json($s?->allowances ?? ['housing' => 0, 'transport' => 0, 'medical' => 0, 'other' => 0]),
-                                        deductions:     @json($s?->deductions ?? ['tax' => 0, 'pension' => 0, 'loan' => 0, 'other' => 0])
+                                        allowances:     @js($s?->allowances ?? ['housing' => 0, 'transport' => 0, 'medical' => 0, 'other' => 0]),
+                                        deductions:     @js($s?->deductions ?? ['tax' => 0, 'pension' => 0, 'loan' => 0, 'other' => 0])
                                     })"
                                     class="text-xs font-medium text-accent hover:underline">
                                 {{ $s ? 'Edit' : 'Set Up' }}

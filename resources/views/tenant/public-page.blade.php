@@ -74,7 +74,7 @@
                     Apply Now
                 </a>
                 @endif
-                <a href="{{ route('tenant.login') }}"
+                <a href="{{ request()->getSchemeAndHttpHost() . '/login' }}"
                    class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors">
                     Login
                 </a>
