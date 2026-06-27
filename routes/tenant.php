@@ -183,14 +183,17 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::post('/students', [StudentController::class, 'store'])->name('students.store');
                 Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
             });
+            // Literal promote paths must be registered before the {student} wildcard
+            Route::middleware('permission:students.edit')->group(function () {
+                Route::get('/students/promote', [StudentPromotionController::class, 'index'])->name('students.promote');
+                Route::post('/students/promote', [StudentPromotionController::class, 'execute'])->name('students.promote.execute');
+            });
             // Wildcard routes come last so literal paths above take precedence
             Route::middleware('permission:students.view')->group(function () {
                 Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
                 Route::get('/students/{student}/transcript', [TranscriptController::class, 'download'])->name('students.transcript');
             });
             Route::middleware('permission:students.edit')->group(function () {
-                Route::get('/students/promote', [StudentPromotionController::class, 'index'])->name('students.promote');
-                Route::post('/students/promote', [StudentPromotionController::class, 'execute'])->name('students.promote.execute');
                 Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
                 Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
                 Route::post('/students/{student}/login', [StudentController::class, 'createLogin'])->name('students.login.create');
