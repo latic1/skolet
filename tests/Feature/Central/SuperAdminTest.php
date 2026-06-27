@@ -3,8 +3,11 @@
 use App\Models\Central\SuperAdmin;
 use App\Models\Central\SubscriptionPlan;
 use App\Models\Central\Tenant;
+use Illuminate\Support\Facades\Vite;
 
 beforeEach(function (): void {
+    Vite::fake(); // No built manifest in CI — prevent ViteManifestNotFoundException
+
     $this->superAdmin = SuperAdmin::firstOrCreate(
         ['email' => 'super@schoolflow.test'],
         ['name' => 'Super Admin', 'password' => bcrypt('SuperSecret1!')]
