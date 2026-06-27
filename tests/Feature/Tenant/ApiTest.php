@@ -79,6 +79,7 @@ test('token revocation invalidates subsequent API calls', function (): void {
 
     // Revoke the token
     $tokenResult->accessToken->delete();
+    auth()->forgetGuards(); // Flush cached auth state so Sanctum re-checks the DB
 
     // Token is invalid after revocation
     $after = $this->withHeader('Authorization', 'Bearer ' . $plainToken)

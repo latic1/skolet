@@ -92,7 +92,7 @@ test('super admin marking a tenant as paid sets payment_status and status to act
     $plan = SubscriptionPlan::where('tenant_id', $tenant->id)->first();
     expect($plan->payment_status)->toBe('paid')
         ->and($plan->status)->toBe('active')
-        ->and($plan->cycle_end)->toBe('2026-09-30');
+        ->and($plan->cycle_end->toDateString())->toBe('2026-09-30');
 
     $tenant->delete();
 });
