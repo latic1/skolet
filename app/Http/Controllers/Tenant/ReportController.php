@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Exports\AttendanceReportExport;
 use App\Exports\FeeCollectionReportExport;
 use App\Http\Controllers\Controller;
+use App\Models\Tenant\AcademicYear;
 use App\Models\Tenant\Exam;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
@@ -16,6 +17,7 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\Term;
 use App\Services\AttendanceReportService;
 use App\Services\ExamAnalyticsService;
+use App\Services\FinancialSummaryService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,23 +34,28 @@ final class ReportController extends Controller
     public function __construct(
         private readonly AttendanceReportService $attendanceService,
         private readonly ExamAnalyticsService $examAnalyticsService,
+        private readonly FinancialSummaryService $financialSummaryService,
     ) {}
 
     private const DEFAULT_THRESHOLD = 80;
 
     public function index(Request $request): View
     {
-        $classes   = SchoolClass::with('sections')->orderBy('order')->get();
-        $terms     = Term::with('academicYear')->latest()->get();
-        $activeTab = $request->query('tab', 'attendance');
+        $classes       = SchoolClass::with('sections')->orderBy('order')->get();
+        $terms         = Term::with('academicYear')->latest()->get();
+        $academicYears = AcademicYear::orderByDesc('start_date')->get();
+        $activeTab     = $request->query('tab', 'attendance');
 
         $attendanceReport  = null;
         $feeReport         = null;
         $analyticsReport   = null;
+        $financialReport   = null;
         $trendData         = [];
         $exams             = collect();
         $absenteesReport   = null;
-        $selectedThreshold = (int) $request->input('threshold', self::DEFAULT_THRESHOLD);
+        $selectedThreshold         = (int) $request->input('threshold', self::DEFAULT_THRESHOLD);
+        $selectedFinancialYearId   = $request->input('financial_year_id', '');
+        $selectedFinancialTermId   = $request->input('financial_term_id', '');
 
         if (
             $activeTab === 'attendance'
@@ -99,6 +106,18 @@ final class ReportController extends Controller
             }
         }
 
+        if ($activeTab === 'financial' && $request->filled('financial_year_id')) {
+            try {
+                $financialReport = $this->financialSummaryService->build(
+                    $request->input('financial_year_id'),
+                    $request->input('financial_term_id') ?: null,
+                );
+            } catch (\Throwable $e) {
+                Log::error('[ReportController::index/financial] ' . $e->getMessage());
+                session()->flash('error', 'Could not load financial summary.');
+            }
+        }
+
         if ($activeTab === 'academic') {
             $exams = Exam::with('term')->orderBy('name')->get();
 
@@ -128,22 +147,26 @@ final class ReportController extends Controller
         }
 
         return view('tenant.reports.index', [
-            'classes'           => $classes,
-            'terms'             => $terms,
-            'exams'             => $exams,
-            'activeTab'         => $activeTab,
-            'attendanceReport'  => $attendanceReport,
-            'feeReport'         => $feeReport,
-            'analyticsReport'   => $analyticsReport,
-            'trendData'         => $trendData,
-            'absenteesReport'   => $absenteesReport,
-            'selectedThreshold' => $selectedThreshold,
-            'selectedClassId'   => $request->input('class_id', ''),
-            'selectedSection'   => $request->input('section_id', ''),
-            'dateFrom'          => $request->input('date_from', ''),
-            'dateTo'            => $request->input('date_to', ''),
-            'selectedTermId'    => $request->input('term_id', ''),
-            'selectedExamId'    => $request->input('exam_id', ''),
+            'classes'                  => $classes,
+            'terms'                    => $terms,
+            'academicYears'            => $academicYears,
+            'exams'                    => $exams,
+            'activeTab'                => $activeTab,
+            'attendanceReport'         => $attendanceReport,
+            'feeReport'                => $feeReport,
+            'analyticsReport'          => $analyticsReport,
+            'financialReport'          => $financialReport,
+            'trendData'                => $trendData,
+            'absenteesReport'          => $absenteesReport,
+            'selectedThreshold'        => $selectedThreshold,
+            'selectedClassId'          => $request->input('class_id', ''),
+            'selectedSection'          => $request->input('section_id', ''),
+            'dateFrom'                 => $request->input('date_from', ''),
+            'dateTo'                   => $request->input('date_to', ''),
+            'selectedTermId'           => $request->input('term_id', ''),
+            'selectedExamId'           => $request->input('exam_id', ''),
+            'selectedFinancialYearId'  => $selectedFinancialYearId,
+            'selectedFinancialTermId'  => $selectedFinancialTermId,
         ]);
     }
 
@@ -281,6 +304,38 @@ final class ReportController extends Controller
         } catch (\Throwable $e) {
             Log::error('[ReportController::academicPdf] ' . $e->getMessage());
 
+            return back()->with('error', 'Could not generate PDF. Please try again.');
+        }
+    }
+
+    public function financialPdf(Request $request): StreamedResponse|RedirectResponse
+    {
+        $validated = $request->validate([
+            'financial_year_id' => ['required', 'uuid', 'exists:academic_years,id'],
+            'financial_term_id' => ['nullable', 'uuid', 'exists:terms,id'],
+        ]);
+
+        try {
+            $report     = $this->financialSummaryService->build(
+                $validated['financial_year_id'],
+                $validated['financial_term_id'] ?? null,
+            );
+            $profile    = SchoolProfile::first();
+            $logoBase64 = $this->encodeLogoBase64($profile);
+
+            $label = $report['term']
+                ? $report['term']->name
+                : $report['academic_year']->name;
+
+            $pdf = Pdf::loadView('tenant.reports.financial-pdf', [
+                'report'     => $report,
+                'profile'    => $profile,
+                'logoBase64' => $logoBase64,
+            ])->setPaper('a4', 'landscape');
+
+            return $pdf->download('financial-summary-' . $this->slugify($label) . '.pdf');
+        } catch (\Throwable $e) {
+            Log::error('[ReportController::financialPdf] ' . $e->getMessage());
             return back()->with('error', 'Could not generate PDF. Please try again.');
         }
     }

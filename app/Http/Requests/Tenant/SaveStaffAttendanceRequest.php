@@ -18,7 +18,7 @@ final class SaveStaffAttendanceRequest extends FormRequest
         return [
             'date'       => ['required', 'date', 'before_or_equal:today'],
             'statuses'   => ['required', 'array'],
-            'statuses.*' => ['nullable', 'in:present,absent,late'],
+            'statuses.*' => ['nullable', 'in:present,absent,late,on_leave'],
         ];
     }
 }

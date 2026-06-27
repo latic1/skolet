@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -35,6 +36,11 @@ final class Staff extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(SubjectTeacherAssignment::class, 'staff_id');
+    }
+
+    public function salaryStructure(): HasOne
+    {
+        return $this->hasOne(SalaryStructure::class, 'staff_id');
     }
 
     public function getActivitylogOptions(): LogOptions

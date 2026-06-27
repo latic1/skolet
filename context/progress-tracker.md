@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** 9 — Growth Features (in progress)
-**Last completed:** Feature 43 — Student Transcript Generation (ReportCardService::generateTranscript groups all published ExamResults by year→term→exam, fetches per-term attendance %, computes per-exam/year/cumulative averages; saves PDF to storage/{tenant}/transcripts/{student_id}.pdf; TranscriptController::download with admin/student/parent authorization; GET /students/{student}/transcript under students.view; transcript-pdf.blade.php multi-section A4 PDF with year banners, term headers with attendance pill, exam results tables, year cumulative rows, overall cumulative block; "Download Transcript" button on student show page)
-**Next:** Feature 33 — Staff Leave Management
+**Phase:** 10 — Competitive Advantages (in progress)
+**Last completed:** Feature 48b — Ghana Payroll Tax Compliance & Payment Tracking (migration adds 7 columns to payroll_items: ssnit_employee/tier2_employee/paye/ssnit_employer/tier2_employer decimal:2 default 0, payment_method string nullable, paid_at timestamp nullable; config/payroll.php with GHA 2024 rates: SSNIT employee 5.5%, Tier2 employee 5%, SSNIT employer 13%, Tier2 employer 5%, progressive PAYE bands; PayrollItem model updated with new fillable + decimal:2 casts + paid_at datetime cast; PayrollRun model adds 5 aggregate accessors: total_ssnit_employee, total_tier2_employee, total_paye, total_ssnit_employer, total_tier2_employer; PayrollService::runPayroll() rewritten to compute Ghana statutory deductions per staff, taxable_income = gross − ssnitEmployee − tier2Employee, computePaye() progressive band loop, net = gross + allowances − deductions − ssnit_employee − tier2_employee − paye, bulk insert via PayrollItem::insert; PayrollController::markPaid() validates payment_method + paid_at, updates payment_status=paid; route PATCH /payroll/{run}/items/{item}/pay under permission:payroll.create; payroll/index.blade.php: inner items table adds − Statutory column (ssnit+tier2+paye combined) + Status badge column + Actions column with Payslip link + per-row Alpine x-data Mark Paid inline form (Method select + Date input + Confirm/Cancel); Remittance Summary panel below items table showing Net Disbursement + SSNIT Emp + Tier2 Emp + PAYE→GRA + Employer Liability; payslip-pdf.blade.php: Statutory Deductions section with named SSNIT 5.5%/Tier2 5%/PAYE rows, Other Deductions section only if manual deductions > 0, net pay box updated, greyed Employer Contributions informational block; paid_at + payment_method displayed on payslip when paid; action required: php artisan tenants:migrate) (2 tenant migrations: class_registers UUID, lesson_plans UUID; ClassRegister + LessonPlan models with HasUuids; RegisterController: index (role-scoped classes/subjects via SubjectTeacherAssignment for teachers, all for admin; loads existing register entry + history; week-based lesson plan listing), store (updateOrCreate by teacher/class/section/subject/date), exportPdf (monthly dompdf A4); LessonPlanController: store (updateOrCreate, snaps week_start to Monday), update, destroy (ownership check); two-tab view (Class Register + Lesson Plans) with Alpine registerPage() — cascading class→section for both register filter and lesson plan modal; weekly navigation with prev/next links; lesson plan cards with inline edit via Alpine x-data={editing}; register filter loads entry form + history table; monthly PDF export via GET /register/pdf/{staff}/{month}; register.view/create/manage permissions; teacher gets register.view+create; sidebar Register nav item) (leave_requests UUID migration; LeaveRequest model with HasUuids, leave_type_label + leave_days accessors; LeaveController: index, store, approve, reject; two-tab view: My Requests (submit form + history list) + All Requests admin tab with inline reject form powered by Alpine; LeaveRequestSubmitted notification → school_admin on new request; LeaveRequestDecided notification → staff user on approve/reject; leave.view + leave.manage permissions seeded; school_admin gets both via \$all, teacher + accountant get leave.view; StaffAttendance integration: AttendanceController::staff() pre-marks on_leave from approved LeaveRequest records overlapping the selected date; SaveStaffAttendanceRequest allows on_leave status; On Leave button + badge added to staff attendance view; Leave nav item in sidebar after Payroll; 4 routes under permission:leave.view) (FinancialSummaryService::build(); income from fee_payments joined with fee_structures filtered by term or academic_year; expenses filtered by date range within year/term; both grouped by category + monthly trend; ReportController extended with FinancialSummaryService injection + financial data loading when tab=financial + financialPdf() method; Financial Summary tab added to reports/index.blade.php with Alpine financialYearId/financialTermId state + cascading year→term filter + Chart.js grouped bar chart for monthly income vs expenses + 3-card summary + income-by-fee-item + expense-by-category tables + Export PDF link; financial-pdf.blade.php A4 landscape self-contained dompdf with summary cards, two-column breakdown tables, monthly trend table; route GET /reports/financial/pdf) (3 tenant migrations: salary_structures, payroll_runs uuid, payroll_items uuid; SalaryStructure/PayrollRun/PayrollItem models; HasOne salaryStructure() added to Staff; PayrollService::runPayroll() wrapped in DB::transaction, bulk-inserts payroll items with manually generated UUIDs; PayrollService::logAsExpense() creates Expense record under Salaries category; PayrollController: index, updateSalaryStructure PATCH, runPayroll POST, downloadPayslip GET, logAsExpense POST; payroll/index.blade.php with Alpine two-tab layout: Salary Structures table with per-row edit modal + Payroll Runs table with collapsible staff items and per-item payslip download; payslip-pdf.blade.php self-contained dompdf with school header, itemised earnings/deductions tables, net pay highlighted box; permissions payroll.view/create/edit added to all list + school_admin + accountant roles; 5 routes in routes/tenant.php; Payroll nav item in sidebar-nav.blade.php; action required: run php artisan tenants:migrate)
+**Next:** Feature 52 — Outbound Webhook System
 
 ---
 
@@ -76,7 +76,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ### Phase 9 — Growth Features
 
 - [x] 32 Subject-Teacher Assignments (subject_teacher_assignments table; add/remove on staff profile; attendance + exam marks scoped to assigned classes/subjects for teachers)
-- [ ] 33 Staff Leave Management
+- [x] 33 Staff Leave Management
 - [x] 34 Parent Portal (parent_student pivot many-to-many; admin creates/links/unlinks parent accounts on student profile; parent role gets dedicated /my-children portal with child selector, fee status, attendance summary, published exam results; /dashboard and /fees redirect parents to portal; "My Children" sidebar nav for parent role)
 - [x] 35 Homework & Assignment Management (assignments + assignment_submissions tables; AssignmentController + SubmissionController; 5 new permissions seeded per role; multi-role /assignments view — teacher/admin CRUD + grading modal, student Pending/Submitted/Overdue tabs with inline submit form; sidebar nav item; dashboard badges for teachers/students)
 - [x] 36 Disciplinary & Behavior Tracking
@@ -87,17 +87,18 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 41 Attendance Analytics & Chronic Absentee Reports
 - [x] 42 Online Admission Application
 - [x] 43 Student Transcript Generation
-- [ ] 44 Multi-Currency & Locale Support
-- [ ] 45 Data Export, Backup & Privacy Tools
-- [ ] 46 REST API (Sanctum)
+- [x] 44 Multi-Currency & Locale Support
+- [x] 45 Data Export, Backup & Privacy Tools
+- [x] 46 REST API (Sanctum)
 
 ### Phase 10 — Competitive Advantages
 
 - [ ] 47 Platform Self-Service Billing
-- [ ] 48 Payroll & Staff Salary Management
+- [x] 48 Payroll & Staff Salary Management
+- [x] 48b Ghana Payroll Tax Compliance & Payment Tracking
 - [ ] 49 Payment Plans / Installment Support
-- [ ] 50 Financial P&L Dashboard
-- [ ] 51 Teacher Class Register & Lesson Plans
+- [x] 50 Financial P&L Dashboard
+- [x] 51 Teacher Class Register & Lesson Plans
 - [ ] 52 Outbound Webhook System
 - [ ] 53 Custom Domain Support (Complete Feature 22)
 - [ ] 54 Multi-Language UI Support
@@ -1438,6 +1439,205 @@ Applied consistent submit-disable pattern (Alpine `submitting` state, `@submit="
 **Show view button**: `$canDownloadTranscript` boolean passed from `StudentController::show()`. Computed from `$hasPublishedResults && (isAdmin || isOwn || isParent)`. Button is a simple `<a href="…/transcript">` link — not a form POST.
 
 **PDF design**: DejaVu Sans font, A4 portrait. Section hierarchy: year banner (blue) → term sub-header (blue-left-border) → exam label row (gray) → results table → year cumulative row (blue). Overall cumulative block at bottom (navy). Attendance shown as color-coded pill: green ≥80%, orange ≥60%, red <60%.
+
+---
+
+### 44 — Multi-Currency & Locale Support
+
+**Migration** `2026_06_26_000001_add_currency_to_school_profile.php`: adds `currency_code` (string 3, default `'GHS'`) and `currency_symbol` (string 5, default `'₵'`) to `school_profile`.
+
+**`app/Helpers/Money.php`**: global `format_money(float $amount, string $symbol = '₵'): string` helper — returns `$symbol . ' ' . number_format($amount, 2)`. Auto-loaded via `composer.json` `autoload.files`. Run `composer dump-autoload` after adding.
+
+**ViewComposer** (`AppServiceProvider`): fetches `SchoolProfile::first()` once per request, shares both `$schoolProfile` and `$currencySymbol` (`$profile?->currency_symbol ?? '₵'`) into `layouts.tenant` and `tenant.auth.login`.
+
+**School profile settings** (`settings/school-profile.blade.php`): Currency section with `<select name="currency_code">` (GHS/NGN/KES/USD/EUR options) and a hidden `<input name="currency_symbol">` auto-populated via Alpine `x-data` options map `@change` handler.
+
+**PaystackService**: reads `currency_code` from `SchoolProfile::first()?->currency_code ?? config('paystack.currency', 'GHS')` — dynamic per-school Paystack currency.
+
+**PDF views**: PDF blades don't go through `layouts.tenant` so they don't get the ViewComposer `$currencySymbol`. Each PDF view has `@php $currencySymbol = $schoolProfile?->currency_symbol ?? '₵'; @endphp` at the top (except `fees-pdf.blade.php` which uses `$profile` not `$schoolProfile`, so uses `$profile?->currency_symbol ?? '₵'`).
+
+**Views updated**: `dashboard.blade.php`, `fees/index.blade.php`, `fees/my-fees.blade.php`, `parents/portal.blade.php`, `expenses/index.blade.php`, `reports/index.blade.php`, `students/show.blade.php` (flat discount), `fees/term-bill-pdf.blade.php`, `fees/receipt-pdf.blade.php`, `reports/fees-pdf.blade.php`.
+
+---
+
+### 45 — Data Export, Backup & Privacy Tools
+
+**Migration** `2026_06_26_000002_add_soft_deletes_to_students_staff_users.php`: adds `deleted_at` nullable timestamp column to `students`, `staff`, and `users` tables.
+
+**SoftDeletes on models**: `Student`, `Staff`, and `User` models all gain `SoftDeletes` trait. Route model binding auto-excludes soft-deleted records (restore/forceDelete methods use explicit `onlyTrashed()->findOrFail()`).
+
+**StudentController**: `destroy()` now soft-deletes (flash changed to "moved to trash"). Added `trash()` (index of `onlyTrashed()`), `restore(string $id)`, `forceDelete(string $id)`, `anonymize(Student)` (blanks PII fields, preserves academic records), `exportData(Request, Student)` (dispatches `ExportStudentDataJob`).
+
+**StaffController**: `destroy()` now soft-deletes both staff + user records. Added `trash()`, `restore(string $id)` (restores staff + user), `forceDelete(string $id)`.
+
+**ExportStudentDataJob**: dispatched with student_id, tenant_id, tenant_host, admin_email/name. Inside `$tenant->run()`: builds ZIP with `student.json`, `attendance.csv`, `exam_results.csv`, `fee_payments.csv`; saves to `storage/{tenantId}/exports/{uuid}.zip`; emails admin with `DataExportReadyMail`.
+
+**ExportAllSchoolDataJob**: same pattern — exports all known tenant tables as CSV files in one ZIP; emails admin.
+
+**DataExportReadyMail** + `resources/views/mail/data-export-ready.blade.php`: branded HTML email with download link button, export type, and expiry timestamp.
+
+**PrivacyController**: `index()` → `settings/privacy` view. `requestFullExport()` → dispatches `ExportAllSchoolDataJob`. `download(token)` → checks file exists + is <24h old, then streams ZIP.
+
+**Download URL pattern**: `GET /export/download/{uuid}` — no signed URL needed; controller verifies `settings.manage` permission and 24h file mtime. Files stored at `storage/app/{tenantId}/exports/{uuid}.zip`.
+
+**PurgeDeletedRecords command** (`schoolflow:purge-deleted`): iterates all tenants via `$tenant->run()`, hard-deletes students/staff/users with `deleted_at < 90 days ago`. Scheduled monthly in `Kernel.php`.
+
+**Routes**: `GET /students/trash` added to `students.view` group (before wildcard). `POST /students/{id}/restore`, `DELETE /students/{id}/force-delete` in `students.delete` group. `POST /students/{student}/anonymize` and `POST /students/{student}/export` in `students.edit`. Same pattern for staff. `GET /settings/privacy` + `POST /settings/privacy/export` in `settings.manage`. `GET /export/download/{token}` in auth group.
+
+**Views**: `students/trash.blade.php`, `staff/trash.blade.php`, `settings/privacy.blade.php`. "Data & Privacy" tab added to all 6 settings sub-navs. Student show page gains Export Data + Anonymise buttons (inside `students.edit` guard, next to Edit).
+
+---
+
+### 46 — REST API (Sanctum)
+
+**Migration** (`database/migrations/tenant/2026_06_26_000003_create_personal_access_tokens_table.php`): Creates `personal_access_tokens` in the tenant DB with `string tokenable_type` and `string tokenable_id` (not the default `morphs` which uses `unsignedBigInteger` — incompatible with tenant Users' UUID PKs). Manual composite index on `[tokenable_type, tokenable_id]`.
+
+**Model** (`User`): `HasApiTokens` trait added (from `Laravel\Sanctum\HasApiTokens`). Sanctum reads from the current default connection, which stancl/tenancy already switches to the tenant DB before `auth:sanctum` runs.
+
+**API Resource classes** (`app/Http/Resources/Api/`):
+- `StudentResource` — id, admission_no, full_name, DOB, gender, class/section name, guardian info, status, created_at
+- `AttendanceResource` — id, student_id, date, status, note, marked_by
+- `ExamResultResource` — id, exam_id/name/term, subject_id/name, marks, grade, remarks
+- `FeeStatusResource` — wraps `FeeStatusService` output array; fee_structure_id, fee_item, term, billing_cycle, original/effective amount, has_discount, paid/outstanding/status, due_date
+
+**API Controllers** (`app/Http/Controllers/Tenant/Api/`):
+- `StudentApiController`: `index()` (paginated 50, filterable by class/status/search), `show(Student)`, `attendance(Student)` (date-range filterable, checks attendance.view), `exams(Student)` (published only, checks exams.view)
+- `AttendanceApiController`: `store()` — bulk mark attendance for a `records[]` array; checks `tokenCan('write')` first (read-only tokens rejected); idempotent via `updateOrCreate`; returns saved count + per-row errors
+- `FeeApiController`: `show(Student)` — calls `FeeStatusService::getStudentFeeItems()`, returns full discount-aware status array
+- `AnnouncementApiController`: `index()` — paginated 25, includes meta pagination block
+
+**Token management** (`AccountController`): `createToken(Request)` — validates `token_name` (max 100) + `token_scope` (in: read-only, full); abilities `['read']` or `['read','write']`; flashes `new_token` + `new_token_name` to session for one-time display. `revokeToken(Request, string $tokenId)` — deletes token owned by current user.
+
+**Routes** (`routes/tenant.php`):
+- Token management (inside auth group): `POST /account/tokens` + `DELETE /account/tokens/{tokenId}`
+- API group (outside auth group, inside domain group): `prefix('api/v1')`, `middleware(['auth:sanctum','throttle:60,1'])`, `withoutMiddleware(VerifyCsrfToken)`. Seven endpoints — GET /students, /students/{id}, /students/{id}/attendance, /students/{id}/exams, POST /attendance, GET /fees/{student}, GET /announcements.
+
+**Exception handler** (`app/Exceptions/Handler.php`): `isApiRequest()` checks `$request->is('api/*') || $request->expectsJson()`. Returns JSON for `AuthenticationException` (401), `AuthorizationException` (403), `ValidationException` (422), `HttpExceptionInterface` (status code), and generic 500 on production.
+
+**UI** (`tenant/account/edit.blade.php`): "API Tokens" card appended below Password card. Table of active tokens (name, scope badge, created, last used, revoke). New-token one-time display banner (mono code + clipboard copy button). Generate Token modal (token name + scope radio). Alpine component manages `showCreateModal`, `showNewToken`, `newToken`, `copied`, `submitting` state.
+
+**Token scope enforcement**: `tokenCan('write')` checked explicitly in `AttendanceApiController::store()` — read-only tokens get a 403 before any DB write. All other API endpoints are read-only and don't need this check.
+
+**Action required**: Run `php artisan tenants:migrate` to create the `personal_access_tokens` table in all existing tenant databases.
+
+### 51 — Teacher Class Register & Lesson Plans
+
+**Migrations**: `class_registers` (UUID; teacher_id FK→staff; class_id FK→school_classes; section_id nullable FK→sections; subject_id FK→subjects; date; topic_covered string; notes text nullable) and `lesson_plans` (UUID; teacher_id; subject_id; class_id; section_id nullable; week_start date; objectives text nullable; content text).
+
+**Models**: `ClassRegister` + `LessonPlan` — both `HasUuids`; date/week_start cast; teacher (BelongsTo Staff), schoolClass, section, subject relations.
+
+**RegisterController**:
+- `index()` — for teacher role: filters classes/subjects via `SubjectTeacherAssignment::where('staff_id', $staffId)`; for admin: all classes + subjects; loads `existingEntry` + `registerHistory` (last 30, same teacher/class/section/subject) if reg_class_id + reg_subject_id present in query; loads `lessonPlans` for selected week_start when tab=plans; snaps week_start to Monday via `Carbon::startOfWeek(Carbon::MONDAY)`.
+- `store()` — `updateOrCreate([teacher_id, class_id, section_id, subject_id, date], [topic_covered, notes])`; redirects back with filter params.
+- `exportPdf(Staff, month)` — month param is `Y-m` string; loads all class_registers for staff in that month; renders dompdf A4 portrait; accessible if `register.manage` OR own staff record.
+
+**LessonPlanController**:
+- `store()` — snaps `week_start` to Monday; `updateOrCreate([teacher_id, subject_id, class_id, section_id, week_start], [objectives, content])`.
+- `update()` / `destroy()` — ownership check: `abort_unless(canManage || plan->teacher_id === staff->id)`.
+
+**View** (`tenant/register/index.blade.php`): Alpine `registerPage(initialTab, classesData, subjectsData, selectedClassId, selectedSectionId, currentWeekStart)`. State: `tab`, `regClassId`, `regSectionId` (register filter), `createModal`, `planWeekStart`, `planClassId`, `planSectionId` (lesson plan modal). Computed: `sectionsForClass` (register), `planSectionsForClass` (modal).
+
+- Class Register tab: filter bar (GET form with tab=register, class/section/subject/date + optional teacher for admin) → Load button. If filter active: 2-col layout (entry form left + history table right). Entry form uses `updateOrCreate` pattern (button says "Update Entry" if existing). History table shows Date/Topic/Notes, last 30 entries.
+- Lesson Plans tab: week navigation bar (prev/next links, "This week" link, Mon–Fri day chips display, admin teacher filter form). Plans shown as card grid (md:grid-cols-2 xl:grid-cols-3). Each card: Alpine `x-data={editing:false}` — read view + inline edit form (PATCH). Delete = form with confirm. "New Plan" button → full-screen modal with week_start/subject/class/section/objectives/content.
+
+**PDF** (`tenant/register/pdf.blade.php`): A4 portrait self-contained dompdf; staff info 2-cell table row; register table (Date, Class, Section badge, Subject, Topic Covered, Notes); row striping.
+
+**Permissions**: `register.view`, `register.create`, `register.manage` added to `$all`; school_admin gets all three; teacher gets `register.view` + `register.create`.
+
+**Routes** under `permission:register.view`: `GET /register` (index), `GET /register/pdf/{staff}/{month}` (exportPdf). Under `permission:register.create`: `POST /register` (store), `POST /lesson-plans` (store), `PATCH /lesson-plans/{id}` (update), `DELETE /lesson-plans/{id}` (destroy).
+
+**Action required**: `php artisan tenants:migrate` to create `class_registers` and `lesson_plans` tables.
+
+### 33 — Staff Leave Management
+
+**Migration** (`leave_requests`): UUID PK; staff_id FK → staff (cascade); leave_type enum (sick/annual/maternity/paternity/personal/other); start_date/end_date date; reason text; status enum (pending/approved/rejected) default pending; approved_by FK → users (null on delete); approved_at timestamp nullable; rejection_reason text nullable.
+
+**LeaveRequest model**: HasUuids; `leave_type_label` accessor (human-readable); `leave_days` accessor (diffInDays + 1).
+
+**LeaveController**:
+- `index()` — loads `currentStaff` (Staff where user_id = Auth::id()); `myRequests` paginated on `my_page`; if `canManage`: `pendingRequests` (pending, oldest start_date) + `historyRequests` paginated on `hist_page`
+- `store()` — validates leave_type/start_date/end_date/reason; finds staff by user_id; creates LeaveRequest; sends `LeaveRequestSubmitted` to all User::role('school_admin')
+- `approve(LeaveRequest)` — `abort_unless(leave.manage)` in controller (route is leave.view); updates status=approved/approved_by/approved_at; notifies staff user via `LeaveRequestDecided`
+- `reject(Request, LeaveRequest)` — same guard; validates rejection_reason; updates status=rejected; notifies staff user
+
+**Notifications**:
+- `LeaveRequestSubmitted`: mail to school_admin users; subject "Leave Request — {staffName}"; body: type + dates + review prompt
+- `LeaveRequestDecided`: mail to staff user; subject "Leave Request {Approved/Rejected} — {type}"; shows rejection_reason if rejected
+
+**View** (`tenant/leave/index.blade.php`): Alpine `leavePage(initialTab)` — initialTab = 'all' if canManage else 'my'. My Requests tab: submit form card (1/3 col) + history table (2/3 col). All Requests tab: pending table with Approve form + inline Reject textarea (Alpine `rejectId`/`rejectReason` state, toggle per row) + history table. Status badges: pending=bg-warning-light text-warning; approved=bg-success-lightest text-success-foreground; rejected=bg-error-light text-error. Pending count badge shown on All Requests tab button.
+
+**Permissions**: `leave.view` + `leave.manage` added to `$all`; school_admin gets both via `$all`; teacher and accountant get `leave.view`.
+
+**StaffAttendance integration**: `AttendanceController::staff()` queries approved LeaveRequests overlapping `$date` (start_date ≤ date ≤ end_date); for each matching staff with no existing attendance record, injects a virtual `StaffAttendance` with `status = 'on_leave'` into `$existingRecords`; `SaveStaffAttendanceRequest` validation updated to allow `on_leave`; staff attendance view adds "On Leave" button (`bg-accent/10 text-accent`) and read-only badge.
+
+**Routes** (all under `permission:leave.view` middleware):
+- `GET /leave` → `index`
+- `POST /leave` → `store`
+- `PATCH /leave/{leaveRequest}/approve` → `approve`
+- `PATCH /leave/{leaveRequest}/reject` → `reject`
+
+**Action required**: `php artisan tenants:migrate` to create `leave_requests` table in all tenant databases.
+
+### 50 — Financial P&L Dashboard
+
+**FinancialSummaryService** (`app/Services/FinancialSummaryService.php`):
+- `build(string $academicYearId, ?string $termId): array` — resolves date range from AcademicYear or Term; uses closure-based query factories to avoid Query Builder clone issues
+- Income: `FeePayment` JOIN `fee_structures` WHERE `term_id` or `academic_year_id`; grouped by `fee_item` for breakdown; grouped by YEAR/MONTH(paid_at) for trend
+- Expenses: `Expense` JOIN `expense_categories` WHERE `expenses.date BETWEEN dateFrom AND dateTo`; grouped by category name; grouped by YEAR/MONTH(date) for trend
+- `buildMonthlyTrend()`: iterates month-by-month from dateFrom to dateTo using `keyBy("{yr}-{mo}")` lookup for O(1) access; returns array of {month, income, expenses}
+- Date fallback: if year/term have no start/end dates, defaults to `now()->startOfYear()` / `now()->endOfYear()`
+
+**ReportController** additions:
+- Constructor gains `FinancialSummaryService $financialSummaryService`
+- `index()`: gains `$academicYears = AcademicYear::orderByDesc('start_date')->get()`; `$financialReport = null`; `$selectedFinancialYearId`, `$selectedFinancialTermId` from request; loads financial report when `$activeTab === 'financial' && request has financial_year_id`; passes all to view
+- `financialPdf()`: validates `financial_year_id` (required uuid) + `financial_term_id` (nullable uuid); calls service; renders `financial-pdf.blade.php` A4 landscape
+
+**reports/index.blade.php** additions:
+- PHP block: `$financialChartData` (labels/income/expenses arrays); `$academicYearsForJs` (id, name, terms[id,name]); passed as 4 extra args to `reportsPage()`
+- Alpine: `financialYearId`, `financialTermId` state; computed `financialTermsForYear` (cascading term filter); `initFinancialChart()` draws Chart.js grouped bar (income=green, expenses=red); `init()` calls `initFinancialChart()` when tab=financial
+- "Financial Summary" tab button added after "Academic Analytics"
+- Tab content: filter bar (Academic Year select → Term select cascading via Alpine); 3 summary cards (Total Income/green, Total Expenses/red, Net Balance/colour-coded); Export PDF link; monthly trend grouped bar chart (`id="financialTrendChart"`, 220px height); two-column breakdown tables (income by fee item, expenses by category); empty state
+
+**financial-pdf.blade.php** (A4 landscape, self-contained dompdf):
+- Header: school name + "Financial Summary Report" + period label + generated date
+- Summary cards: display:table three-cell row with income/expense/net figures
+- Two-column breakdown: `display:table-cell` 50%/50% with breakdown-table for each
+- Monthly trend table: month | income | expenses | net (net colour-coded)
+- All negative net shown as (amount) in red
+
+**Route**: `GET /reports/financial/pdf` → `ReportController::financialPdf()` (inside permission:reports.view group)
+
+### 48 — Payroll & Staff Salary Management
+
+**Migrations** (3 tenant migrations):
+- `salary_structures`: standard bigint id; `staff_id` foreignUuid unique (one-to-one); `gross` decimal(15,2); `allowances`/`deductions` JSON (default `{}`); `effective_from` date nullable
+- `payroll_runs`: uuid primary key; `month` tinyint unsigned, `year` smallint unsigned, unique([month,year]); `status` enum(draft|processed); `processed_by` foreignUuid nullable→users nullOnDelete; `processed_at` timestamp nullable
+- `payroll_items`: uuid primary key; `payroll_run_id` foreignUuid cascadeOnDelete; `staff_id` foreignUuid cascadeOnDelete; `gross`/`allowances_total`/`deductions_total`/`net` decimal(15,2); `payment_status` enum(pending|paid)
+
+**Models**: `SalaryStructure` (hasOne via staff_id; computed accessors: allowances_total, deductions_total, net); `PayrollRun` (HasUuids; period_label/month_name/total_net accessors); `PayrollItem` (HasUuids). `Staff::salaryStructure()` HasOne added.
+
+**PayrollService**:
+- `runPayroll(int $month, int $year)` — DB::transaction; creates PayrollRun(status:processed); queries SalaryStructure whereHas active staff; bulk-inserts PayrollItem rows with manually generated Str::uuid() IDs
+- `logAsExpense(PayrollRun)` — firstOrCreate 'Salaries' ExpenseCategory; creates Expense for total net pay, date = end of month, description = "Payroll — {month year}"
+
+**PayrollController** (5 actions):
+- `index()` — active staff with salaryStructure + paginated runs with items.staff
+- `updateSalaryStructure(PATCH, Staff)` — permission:payroll.edit; SalaryStructure::updateOrCreate with array_merge defaults for allowances/deductions keys
+- `runPayroll(POST)` — permission:payroll.create; checks for existing run; calls service; redirects to ?tab=runs
+- `downloadPayslip(GET, PayrollRun, PayrollItem)` — permission:payroll.view; aborts if item not in run; streams dompdf PDF
+- `logAsExpense(POST, PayrollRun)` — permission:payroll.create; aborts if status≠processed
+
+**Routes** (`routes/tenant.php`): `GET /payroll`, `PATCH /payroll/salary/{staff}`, `POST /payroll/run`, `GET /payroll/{run}/{item}/payslip`, `POST /payroll/{run}/expense`
+
+**UI** (`tenant/payroll/index.blade.php`): Alpine two-tab layout (tab state from `?tab=` query param). Tab 1 (Salary Structures): table of active staff with gross/allowances/deductions/net columns; per-row Edit/Set Up button opens shared edit modal with dynamic `:action` URL, gross field, effective_from, 4-field allowances grid (housing/transport/medical/other), 4-field deductions grid (tax/pension/loan/other). Tab 2 (Payroll Runs): collapsible rows (chevron toggle via `expandedRun`); each run shows period, status badge, staff count, total net, processed by; Log Expense form per processed run; expanded view shows nested staff items table with individual payslip Download links.
+
+**Payslip PDF** (`tenant/payroll/payslip-pdf.blade.php`): Self-contained inline CSS; school header + payslip title + period; staff info table; Earnings table (gross + itemised allowances from SalaryStructure.allowances if available, else total); Deductions table (itemised from SalaryStructure.deductions); dark-blue Net Pay highlighted box; signature lines; generated-on footer.
+
+**Permissions**: `payroll.view`, `payroll.create`, `payroll.edit` added to all list; school_admin gets all; accountant gets all three.
+
+**Sidebar**: "Payroll" nav item added after "Expenses" (permission: payroll.view).
+
+**Action required**: Run `php artisan tenants:migrate` to create the 3 payroll tables in all existing tenant databases.
 
 ---
 

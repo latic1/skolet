@@ -23,6 +23,17 @@
         'trendLabels'   => collect($trendData)->pluck('exam_name')->values()->toArray(),
         'trendAverages' => collect($trendData)->pluck('average')->values()->toArray(),
     ];
+    $financialChartData = [
+        'labels'   => $financialReport ? collect($financialReport['monthly_trend'])->pluck('month')->values()->toArray() : [],
+        'income'   => $financialReport ? collect($financialReport['monthly_trend'])->pluck('income')->values()->toArray() : [],
+        'expenses' => $financialReport ? collect($financialReport['monthly_trend'])->pluck('expenses')->values()->toArray() : [],
+    ];
+    // Pass academic years with their terms for the financial filter cascade
+    $academicYearsForJs = $academicYears->map(fn($y) => [
+        'id'    => $y->id,
+        'name'  => $y->name,
+        'terms' => $y->terms->map(fn($t) => ['id' => $t->id, 'name' => $t->name])->values(),
+    ])->values()->toArray();
 @endphp
 <div x-data="reportsPage(
     {{ Js::from($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'sections' => $c->sections->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values()])->values()) }},
@@ -30,7 +41,11 @@
     '{{ $selectedSection }}',
     '{{ $activeTab }}',
     {{ Js::from($examsForJs) }},
-    {{ Js::from($chartData) }}
+    {{ Js::from($chartData) }},
+    {{ Js::from($financialChartData) }},
+    {{ Js::from($academicYearsForJs) }},
+    '{{ $selectedFinancialYearId }}',
+    '{{ $selectedFinancialTermId }}'
 )">
 
     {{-- Page header --}}
@@ -93,6 +108,15 @@
             type="button"
         >
             Academic Analytics
+        </button>
+        <button
+            @click="activeTab = 'financial'"
+            :class="activeTab === 'financial'
+                ? 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-accent text-accent'
+                : 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors border-transparent text-text-secondary hover:text-text-primary'"
+            type="button"
+        >
+            Financial Summary
         </button>
     </div>
 
@@ -847,17 +871,202 @@
 
     </div>{{-- /academic tab --}}
 
+    {{-- ============================================================ --}}
+    {{-- FINANCIAL SUMMARY TAB                                        --}}
+    {{-- ============================================================ --}}
+    <div x-show="activeTab === 'financial'" x-cloak>
+
+        {{-- Filter card --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card p-5 mb-5">
+            <form method="GET" action="{{ $host }}/reports" class="flex flex-wrap items-end gap-4">
+                <input type="hidden" name="tab" value="financial">
+
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Academic Year</label>
+                    <select name="financial_year_id" x-model="financialYearId" @change="financialTermId = ''"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">Select year…</option>
+                        <template x-for="y in academicYearsData" :key="y.id">
+                            <option :value="y.id" :selected="y.id === financialYearId" x-text="y.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="flex-1 min-w-[160px]">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term (optional)</label>
+                    <select name="financial_term_id" x-model="financialTermId"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">Full Year</option>
+                        <template x-for="t in financialTermsForYear" :key="t.id">
+                            <option :value="t.id" :selected="t.id === financialTermId" x-text="t.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors shrink-0">
+                    Load Summary
+                </button>
+            </form>
+        </div>
+
+        @if($activeTab === 'financial' && $financialReport !== null)
+
+        {{-- Summary cards --}}
+        <div class="grid grid-cols-3 gap-4 mb-5">
+            <div class="bg-surface border border-border rounded-2xl shadow-card p-5">
+                <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Total Income</p>
+                <p class="text-2xl font-semibold text-success-foreground">{{ format_money($financialReport['income_total'], $currencySymbol) }}</p>
+                <p class="text-xs text-text-muted mt-1">Fee collections received</p>
+            </div>
+            <div class="bg-surface border border-border rounded-2xl shadow-card p-5">
+                <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Total Expenses</p>
+                <p class="text-2xl font-semibold text-error">{{ format_money($financialReport['expense_total'], $currencySymbol) }}</p>
+                <p class="text-xs text-text-muted mt-1">Recorded expenditure</p>
+            </div>
+            <div class="bg-surface border border-border rounded-2xl shadow-card p-5">
+                <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Net Balance</p>
+                <p class="text-2xl font-semibold {{ $financialReport['net'] >= 0 ? 'text-success-foreground' : 'text-error' }}">
+                    {{ format_money(abs($financialReport['net']), $currencySymbol) }}
+                    @if($financialReport['net'] < 0)<span class="text-base font-normal">(deficit)</span>@endif
+                </p>
+                <p class="text-xs text-text-muted mt-1">Income minus expenses</p>
+            </div>
+        </div>
+
+        {{-- Export + Period --}}
+        <div class="flex items-center justify-between mb-4">
+            <p class="text-xs text-text-muted">
+                Period:
+                <span class="font-medium text-text-primary">
+                    @if($financialReport['term'])
+                        {{ $financialReport['term']->name }} — {{ $financialReport['academic_year']->name }}
+                    @else
+                        {{ $financialReport['academic_year']->name }} (Full Year)
+                    @endif
+                </span>
+                · {{ $financialReport['date_from']->format('d M Y') }} – {{ $financialReport['date_to']->format('d M Y') }}
+            </p>
+            <a href="{{ $host }}/reports/financial/pdf?financial_year_id={{ $selectedFinancialYearId }}&financial_term_id={{ $selectedFinancialTermId }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-surface border border-border rounded-md hover:bg-surface-secondary transition-colors text-text-primary">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Export PDF
+            </a>
+        </div>
+
+        {{-- Monthly trend chart --}}
+        @if(count($financialReport['monthly_trend']) > 0)
+        <div class="bg-surface border border-border rounded-2xl shadow-card p-5 mb-5">
+            <h3 class="text-sm font-semibold text-text-primary mb-4">Monthly Income vs Expenses</h3>
+            <div style="height: 220px; position: relative;">
+                <canvas id="financialTrendChart"></canvas>
+            </div>
+        </div>
+        @endif
+
+        {{-- Breakdown tables --}}
+        <div class="grid grid-cols-2 gap-4">
+            {{-- Income breakdown --}}
+            <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
+                <div class="px-5 py-4 border-b border-border">
+                    <h3 class="text-sm font-semibold text-text-primary">Income by Fee Item</h3>
+                </div>
+                @if(empty($financialReport['income_by_category']))
+                <p class="px-5 py-8 text-sm text-text-muted text-center">No fee payments recorded.</p>
+                @else
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-border bg-surface-secondary">
+                            <th class="px-5 py-2.5 text-left text-xs font-semibold text-text-muted uppercase tracking-wide">Fee Item</th>
+                            <th class="px-5 py-2.5 text-right text-xs font-semibold text-text-muted uppercase tracking-wide">Collected</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        @foreach($financialReport['income_by_category'] as $row)
+                        <tr class="hover:bg-surface-secondary transition-colors">
+                            <td class="px-5 py-2.5 text-text-primary">{{ $row['label'] }}</td>
+                            <td class="px-5 py-2.5 text-right font-medium text-success-foreground">{{ format_money($row['amount'], $currencySymbol) }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-t-2 border-border bg-surface-secondary">
+                            <td class="px-5 py-2.5 text-xs font-semibold text-text-muted uppercase">Total</td>
+                            <td class="px-5 py-2.5 text-right font-semibold text-success-foreground">{{ format_money($financialReport['income_total'], $currencySymbol) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                @endif
+            </div>
+
+            {{-- Expense breakdown --}}
+            <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
+                <div class="px-5 py-4 border-b border-border">
+                    <h3 class="text-sm font-semibold text-text-primary">Expenses by Category</h3>
+                </div>
+                @if(empty($financialReport['expense_by_category']))
+                <p class="px-5 py-8 text-sm text-text-muted text-center">No expenses recorded for this period.</p>
+                @else
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-border bg-surface-secondary">
+                            <th class="px-5 py-2.5 text-left text-xs font-semibold text-text-muted uppercase tracking-wide">Category</th>
+                            <th class="px-5 py-2.5 text-right text-xs font-semibold text-text-muted uppercase tracking-wide">Spent</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        @foreach($financialReport['expense_by_category'] as $row)
+                        <tr class="hover:bg-surface-secondary transition-colors">
+                            <td class="px-5 py-2.5 text-text-primary">{{ $row['label'] }}</td>
+                            <td class="px-5 py-2.5 text-right font-medium text-error">{{ format_money($row['amount'], $currencySymbol) }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-t-2 border-border bg-surface-secondary">
+                            <td class="px-5 py-2.5 text-xs font-semibold text-text-muted uppercase">Total</td>
+                            <td class="px-5 py-2.5 text-right font-semibold text-error">{{ format_money($financialReport['expense_total'], $currencySymbol) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                @endif
+            </div>
+        </div>
+
+        @elseif($activeTab === 'financial')
+        {{-- No data yet --}}
+        <div class="bg-surface border border-border rounded-2xl shadow-card flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-14 h-14 rounded-xl bg-surface-secondary flex items-center justify-center mb-4">
+                <svg class="w-7 h-7 text-text-muted" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <p class="text-sm font-medium text-text-primary mb-1">No summary loaded</p>
+            <p class="text-xs text-text-muted">Select an academic year above and click Load Summary.</p>
+        </div>
+        @endif
+
+    </div>{{-- /financial tab --}}
+
 </div>{{-- /x-data --}}
 @endsection
 
 @push('scripts')
 <script>
-Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab, examsData, chartData) => ({
+Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab, examsData, chartData, financialChartData, academicYearsData, selectedFinancialYearId, selectedFinancialTermId) => ({
     activeTab,
     classId: selectedClassId || '',
     sectionId: selectedSectionId || '',
     academicTermId: '{{ $selectedTermId }}',
     academicExamId: '{{ $selectedExamId }}',
+    financialYearId: selectedFinancialYearId || '',
+    financialTermId: selectedFinancialTermId || '',
+    get financialTermsForYear() {
+        const y = academicYearsData.find(y => y.id === this.financialYearId);
+        return y ? y.terms : [];
+    },
 
     get currentClass() {
         return classes.find(c => c.id === this.classId) || null;
@@ -957,9 +1166,53 @@ Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeT
         }
     },
 
+    initFinancialChart() {
+        const canvas = document.getElementById('financialTrendChart');
+        if (!canvas || !financialChartData.labels.length) return;
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: financialChartData.labels,
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: financialChartData.income,
+                        backgroundColor: 'rgba(22,163,74,0.6)',
+                        borderColor: '#16a34a',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Expenses',
+                        data: financialChartData.expenses,
+                        backgroundColor: 'rgba(220,38,38,0.6)',
+                        borderColor: '#dc2626',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top', labels: { font: { size: 11 } } },
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
+                },
+            },
+        });
+    },
+
     init() {
         if (this.activeTab === 'academic') {
             this.$nextTick(() => this.initAcademicCharts());
+        }
+        if (this.activeTab === 'financial') {
+            this.$nextTick(() => this.initFinancialChart());
         }
     },
 }));

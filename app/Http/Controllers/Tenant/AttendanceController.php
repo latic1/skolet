@@ -16,6 +16,7 @@ use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\SubjectTeacherAssignment;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Term;
+use App\Models\Tenant\LeaveRequest;
 use App\Notifications\AbsenceAlert;
 use App\Notifications\LowAttendanceAlert;
 use App\Services\AttendanceReportService;
@@ -221,10 +222,27 @@ final class AttendanceController extends Controller
         $existingRecords = collect();
 
         if ($staffList->isNotEmpty()) {
+            $staffIds = $staffList->pluck('id');
+
             $existingRecords = StaffAttendance::where('date', $date)
-                ->whereIn('staff_id', $staffList->pluck('id'))
+                ->whereIn('staff_id', $staffIds)
                 ->get()
                 ->keyBy('staff_id');
+
+            // Pre-mark staff on approved leave with on_leave status if not already marked
+            $onLeaveStaffIds = LeaveRequest::where('status', 'approved')
+                ->whereIn('staff_id', $staffIds)
+                ->where('start_date', '<=', $date)
+                ->where('end_date', '>=', $date)
+                ->pluck('staff_id');
+
+            foreach ($onLeaveStaffIds as $staffId) {
+                if (! $existingRecords->has($staffId)) {
+                    $virtual         = new StaffAttendance();
+                    $virtual->status = 'on_leave';
+                    $existingRecords->put($staffId, $virtual);
+                }
+            }
         }
 
         return view('tenant.attendance.staff', compact(

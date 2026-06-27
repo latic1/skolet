@@ -833,3 +833,96 @@ After building any component — update this file with the component name, file 
 - Style: same as Edit button — `bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary`
 - Icon: download arrow SVG (`M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5…`)
 - Rendered before the Edit button in the flex row
+
+### Currency Select (School Profile Settings)
+**Files:** `resources/views/tenant/settings/school-profile.blade.php`, `app/Models/Tenant/SchoolProfile.php`, `database/migrations/tenant/2026_06_26_000001_add_currency_to_school_profile.php`
+**Description:** Dropdown to set the school's display currency; auto-fills a hidden `currency_symbol` input via Alpine.js.
+- Alpine pattern: `x-data="{ options: {'GHS':'₵','NGN':'₦','KES':'KSh','USD':'$','EUR':'€'}, selected: '…', get symbol() { return this.options[this.selected] ?? '₵'; } }"` on the `<select>`, `@change` writes symbol into hidden input.
+- Hidden input: `<input type="hidden" name="currency_symbol" id="currency_symbol" value="…">` — populated on load and on every select change.
+- Supported currencies: GHS (₵), NGN (₦), KES (KSh), USD ($), EUR (€).
+- Global helper: `format_money(float $amount, string $symbol): string` in `app/Helpers/Money.php` (autoloaded via `composer.json` files key). Used everywhere monetary amounts are displayed.
+- ViewComposer: `AppServiceProvider` shares `$currencySymbol` (from `SchoolProfile::first()?->currency_symbol ?? '₵'`) into `layouts.tenant` and `tenant.auth.login`.
+- PDF views: each fee PDF (`receipt-pdf`, `term-bill-pdf`, `fees-pdf`) sets `@php $currencySymbol = …; @endphp` at the top before using `format_money()`.
+
+### Class Register & Lesson Plans Page
+**Files:** `resources/views/tenant/register/index.blade.php`, `resources/views/tenant/register/pdf.blade.php`, `app/Http/Controllers/Tenant/RegisterController.php`, `app/Http/Controllers/Tenant/LessonPlanController.php`
+**Description:** Two-tab page for teacher class registers (daily lesson log) and weekly lesson plans. Teachers see only their own; admins see all with teacher filter.
+- Alpine component: `registerPage(initialTab, classesData, subjectsData, selectedClassId, selectedSectionId, currentWeekStart)` — state: `tab`, `regClassId`, `regSectionId` (register), `createModal`, `planWeekStart`, `planClassId`, `planSectionId` (lesson plan modal). Computed: `sectionsForClass`, `planSectionsForClass`.
+- **Class Register tab**: Filter bar (`bg-surface border border-border rounded-2xl shadow-card p-5`) with class/section (cascading Alpine), subject, date, optional teacher (admin only). Load button → GET ?tab=register&reg_class_id=...&reg_subject_id=...&reg_date=... If loaded: `lg:grid-cols-5` — entry form (col-span-2) + history table (col-span-3). Entry form uses `updateOrCreate` pattern (button label = "Update Entry" vs "Save Entry"). History table: Date | Topic | Notes (Notes hidden lg). Empty state: open-book SVG icon + prompt text.
+- **Lesson Plans tab**: Week navigation bar (prev/next chevron links, Mon–Fri day chip row, "This week" link). Admin: teacher filter form embedded. "New Plan" button (if register.create). Plans: card grid (`md:grid-cols-2 xl:grid-cols-3`). Each card uses Alpine `x-data={editing:false}` — read mode shows objectives + content sections; edit mode shows inline textareas + PATCH form. Delete = DELETE form with `onsubmit confirm`. Create modal: full-screen overlay (`fixed inset-0 z-50`), 2-col grid for week_start+subject and class+section, objectives textarea, content textarea.
+- `pdf.blade.php` — A4 portrait, self-contained dompdf; staff info 2-cell display:table row; register table with Date/Class/Subject/Topic/Notes; section shown as badge (`background:#dbeafe; color:#1e40af`); even-row striping.
+- Export PDF button in page header (links to `/register/pdf/{staff}/{month}`).
+- Nav item: "Register" between Leave and Announcements (checklist icon, `permission: register.view`).
+
+### Leave Management Page
+**Files:** `resources/views/tenant/leave/index.blade.php`, `app/Http/Controllers/Tenant/LeaveController.php`, `app/Models/Tenant/LeaveRequest.php`
+**Description:** Two-tab leave management page. Staff submit and track their own leave requests. Admins (leave.manage) see a pending queue with inline approve/reject actions and a history table.
+- Alpine component: `leavePage(initialTab)` — state: `{ tab }`. Initial tab = 'all' if user has leave.manage, else 'my'.
+- Tab bar: "My Requests" | "All Requests" (admin only) with pending count badge `bg-warning text-white rounded-full` on the All Requests button.
+- **My Requests tab**: 3+2 col grid. Left: submit form card (`bg-surface border border-border rounded-2xl shadow-card p-6`) with leave_type select, start_date/end_date date inputs (grid-cols-2), reason textarea. Right: history table with Type, Dates, Days (hidden md), Status, Reason (hidden lg) columns.
+- **All Requests tab (admin)**: Two separate cards. Pending Requests: table with Staff, Type, Dates, Days, Reason, Actions columns. Approve = POST form with confirm dialog. Reject = toggle button per row + inline textarea + Confirm Reject button (Alpine state: `{ rejectId, rejectReason }` inside `x-data` on the table wrapper). History: Staff, Type, Dates, Days, Status, Decided-by columns.
+- Status badges: `bg-warning-light text-warning` (Pending), `bg-success-lightest text-success-foreground` (Approved), `bg-error-light text-error` (Rejected).
+- On Leave badge/button in staff attendance: `bg-accent/10 text-accent` (both editable button and read-only badge).
+- Empty states: calendar icon for My Requests; checkmark icon for pending queue empty; text-only for history empty.
+- Routes: `GET /leave` (index), `POST /leave` (store), `PATCH /leave/{id}/approve`, `PATCH /leave/{id}/reject` — all under `permission:leave.view`.
+- Nav item: "Leave" between Payroll and Announcements in sidebar (calendar icon, `permission: leave.view`).
+
+### Financial Summary Tab (Reports Page)
+**Files:** `resources/views/tenant/reports/index.blade.php`, `resources/views/tenant/reports/financial-pdf.blade.php`, `app/Services/FinancialSummaryService.php`
+**Description:** "Financial Summary" tab added to the existing Reports page. Shows income vs expenses P&L summary for a selected academic year or term, with a Chart.js grouped bar chart and breakdown tables. PDF export available.
+- Tab button: added after "Academic Analytics" in the tab bar, same styling pattern (`border-b-2`, active=`border-accent text-accent`, inactive=`border-transparent text-text-secondary`).
+- Filter bar: `bg-surface border border-border rounded-2xl shadow-card p-5` card with Academic Year `<select>` + cascading Term `<select>` ("Full Year" default). Alpine `x-model="financialYearId"` + computed `financialTermsForYear` filters term options. Form GET action `?tab=financial`.
+- Alpine additions to `reportsPage()`: 4 new parameters: `financialChartData`, `academicYearsData`, `selectedFinancialYearId`, `selectedFinancialTermId`. New state: `financialYearId`, `financialTermId`. Computed: `financialTermsForYear`. Method: `initFinancialChart()` (Chart.js grouped bar; income=`rgba(22,163,74,0.6)`, expenses=`rgba(220,38,38,0.6)`). `init()` updated to call `initFinancialChart()` when `activeTab === 'financial'`.
+- Summary cards: `grid grid-cols-3 gap-4`. Total Income (text-success-foreground), Total Expenses (text-error), Net Balance (colour-coded: success if ≥ 0, error if < 0; shows "(deficit)" label when negative).
+- Monthly trend chart: `id="financialTrendChart"`, `height: 220px` wrapper, Chart.js `type: 'bar'` with two datasets (Income + Expenses), legend displayed at top.
+- Export PDF link: top-right, ghost button style (`bg-surface border border-border`), links to `/reports/financial/pdf?financial_year_id=...&financial_term_id=...`.
+- Income breakdown table: fee_item | collected (text-success-foreground); total footer row.
+- Expense breakdown table: category | spent (text-error); total footer row.
+- Both tables in `grid grid-cols-2 gap-4` layout, each in `bg-surface border border-border rounded-2xl shadow-card overflow-hidden`.
+- Empty state (no data loaded): icon + text, same pattern as other report tabs.
+- `financial-pdf.blade.php` A4 landscape: display:table summary card row (3 cells) + display:table-cell 50%/50% breakdown tables + monthly trend table. Income amounts in `#16a34a`, expenses in `#dc2626`, negative net shown as `(amount)`. Self-contained DejaVu Sans.
+
+### Payroll Page (Two-Tab Layout)
+**File:** `resources/views/tenant/payroll/index.blade.php`
+**Description:** Full payroll management page with Alpine-driven tab switching, a per-row salary structure edit modal, a run-payroll modal, and collapsible payroll run rows with nested payslip download links.
+- Page header: title + "Run Payroll" primary button (`bg-accent text-accent-foreground`) gated by `@can('payroll.create')`.
+- Tab bar: `border-b border-border` container; active tab: `border-accent text-accent`; inactive: `border-transparent text-text-muted hover:text-text-primary`.
+- Tab state: `x-data="{ tab: '{{ request()->get('tab', 'salary') }}' }"` — persists via `?tab=runs` redirect after payroll run.
+- Tab 1 — Salary Structures: `bg-surface border border-border rounded-2xl shadow-card overflow-hidden` table; columns: Staff Member | Role | Gross | + Allowances (text-success) | − Deductions (text-error) | Net Pay (font-semibold) | Action. Empty state: user-group icon + description. "Edit" / "Set Up" button per row triggers `openEdit(data)`.
+- Salary Structure Edit Modal: `fixed inset-0 z-50 flex items-center justify-center`, `absolute inset-0 bg-black/50` backdrop. Card: `bg-surface rounded-2xl shadow-xl max-w-lg max-h-[90vh] overflow-y-auto`. Dynamic form action via Alpine `:action`. Fields: Gross (number), Effective From (date), 4-field Allowances grid (housing/transport/medical/other, `text-success` section header), 4-field Deductions grid (tax/pension/loan/other, `text-error` section header). Inputs: `px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:ring-2 focus:ring-accent/30`.
+- Tab 2 — Payroll Runs: same card wrapper; table rows are collapsible via `expandedRun === id` toggle; chevron `transition-transform rotate-90` when open. Each run header div shows: period label | status badge (success-lightest for processed, surface-secondary for draft) | staff count | total net | processed by | "Log Expense" form button (gated by `@can('payroll.create')`). Expanded section: `overflow-x-auto` wrapper + inner table with pl-12 indent showing: Staff | Gross | + Allow. (text-success) | − Deduct. (text-error) | − Statutory (ssnit+tier2+paye combined, text-error) | Net Pay (font-semibold) | Status badge | Actions.
+- Payslip download link: `text-xs font-medium text-accent hover:underline`, href = `/payroll/{run.id}/{item.id}/payslip`.
+- Status badges (payroll items): Paid = `bg-success-lightest text-success-foreground`; Pending = `bg-warning-light text-warning`.
+- Mark Paid inline form: per-row `x-data="{ paying, payMethod, payDate }"` on `<tr>`. Button `x-show="!paying"` triggers `paying=true`. Expanded form in a `w-52 bg-surface border border-border rounded-xl p-3 shadow-card` div: Method `<select>` (bank_transfer/mobile_money/cash) + Date `<input type="date">` + Confirm/Cancel buttons. Form POSTs to `PATCH /payroll/{run}/items/{item}/pay`. Only shown when `payment_status !== 'paid'` and `@can('payroll.create')`.
+- Remittance Summary panel: `mx-4 my-4 bg-surface border border-border rounded-xl p-4` below the items table inside the expanded section. 5-column responsive grid showing: Net Disbursement (total_net) | SSNIT Emp 5.5% (total_ssnit_employee, text-error) | Tier 2 Emp 5% (total_tier2_employee, text-error) | PAYE→GRA (total_paye, text-error) | Employer Liability (ssnit_employer + tier2_employer combined with label, text-muted).
+- Log Expense: inline `<form>` per run row, `@click.stop` to prevent row collapse, `onsubmit="return confirm(…)"`.
+- Run Payroll Modal: `max-w-sm`; month `<select>` (range 1–12, Carbon-formatted names) + year `<select>` (current-2 to current+1); Alpine x-model binds to `runMonth`/`runYear` (default = current month/year).
+- Alpine component root: `x-data="{ tab, editModal, editStaffId, editStaffName, editForm, openEdit(data), runModal, runMonth, runYear, expandedRun, toggleRun(id) }"`.
+
+### Payslip PDF
+**File:** `resources/views/tenant/payroll/payslip-pdf.blade.php`
+**Description:** Self-contained dompdf A4 portrait payslip. No Tailwind — all inline CSS.
+- Layout: `padding: 32px 40px` page wrapper.
+- Header: centered school name (20px bold) + "Employee Payslip" label (uppercase, 13px, gray) + period label.
+- Info grid: `display: table` rows for Employee Name, Role/Title, Pay Period, Processed date, Payment Status.
+- Earnings table: Basic Gross + itemised allowance rows (sourced from `$structure->allowances` if available, skipping zero values) + Total Earnings subtotal row (`font-weight:600; background:#f9fafb`). Positive rows colored `#16a34a`.
+- Statutory Deductions table (always shown): named rows — SSNIT Employee Contribution (5.5%), Tier 2 Employee Contribution (5%), PAYE Income Tax (GRA 2024) — sourced from `$item->ssnit_employee`, `tier2_employee`, `paye`. Total row with combined amount.
+- Other Deductions table: shown only when `deductions_total > 0`; itemised from `$structure->deductions` or total fallback. Negative rows colored `#dc2626`. Total Deductions subtotal row.
+- Net Pay box: `background:#1e3a5f; color:#fff; border-radius:8px` — `display:table` with "NET PAY" label left and `GHS {amount}` large amount (22px bold) right.
+- Employer Contributions block: `border:1px solid #e5e7eb; border-radius:6px; padding:12px 14px; background:#f9fafb` informational section. Shows SSNIT Employer (13%) and Tier 2 Employer (5%) from `$item->ssnit_employer`/`tier2_employer`, plus combined total. All text colored `#9ca3af` (greyed out — not deducted from employee).
+- Paid status on info grid: when `paid_at` is set, shows date + payment method (matched to human labels: bank_transfer→Bank Transfer, mobile_money→Mobile Money, cash→Cash).
+- Signature area: `display:table` with two cells, `border-top:1px solid #9ca3af`, 50% each.
+- Footer: `border-top:1px solid #e5e7eb`, generated date + school name.
+- dompdf-safe: uses `DejaVu Sans` font; all layout via `display:table`/`display:table-cell`/`display:table-row`.
+
+### API Tokens Card (My Account)
+**File:** `resources/views/tenant/account/edit.blade.php` (bottom card, `id="api-tokens"`)
+**Description:** Sanctum token management UI for every authenticated user — generate named tokens with read-only or full-access scope, copy the plaintext token on creation (one-time display), and revoke tokens.
+- Card structure: `bg-surface border border-border rounded-2xl shadow-card` — same as Profile and Password cards above it.
+- Header: token count subtitle + "Generate Token" primary button.
+- New-token banner (shown once via `session('new_token')` flash + Alpine `showNewToken` bool): `bg-success-lightest border border-success` strip with token name, mono `<code>` block, "Copy" button (clipboard API, "Copied!" 2s feedback).
+- Token table: Name | Scope badge | Created | Last Used | Revoke link. Scope badges: Full Access → `bg-accent-muted text-accent`; Read Only → `bg-surface-secondary text-text-muted`.
+- Empty state: key icon (opacity-40) + descriptive text.
+- Generate Token modal: `fixed inset-0 bg-black/50` overlay + `bg-surface rounded-2xl max-w-sm` card, `@click.self` to close. Fields: Token Name (text, maxlength 100) + Scope (two radio options). Alpine `submitting` guard on submit.
+- Alpine component: `x-data="{ showCreateModal, showNewToken, newToken, newTokenName, copied, copyToken(), submitting }"` on the card root.
+- Revoke: inline `<form>` with `@method('DELETE')` + `onsubmit="return confirm(…)"` per row.

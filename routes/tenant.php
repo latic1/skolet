@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Tenant\AccountController;
+use App\Http\Controllers\Tenant\Api\AnnouncementApiController;
+use App\Http\Controllers\Tenant\Api\AttendanceApiController;
+use App\Http\Controllers\Tenant\Api\FeeApiController;
+use App\Http\Controllers\Tenant\Api\StudentApiController;
 use App\Http\Controllers\Tenant\AcademicYearController;
 use App\Http\Controllers\Tenant\ImpersonateController;
 use App\Http\Controllers\Tenant\AnnouncementController;
@@ -35,6 +39,10 @@ use App\Http\Controllers\Tenant\ParentPortalController;
 use App\Http\Controllers\Tenant\AssignmentController;
 use App\Http\Controllers\Tenant\DisciplinaryController;
 use App\Http\Controllers\Tenant\ExpenseController;
+use App\Http\Controllers\Tenant\PayrollController;
+use App\Http\Controllers\Tenant\LeaveController;
+use App\Http\Controllers\Tenant\RegisterController;
+use App\Http\Controllers\Tenant\LessonPlanController;
 use App\Http\Controllers\Tenant\AdmissionController;
 use App\Http\Controllers\Tenant\FeeDiscountController;
 use App\Http\Controllers\Tenant\PublicApplicationController;
@@ -142,6 +150,10 @@ Route::domain('{subdomain}.' . $appHost)
             Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
             Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');
             Route::get('/account/avatar', [AccountController::class, 'avatar'])->name('account.avatar');
+
+            // API Token management — web UI for creating/revoking Sanctum tokens
+            Route::post('/account/tokens', [AccountController::class, 'createToken'])->name('account.tokens.create');
+            Route::delete('/account/tokens/{tokenId}', [AccountController::class, 'revokeToken'])->name('account.tokens.revoke');
 
             // Notifications — personal notification centre for every authenticated user
             Route::get('/notifications', [UserNotificationsController::class, 'index'])->name('notifications.index');
@@ -317,6 +329,38 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
             });
 
+            // Payroll
+            Route::middleware('permission:payroll.view')->group(function () {
+                Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+                Route::get('/payroll/{payrollRun}/{payrollItem}/payslip', [PayrollController::class, 'downloadPayslip'])->name('payroll.payslip');
+            });
+            Route::middleware('permission:payroll.edit')->group(function () {
+                Route::patch('/payroll/salary/{staff}', [PayrollController::class, 'updateSalaryStructure'])->name('payroll.salary.update');
+            });
+            Route::middleware('permission:payroll.create')->group(function () {
+                Route::post('/payroll/run', [PayrollController::class, 'runPayroll'])->name('payroll.run');
+                Route::post('/payroll/{payrollRun}/expense', [PayrollController::class, 'logAsExpense'])->name('payroll.expense');
+                Route::patch('/payroll/{payrollRun}/items/{payrollItem}/pay', [PayrollController::class, 'markPaid'])->name('payroll.item.pay');
+            });
+
+            Route::middleware('permission:leave.view')->group(function () {
+                Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
+                Route::post('/leave', [LeaveController::class, 'store'])->name('leave.store');
+                Route::patch('/leave/{leaveRequest}/approve', [LeaveController::class, 'approve'])->name('leave.approve');
+                Route::patch('/leave/{leaveRequest}/reject', [LeaveController::class, 'reject'])->name('leave.reject');
+            });
+
+            Route::middleware('permission:register.view')->group(function () {
+                Route::get('/register', [RegisterController::class, 'index'])->name('register.index');
+                Route::get('/register/pdf/{staff}/{month}', [RegisterController::class, 'exportPdf'])->name('register.pdf');
+            });
+            Route::middleware('permission:register.create')->group(function () {
+                Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+                Route::post('/lesson-plans', [LessonPlanController::class, 'store'])->name('lesson-plan.store');
+                Route::patch('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'update'])->name('lesson-plan.update');
+                Route::delete('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'destroy'])->name('lesson-plan.destroy');
+            });
+
             // Fees — index accessible to all auth users; controller dispatches by permission
             // (admin/accountant → tabbed admin view; student/parent → own fees view)
             Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
@@ -354,6 +398,7 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::get('/reports/fees/pdf', [ReportController::class, 'feesPdf'])->name('reports.fees.pdf');
                 Route::get('/reports/fees/excel', [ReportController::class, 'feesExcel'])->name('reports.fees.excel');
                 Route::get('/reports/academic/pdf', [ReportController::class, 'academicPdf'])->name('reports.academic.pdf');
+                Route::get('/reports/financial/pdf', [ReportController::class, 'financialPdf'])->name('reports.financial.pdf');
             });
 
             Route::middleware('permission:settings.manage')->group(function () {
@@ -425,4 +470,33 @@ Route::domain('{subdomain}.' . $appHost)
             // Export download — requires auth + settings.manage (checked in controller)
             Route::get('/export/download/{token}', [PrivacyController::class, 'download'])->name('export.download');
         });
+
+        // --- REST API v1 — Sanctum bearer-token auth, no CSRF, 60 req/min per token ---
+        Route::prefix('api/v1')
+            ->name('api.v1.')
+            ->middleware(['auth:sanctum', 'throttle:60,1'])
+            ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
+            ->group(function () {
+
+                // Students — requires students.view permission
+                Route::middleware('permission:students.view')->group(function () {
+                    Route::get('/students', [StudentApiController::class, 'index'])->name('students.index');
+                    Route::get('/students/{student}', [StudentApiController::class, 'show'])->name('students.show');
+                    Route::get('/students/{student}/attendance', [StudentApiController::class, 'attendance'])->name('students.attendance');
+                    Route::get('/students/{student}/exams', [StudentApiController::class, 'exams'])->name('students.exams');
+                });
+
+                // Attendance — POST for biometric gate integration; requires attendance.edit + write token
+                Route::middleware('permission:attendance.edit')->group(function () {
+                    Route::post('/attendance', [AttendanceApiController::class, 'store'])->name('attendance.store');
+                });
+
+                // Fees — requires fees.view permission
+                Route::middleware('permission:fees.view')->group(function () {
+                    Route::get('/fees/{student}', [FeeApiController::class, 'show'])->name('fees.show');
+                });
+
+                // Announcements — all authenticated tokens (no additional permission gate)
+                Route::get('/announcements', [AnnouncementApiController::class, 'index'])->name('announcements.index');
+            });
     });

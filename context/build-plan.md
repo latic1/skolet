@@ -554,8 +554,8 @@ Available to every authenticated user, regardless of role or permissions — thi
 | Phase 7 — Reports & Super Admin            | 3        |
 | Phase 8 — Platform Foundation (MVP Gaps)   | 9        |
 | Phase 9 — Growth Features                  | 15       |
-| Phase 10 — Competitive Advantages          | 8        |
-| **Total**                                  | **57**   |
+| Phase 10 — Competitive Advantages          | 9        |
+| **Total**                                  | **58**   |
 
 ---
 
@@ -1177,6 +1177,44 @@ Build these after Phase 9 is stable. They differentiate SchoolFlow from generic 
 - `PayrollService::runPayroll(int $month, int $year)`: queries `salary_structures` for all active staff, creates `payroll_run` row, bulk-inserts `payroll_items`, dispatches payslip PDF generation per staff. Wrapped in `DB::transaction`.
 - Payslip PDF (`payslip-pdf.blade.php`): same dompdf self-contained pattern; school header; itemised allowances/deductions table; highlighted net pay box.
 - `Expense` integration: on payroll run processed, optionally create an `Expense` row for total payroll cost (category: "Salaries") for the month — manual trigger by accountant
+
+---
+
+### 48b Ghana Payroll Tax Compliance & Payment Tracking
+
+Extends Feature 48. Adds Ghana-specific statutory deductions, employer contribution tracking, payment recording per staff member, and an updated payslip PDF.
+
+**UI:**
+
+- **Payroll Runs tab**: each run gains a **Remittance Summary** panel (visible when run is expanded) showing:
+  - Total Net Pay (what is disbursed to staff)
+  - Total Employee SSNIT (5.5%) + Tier 2 (5%) deducted — the amount withheld
+  - Total Employer SSNIT (13%) + Employer Tier 2 (5%) — the school's additional liability
+  - Total PAYE to remit to GRA
+- **Per-staff row** inside an expanded run: "Mark Paid" button opens a small inline form — Payment Method (Bank Transfer / Mobile Money / Cash) + Payment Date. Saves and updates the row's status badge from Pending to Paid.
+- Payslip PDF gains a Ghana tax breakdown section (see Logic).
+
+**Logic:**
+
+- New migration: add columns to `payroll_items` — `ssnit_employee decimal:2 default 0`, `tier2_employee decimal:2 default 0`, `paye decimal:2 default 0`, `ssnit_employer decimal:2 default 0`, `tier2_employer decimal:2 default 0`, `payment_method string nullable`, `paid_at timestamp nullable`
+- Ghana tax config `config/payroll.php`:
+  - SSNIT employee rate: 5.5%
+  - Tier 2 employee rate: 5%
+  - SSNIT employer rate: 13%
+  - Tier 2 employer rate: 5%
+  - PAYE monthly bands (2024 GRA): `[{limit: 365, rate: 0}, {limit: 110, rate: 0.05}, {limit: 130, rate: 0.10}, {limit: 3167, rate: 0.175}, {limit: 16000, rate: 0.25}, {limit: null, rate: 0.30}]`
+- `PayrollService::runPayroll()` updated:
+  - For each staff: taxable_income = gross − ssnit_employee − tier2_employee
+  - PAYE computed via progressive band calculation against taxable_income
+  - net = gross + allowances_total − deductions_total − ssnit_employee − tier2_employee − paye
+  - All five new columns populated per `payroll_item`
+- New route: `PATCH /payroll/{payrollRun}/items/{payrollItem}/pay` — saves `payment_method` + `paid_at`, sets `payment_status = 'paid'`. Gated by `permission:payroll.create`.
+- `PayrollRun` model: add `total_ssnit_employee`, `total_tier2_employee`, `total_employer_ssnit`, `total_employer_tier2`, `total_paye` computed attributes (sum from items).
+- Payslip PDF (`payslip-pdf.blade.php`) updated:
+  - Deductions section shows SSNIT (5.5%), Tier 2 (5%), PAYE as separate named rows — not a single lump "deductions" line
+  - Employer contributions block at the bottom (informational, greyed out): Employer SSNIT 13%, Employer Tier 2 5%
+  - Net Pay = Gross + Allowances − SSNIT − Tier 2 − PAYE − other deductions
+- Existing manual deduction fields (tax, pension entries from Feature 48 salary structure form) remain — they are added on top of the auto-computed statutory amounts, for any school-specific additional deductions (e.g. loan repayments, union dues)
 
 ---
 

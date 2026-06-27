@@ -130,6 +130,7 @@ In addition to the fixed roles above, School Admin can create custom roles (e.g.
 - Class timetable/routine builder
 - Exam scheduling, marks entry, grading scale, printable report cards
 - Fee structure setup, fee collection (cash + Paystack), receipts, due/overdue tracking
+- Ghana payroll compliance — SSNIT (employee 5.5%, employer 13%), Tier 2 (employee 5%, employer 5%), PAYE auto-computed via GRA 2024 tax bands; per-staff payment tracking; remittance summary for accountant
 - Announcements / notice board
 - Auto-generated public page per school
 - Attendance and fee reports (exportable)

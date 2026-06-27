@@ -147,6 +147,15 @@
                                         class="px-3 py-1.5 text-xs border rounded-md transition-colors min-w-[48px]">
                                     Late
                                 </button>
+                                {{-- On Leave --}}
+                                <button type="button"
+                                        @click="setStatus('{{ $staffMember->id }}', 'on_leave')"
+                                        :class="isActive('{{ $staffMember->id }}', 'on_leave')
+                                            ? 'bg-accent/10 text-accent border-accent font-semibold'
+                                            : 'bg-surface text-text-secondary border-border hover:bg-accent/10 hover:text-accent hover:border-accent'"
+                                        class="px-3 py-1.5 text-xs border rounded-md transition-colors min-w-[72px]">
+                                    On Leave
+                                </button>
                                 @else
                                 {{-- Read-only badge --}}
                                 @php $record = $existingRecords->get($staffMember->id); @endphp
@@ -155,6 +164,8 @@
                                     <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-success-lightest text-success-foreground">Present</span>
                                     @elseif($record->status === 'absent')
                                     <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-error-light text-error">Absent</span>
+                                    @elseif($record->status === 'on_leave')
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">On Leave</span>
                                     @else
                                     <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-warning-light text-warning">Late</span>
                                     @endif

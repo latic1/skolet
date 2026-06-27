@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('lesson_plans', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('teacher_id')->constrained('staff')->cascadeOnDelete();
+            $table->foreignUuid('subject_id')->constrained('subjects')->cascadeOnDelete();
+            $table->foreignUuid('class_id')->constrained('school_classes')->cascadeOnDelete();
+            $table->foreignUuid('section_id')->nullable()->constrained('sections')->nullOnDelete();
+            $table->date('week_start');
+            $table->text('objectives')->nullable();
+            $table->text('content');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('lesson_plans');
+    }
+};
