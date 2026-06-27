@@ -42,7 +42,8 @@ abstract class TenantTestCase extends TestCase
             'name'      => 'Test School ' . $subdomain,
             'subdomain' => $subdomain,
         ]);
-        $this->tenant->domains()->create(['domain' => $subdomain . '.localhost']);
+        $appHost = preg_replace('/^www\./i', '', parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost');
+        $this->tenant->domains()->create(['domain' => $subdomain . '.' . $appHost]);
 
         tenancy()->initialize($this->tenant);
     }

@@ -555,7 +555,8 @@ Available to every authenticated user, regardless of role or permissions — thi
 | Phase 8 — Platform Foundation (MVP Gaps)   | 10       |
 | Phase 9 — Growth Features                  | 15       |
 | Phase 10 — Competitive Advantages          | 9        |
-| **Total**                                  | **59**   |
+| Phase 11 — Super Admin & Platform Ops      | 4        |
+| **Total**                                  | **63**   |
 
 ---
 
@@ -1501,3 +1502,100 @@ Feature 22 currently shows "coming soon." This feature replaces that placeholder
 - PDF templates: strings in PDF views also use `__()` calls — dompdf renders with the locale set for that request
 - Date formatting: use `$date->translatedFormat('d M Y')` throughout for locale-aware dates
 - DejaVu Sans font (already used in all PDFs) covers Latin Extended characters for French; Swahili also uses Latin script — no font change needed
+
+---
+
+## Phase 11 — Super Admin & Platform Operations
+
+Fills the gaps in the Super Admin experience that Feature 21 left unaddressed. Build after Phase 10.
+
+### 55 Platform Broadcast
+
+Lets the Super Admin send a message to all school admins at once — for maintenance notices, new feature announcements, or urgent platform updates.
+
+**UI:**
+
+- Super Admin dashboard: new **"Broadcasts"** tab alongside the tenant list
+- Compose form: Subject, Message (textarea), Severity (Info / Warning / Critical — controls badge colour), Schedule (Send Now or pick a date/time)
+- Sent broadcasts table: Subject | Sent At | Recipients | Severity badge
+- School admins see a non-dismissible banner at the top of every page when a Critical broadcast is active; Info/Warning broadcasts appear as a dismissible notification card on the dashboard
+
+**Logic:**
+
+- New central DB migration: `create_broadcasts_table` (id uuid, subject string, message text, severity enum['info','warning','critical'] default 'info', send_at timestamp nullable, sent_at timestamp nullable, sent_by FK→super_admins, created_at timestamp)
+- `Broadcast` model (central)
+- `SuperAdminController::broadcasts()` — list; `storeBroadcast()` — create; `SendBroadcastJob` — dispatched on creation or at scheduled time; loops all active tenants and inserts a `broadcast_notifications` row per tenant
+- New central migration: `create_broadcast_notifications_table` (id uuid, broadcast_id FK, tenant_id FK, dismissed_at timestamp nullable, timestamps)
+- Tenant middleware `CheckPlatformBroadcast`: on each authenticated tenant request, queries `broadcast_notifications` for this tenant where `dismissed_at` is null and the broadcast's `send_at` has passed — passes result to view via shared view data
+- Tenant layout: `@if($activeBroadcast)` renders banner or card depending on severity
+- "Dismiss" button (Info/Warning only): `PATCH /platform-notice/{id}/dismiss` sets `dismissed_at = now()`
+
+---
+
+### 56 Impersonation Audit Log UI
+
+The `impersonation_logs` table is already written to on every Super Admin support session. This feature adds a page to view, filter, and export that data.
+
+**UI:**
+
+- Super Admin dashboard: new **"Audit Log"** tab
+- Table: Date | Super Admin | School | Duration | Ended (normal exit / timeout / session end) — paginated 25/page
+- Filter bar: date range + school name search
+- Row expand: shows `started_at`, `ended_at`, duration computed, whether it timed out (no `ended_at` within 1 hour window)
+- Export CSV button: downloads filtered results as a CSV for compliance records
+
+**Logic:**
+
+- No new migrations — `impersonation_logs` table already exists with `super_admin_id`, `tenant_id`, `started_at`, `ended_at`
+- `SuperAdminController::auditLog(Request)`: queries `impersonation_logs` with tenant + super_admin eager-loads; applies date/search filters; paginates
+- Duration computed attribute: `ended_at - started_at` in minutes, or "Timed out" if `ended_at` is null and `started_at` is > 1 hour ago
+- CSV export: `GET /super-admin/audit-log/export` — streams CSV via `League\Csv` or a simple `Response::streamDownload()`; no queued job needed (data is in central DB, no tenant switching)
+- Route: `GET /super-admin/audit-log`, `GET /super-admin/audit-log/export` under `auth:super_admin`
+
+---
+
+### 57 Invoice & Payment History
+
+When the Super Admin marks a school as paid, the action is recorded. Schools can see their own payment history and download invoices. Replaces the current stateless "flip a flag" payment flow.
+
+**UI:**
+
+- Super Admin per-school detail: **"Payment History"** table — Date | Amount | Cycle Period | Marked Paid By | Download Invoice
+- "Mark as Paid" form gains a **Reference / Notes** field (e.g. bank transfer reference)
+- School Admin side: new Settings > **Billing** page (tenant app, read-only) — current subscription status, cycle dates, amount due, payment history table with invoice download links
+
+**Logic:**
+
+- New central migration: `create_subscription_payments_table` (id uuid, tenant_id FK, amount decimal:2, cycle_start date, cycle_end date, payment_reference string nullable, notes text nullable, recorded_by FK→super_admins, created_at timestamp)
+- `SubscriptionPayment` model (central)
+- `SuperAdminController::markPaid()` updated: creates a `subscription_payments` row on each "Mark Paid" action in addition to updating `subscription_plans`
+- Invoice PDF: `GET /super-admin/tenants/{tenant}/invoices/{payment}` — dompdf renders a simple invoice (SchoolFlow header, school name, amount, cycle period, reference, date); streamed as PDF
+- Tenant-side billing route: `GET /settings/billing` — reads own `subscription_plans` row and `subscription_payments` rows via central DB (no tenant DB query needed); gated by `permission:settings.manage`; read-only — no payment initiation (that is Feature 47)
+- Route: `GET /settings/billing` added to tenant routes, outside tenant DB context (queries central DB using `\App\Models\Central\Tenant::current()` or passed via middleware)
+
+---
+
+### 58 Platform Analytics Dashboard
+
+Gives the Super Admin a bird's-eye view of platform health and growth — beyond the 4 stat cards in Feature 21.
+
+**UI:**
+
+- Super Admin dashboard: new **"Analytics"** tab
+- KPI row: Total Schools | Total Students (sum across all tenants) | MRR (monthly recurring revenue estimate) | Avg Students per School
+- Charts (Chart.js, same pattern as tenant dashboard):
+  - New schools per month — bar chart, last 12 months
+  - Total platform student count over time — line chart
+  - Revenue trend — bar chart (sum of `subscription_payments.amount` per month)
+  - Subscription status breakdown — doughnut (trial / active / expired / suspended)
+- Feature adoption table: shows per-feature usage counts — how many tenants have run payroll, how many use the REST API (have at least one token), how many have active webhooks, how many have processed online payments via Paystack
+- "Last refreshed" timestamp + manual "Refresh" button (triggers the analytics cache rebuild)
+
+**Logic:**
+
+- Analytics are expensive to compute (loop all tenants). Computed once daily by a scheduled command `schoolflow:build-platform-analytics` and cached in a central `platform_analytics` table (or Redis key) — never computed on page load
+- New central migration: `create_platform_analytics_table` (id, metric string, value JSON, computed_at timestamp) — one row per metric (e.g. `{metric: 'monthly_new_schools', value: [{month: '2026-01', count: 3}, ...]}`)
+- `BuildPlatformAnalyticsCommand`: loops tenants via `Tenant::run()` to count students, checks for API tokens, payroll runs, webhooks, Paystack payments; upserts metric rows; scheduled daily at 02:00
+- `SuperAdminController::analytics()`: reads from `platform_analytics` rows — no live tenant queries; passes data as `Js::from()` to view for Chart.js
+- Feature adoption counts: each checked via `Tenant::run($tenant, fn() => Model::exists())` — batched in the scheduled command, not on page load
+- MRR estimate: `subscription_payments` sum for the current calendar month (central DB, no tenant switching needed)

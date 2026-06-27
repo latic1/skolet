@@ -14,23 +14,30 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Inject $schoolProfile into the tenant layout and login view.
-        // Wraps in try/catch so requests that hit the route before tenancy is
-        // initialized (e.g. central-domain 404s) don't blow up.
-        View::composer(['layouts.tenant', 'tenant.auth.login'], function ($view) {
-            try {
-                $tenancy = app(\Stancl\Tenancy\Tenancy::class);
+        // Inject $schoolProfile and $currencySymbol into every tenant view.
+        // The composer covers the layout AND all child views (tenant.*) because
+        // Blade captures child-section PHP before the parent layout renders, so
+        // variables added only to layouts.tenant arrive too late for child views.
+        // once() ensures SchoolProfile is queried at most once per request.
+        View::composer(['layouts.tenant', 'tenant.*', 'tenant.*.*', 'tenant.*.*.*'], function ($view) {
+            $data = once(function () {
+                try {
+                    $tenancy = app(\Stancl\Tenancy\Tenancy::class);
 
-                if ($tenancy->initialized) {
-                    $profile = \App\Models\Tenant\SchoolProfile::first();
-                    $view->with('schoolProfile', $profile);
-                    $view->with('currencySymbol', $profile?->currency_symbol ?? '₵');
-                    return;
-                }
-            } catch (\Throwable) {}
+                    if ($tenancy->initialized) {
+                        $profile = \App\Models\Tenant\SchoolProfile::first();
 
-            $view->with('schoolProfile', null);
-            $view->with('currencySymbol', '₵');
+                        return [
+                            'schoolProfile'  => $profile,
+                            'currencySymbol' => $profile?->currency_symbol ?? '₵',
+                        ];
+                    }
+                } catch (\Throwable) {}
+
+                return ['schoolProfile' => null, 'currencySymbol' => '₵'];
+            });
+
+            $view->with($data);
         });
 
         // 5 login attempts per minute, keyed by IP + email to prevent brute-forcing.
