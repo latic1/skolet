@@ -123,6 +123,7 @@ final class TenantProvisioningService
             'register.view', 'register.create', 'register.manage',
             'reports.view',
             'settings.manage',
+            'webhooks.manage',
         ];
 
         foreach ($all as $name) {

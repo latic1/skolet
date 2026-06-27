@@ -5,13 +5,23 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBroadcastJob;
+use App\Models\Central\Broadcast;
+use App\Models\Central\ImpersonationLog;
+use App\Models\Central\PlatformAnalytics;
+use App\Models\Central\SubscriptionPayment;
 use App\Models\Central\SubscriptionPlan;
 use App\Models\Central\Tenant;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SuperAdminController extends Controller
 {
@@ -35,7 +45,31 @@ final class SuperAdminController extends Controller
             'total_amount_due' => SubscriptionPlan::where('payment_status', 'unpaid')->sum('amount_due'),
         ];
 
-        return view('central.super-admin.dashboard', compact('tenants', 'stats'));
+        $metrics = PlatformAnalytics::get()->keyBy('metric');
+        $analyticsData = [
+            'kpi'            => $metrics->get('kpi')?->value ?? [],
+            'new_schools'    => $metrics->get('monthly_new_schools')?->value ?? [],
+            'revenue'        => $metrics->get('monthly_revenue')?->value ?? [],
+            'status'         => $metrics->get('subscription_status')?->value ?? [],
+            'student_history'=> $metrics->get('student_snapshot')?->value ?? [],
+            'adoption'       => $metrics->get('feature_adoption')?->value ?? [],
+            'computed_at'    => $metrics->first()?->computed_at,
+        ];
+
+        return view('central.super-admin.dashboard', compact('tenants', 'stats', 'analyticsData'));
+    }
+
+    public function rebuildAnalytics(): RedirectResponse
+    {
+        try {
+            Artisan::call('schoolflow:build-platform-analytics');
+            return redirect()->route('super-admin.dashboard', ['tab' => 'analytics'])
+                ->with('success', 'Platform analytics rebuilt successfully.');
+        } catch (\Throwable $e) {
+            Log::error('[SuperAdminController::rebuildAnalytics] ' . $e->getMessage());
+            return redirect()->route('super-admin.dashboard', ['tab' => 'analytics'])
+                ->with('error', 'Could not rebuild analytics.');
+        }
     }
 
     public function toggleStatus(Tenant $tenant): RedirectResponse
@@ -78,8 +112,10 @@ final class SuperAdminController extends Controller
     public function markPaid(Request $request, Tenant $tenant): RedirectResponse
     {
         $data = $request->validate([
-            'cycle_start' => ['required', 'date'],
-            'cycle_end'   => ['required', 'date', 'after:cycle_start'],
+            'cycle_start'       => ['required', 'date'],
+            'cycle_end'         => ['required', 'date', 'after:cycle_start'],
+            'payment_reference' => ['nullable', 'string', 'max:255'],
+            'notes'             => ['nullable', 'string', 'max:1000'],
         ]);
 
         try {
@@ -90,6 +126,17 @@ final class SuperAdminController extends Controller
                 'status'         => 'active',
                 'cycle_start'    => $data['cycle_start'],
                 'cycle_end'      => $data['cycle_end'],
+            ]);
+
+            SubscriptionPayment::create([
+                'tenant_id'         => $tenant->id,
+                'amount'            => $plan->amount_due,
+                'cycle_start'       => $data['cycle_start'],
+                'cycle_end'         => $data['cycle_end'],
+                'payment_reference' => $data['payment_reference'] ?? null,
+                'notes'             => $data['notes'] ?? null,
+                'recorded_by'       => Auth::guard('super_admin')->id(),
+                'created_at'        => now(),
             ]);
 
             // Also ensure the tenant itself is active
@@ -103,6 +150,35 @@ final class SuperAdminController extends Controller
 
             return back()->with('error', 'Could not mark as paid.');
         }
+    }
+
+    public function tenantDetail(Tenant $tenant): View
+    {
+        $plan     = SubscriptionPlan::where('tenant_id', $tenant->id)->first();
+        $payments = SubscriptionPayment::on('central')
+            ->with('recordedBy')
+            ->where('tenant_id', $tenant->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('central.super-admin.tenant-detail', compact('tenant', 'plan', 'payments'));
+    }
+
+    public function downloadInvoice(Tenant $tenant, SubscriptionPayment $payment): Response
+    {
+        abort_if($payment->tenant_id !== $tenant->id, 404);
+
+        $payment->load('recordedBy');
+
+        $pdf = Pdf::loadView('central.super-admin.invoice-pdf', compact('tenant', 'payment'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'invoice-' . $tenant->subdomain . '-' . $payment->created_at->format('Y-m-d') . '.pdf';
+
+        return response($pdf->output(), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     public function markUnpaid(Tenant $tenant): RedirectResponse
@@ -131,6 +207,111 @@ final class SuperAdminController extends Controller
 
             return back()->with('error', 'Sync failed: ' . $e->getMessage());
         }
+    }
+
+    public function broadcasts(): View
+    {
+        $broadcasts = Broadcast::on('central')
+            ->with('sentBy')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('central.super-admin.broadcasts', compact('broadcasts'));
+    }
+
+    public function storeBroadcast(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'subject'  => ['required', 'string', 'max:255'],
+            'message'  => ['required', 'string', 'max:5000'],
+            'severity' => ['required', 'in:info,warning,critical'],
+            'send_at'  => ['nullable', 'date', 'after_or_equal:now'],
+        ]);
+
+        try {
+            $broadcast = Broadcast::on('central')->create([
+                'id'       => (string) Str::uuid(),
+                'subject'  => $data['subject'],
+                'message'  => $data['message'],
+                'severity' => $data['severity'],
+                'send_at'  => $data['send_at'] ?? null,
+                'sent_at'  => null,
+                'sent_by'  => Auth::guard('super_admin')->id(),
+            ]);
+
+            // Send immediately if no schedule date, otherwise queue for later
+            if (empty($data['send_at'])) {
+                SendBroadcastJob::dispatch($broadcast->id);
+            } else {
+                SendBroadcastJob::dispatch($broadcast->id)->delay(now()->parse($data['send_at']));
+            }
+
+            return redirect(route('super-admin.broadcasts'))->with('success', 'Broadcast queued for delivery.');
+        } catch (\Throwable $e) {
+            Log::error('[SuperAdminController::storeBroadcast] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not send broadcast: ' . $e->getMessage());
+        }
+    }
+
+    public function auditLog(Request $request): View
+    {
+        $logs = ImpersonationLog::on('central')
+            ->with(['superAdmin', 'tenant'])
+            ->when($request->filled('date_from'), fn ($q) => $q->where('started_at', '>=', $request->date_from . ' 00:00:00'))
+            ->when($request->filled('date_to'), fn ($q) => $q->where('started_at', '<=', $request->date_to . ' 23:59:59'))
+            ->when($request->filled('search'), fn ($q) => $q->whereHas('tenant', fn ($tq) => $tq->where('name', 'like', '%' . $request->search . '%')))
+            ->orderByDesc('started_at')
+            ->paginate(25)
+            ->withQueryString();
+
+        return view('central.super-admin.audit-log', compact('logs'));
+    }
+
+    public function exportAuditLog(Request $request): StreamedResponse
+    {
+        $logs = ImpersonationLog::on('central')
+            ->with(['superAdmin', 'tenant'])
+            ->when($request->filled('date_from'), fn ($q) => $q->where('started_at', '>=', $request->date_from . ' 00:00:00'))
+            ->when($request->filled('date_to'), fn ($q) => $q->where('started_at', '<=', $request->date_to . ' 23:59:59'))
+            ->when($request->filled('search'), fn ($q) => $q->whereHas('tenant', fn ($tq) => $tq->where('name', 'like', '%' . $request->search . '%')))
+            ->orderByDesc('started_at')
+            ->get();
+
+        $filename = 'impersonation-audit-log-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($logs) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Date', 'Super Admin', 'School', 'Started At', 'Ended At', 'Duration', 'Status']);
+
+            foreach ($logs as $log) {
+                $status   = $this->resolveSessionStatus($log);
+                $duration = $log->ended_at
+                    ? $log->started_at->diffInMinutes($log->ended_at) . ' min'
+                    : ($log->started_at->lt(now()->subHour()) ? 'Timed out' : 'Active');
+
+                fputcsv($out, [
+                    $log->started_at->format('d M Y'),
+                    $log->superAdmin?->name ?? '—',
+                    $log->tenant?->name ?? '—',
+                    $log->started_at->format('d M Y H:i:s'),
+                    $log->ended_at?->format('d M Y H:i:s') ?? '—',
+                    $duration,
+                    $status,
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    private function resolveSessionStatus(ImpersonationLog $log): string
+    {
+        if ($log->ended_at) {
+            return 'Normal exit';
+        }
+
+        return $log->started_at->lt(now()->subHour()) ? 'Timed out' : 'Active';
     }
 
     public function destroyTenant(Tenant $tenant): RedirectResponse

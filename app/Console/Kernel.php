@@ -13,6 +13,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('skolet:sync-student-counts')->daily();
+        $schedule->command('schoolflow:build-platform-analytics')->dailyAt('02:00');
+        $schedule->command('schoolflow:retry-failed-webhooks')->everyFiveMinutes();
         $schedule->command('skolet:send-fee-overdue-reminders')->weekly();
         $schedule->command('activitylog:clean')->monthly();
         $schedule->command('schoolflow:purge-deleted')->monthly();

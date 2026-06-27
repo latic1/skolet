@@ -91,6 +91,45 @@
             </div>
             @endif
 
+            {{-- Critical platform broadcast banner — non-dismissible, shown on every page --}}
+            @if(!empty($criticalBroadcast))
+            <div class="shrink-0 bg-error-light border-b-2 border-error/40 px-6 py-3 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2.5 text-sm font-medium text-error min-w-0">
+                    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="min-w-0">
+                        <span class="font-semibold">{{ $criticalBroadcast['subject'] }}:</span>
+                        <span class="ml-1 truncate">{{ Str::limit($criticalBroadcast['message'], 120) }}</span>
+                    </div>
+                </div>
+                <span class="shrink-0 text-xs font-semibold text-error border border-error/30 bg-white/60 rounded-md px-2 py-1 whitespace-nowrap">Platform Alert</span>
+            </div>
+            @endif
+
+            {{-- Info/Warning platform broadcast — dismissible, shown on dashboard only --}}
+            @if(!empty($activeBroadcast) && request()->routeIs('tenant.dashboard'))
+            <div class="shrink-0 {{ $activeBroadcast['severity'] === 'warning' ? 'bg-warning-light border-b-2 border-warning/40' : 'bg-accent-muted border-b border-accent/20' }} px-6 py-3 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2.5 text-sm font-medium {{ $activeBroadcast['severity'] === 'warning' ? 'text-warning' : 'text-accent' }} min-w-0">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                    </svg>
+                    <div class="min-w-0">
+                        <span class="font-semibold">{{ $activeBroadcast['subject'] }}:</span>
+                        <span class="ml-1">{{ Str::limit($activeBroadcast['message'], 120) }}</span>
+                    </div>
+                </div>
+                <form method="POST" action="{{ request()->getSchemeAndHttpHost() }}/platform-notice/{{ $activeBroadcast['notification_id'] }}/dismiss">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit"
+                            class="shrink-0 text-xs font-semibold {{ $activeBroadcast['severity'] === 'warning' ? 'text-warning border-warning/40' : 'text-accent border-accent/40' }} border bg-white/60 rounded-md px-3 py-1.5 hover:bg-white/90 transition-colors whitespace-nowrap">
+                        Dismiss
+                    </button>
+                </form>
+            </div>
+            @endif
+
             {{-- Top bar --}}
             <header class="h-16 shrink-0 bg-surface border-b border-border flex items-center px-6 gap-4">
                 <h2 class="text-base font-semibold text-text-primary flex-1">

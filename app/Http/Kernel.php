@@ -72,5 +72,6 @@ class Kernel extends HttpKernel
         'has_role'              => \App\Http\Middleware\EnsureUserHasRole::class,
         'resume_impersonation'  => \App\Http\Middleware\ResumeImpersonation::class,
         'onboarding'            => \App\Http\Middleware\TenantOnboardingMiddleware::class,
+        'platform_broadcast'    => \App\Http\Middleware\CheckPlatformBroadcast::class,
     ];
 }

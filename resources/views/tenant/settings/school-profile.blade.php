@@ -38,6 +38,14 @@
            class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
             Data &amp; Privacy
         </a>
+        <a href="{{ $host }}/settings/billing"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Billing
+        </a>
+        <a href="{{ $host }}/settings/webhooks"
+           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
+            Webhooks
+        </a>
     </div>
 
     {{-- Flash messages --}}

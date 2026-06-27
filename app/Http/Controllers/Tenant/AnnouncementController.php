@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreAnnouncementRequest;
 use App\Http\Requests\Tenant\UpdateAnnouncementRequest;
 use App\Jobs\SendAnnouncementNotifications;
+use App\Jobs\SendWebhookPayload;
 use App\Models\Tenant\Announcement;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\Student;
@@ -84,6 +85,17 @@ final class AnnouncementController extends Controller
             ]);
 
             SendAnnouncementNotifications::dispatch($announcement->id, tenant('id'));
+
+            SendWebhookPayload::dispatch(tenant('id'), 'announcement_posted', [
+                'event'     => 'announcement_posted',
+                'tenant'    => tenant('id'),
+                'timestamp' => now()->toIso8601String(),
+                'data'      => [
+                    'announcement_id' => $announcement->id,
+                    'title'           => $announcement->title,
+                    'audience_type'   => $audienceType,
+                ],
+            ]);
 
             return redirect($host . '/announcements')
                 ->with('success', 'Announcement posted successfully.');

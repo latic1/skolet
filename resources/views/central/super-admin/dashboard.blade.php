@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body class="font-sans antialiased bg-background text-text-primary">
 
@@ -58,6 +59,21 @@
             <h1 class="text-2xl font-bold text-text-darkest">Tenant & Subscription Management</h1>
             <p class="text-sm text-text-muted mt-1">Manage school accounts, billing rates, and payment status.</p>
         </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="{{ route('super-admin.audit-log') }}"
+               class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-surface border border-border text-text-secondary rounded-lg hover:bg-surface-secondary hover:text-text-primary transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Audit Log
+            </a>
+            <a href="{{ route('super-admin.broadcasts') }}"
+               class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-lg hover:bg-accent-dark transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                </svg>
+                Broadcasts
+            </a>
         <form method="POST" action="{{ route('super-admin.sync-students') }}">
             @csrf
             <button type="submit"
@@ -69,7 +85,27 @@
                 Sync Students
             </button>
         </form>
+        </div>
     </div>
+
+    <div x-data="superAdminPage()" x-init="init()">
+
+    {{-- Tab switcher --}}
+    <div class="flex gap-1 border-b border-border mb-6">
+        <button @click="setTab('schools')"
+                :class="tab === 'schools' ? 'border-b-2 border-accent text-accent' : 'border-b-2 border-transparent text-text-secondary hover:text-text-primary'"
+                class="px-4 py-2.5 text-sm font-medium -mb-px transition-colors">
+            Schools
+        </button>
+        <button @click="setTab('analytics')"
+                :class="tab === 'analytics' ? 'border-b-2 border-accent text-accent' : 'border-b-2 border-transparent text-text-secondary hover:text-text-primary'"
+                class="px-4 py-2.5 text-sm font-medium -mb-px transition-colors">
+            Analytics
+        </button>
+    </div>
+
+    {{-- Schools Tab --}}
+    <div x-show="tab === 'schools'">
 
     {{-- Stats --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -92,7 +128,7 @@
     </div>
 
     {{-- Tenants table --}}
-    <div class="bg-surface border border-border rounded-xl overflow-hidden" x-data="superAdminPage()">
+    <div class="bg-surface border border-border rounded-xl overflow-hidden">
 
         <div class="px-6 py-4 border-b border-border flex flex-wrap items-center gap-4">
             <div class="flex-1">
@@ -246,9 +282,15 @@
                                     </button>
                                 </form>
 
+                                {{-- Payment History --}}
+                                <a href="{{ route('super-admin.tenants.detail', $tenant) }}"
+                                   class="px-2.5 py-1 text-xs font-medium rounded-md border border-border text-text-secondary bg-surface hover:bg-surface-secondary transition-colors">
+                                    Payments
+                                </a>
+
                                 {{-- Mark Paid --}}
                                 @if (($plan?->payment_status ?? 'unpaid') !== 'paid')
-                                    <button @click="openMarkPaid({{ json_encode(['id' => $tenant->id, 'name' => $tenant->name, 'cycle_start' => $plan?->cycle_start?->format('Y-m-d'), 'cycle_end' => $plan?->cycle_end?->format('Y-m-d')]) }})"
+                                    <button @click="openMarkPaid({{ json_encode(['id' => $tenant->id, 'name' => $tenant->name, 'cycle_start' => $plan?->cycle_start?->format('Y-m-d'), 'cycle_end' => $plan?->cycle_end?->format('Y-m-d'), 'amount' => $plan?->amount_due]) }})"
                                             class="px-2.5 py-1 text-xs font-medium rounded-md border border-success-light text-success-foreground bg-success-lightest hover:bg-success-lightest/70 transition-colors">
                                         Mark Paid
                                     </button>
@@ -341,7 +383,7 @@
                 <form method="POST" :action="'/super-admin/tenants/' + paidModal.tenantId + '/mark-paid'">
                     @csrf
                     <input type="hidden" name="_method" value="PATCH">
-                    <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>
                             <label class="block text-sm font-medium text-text-dark mb-1.5">Cycle Start</label>
                             <input type="date" name="cycle_start" x-model="paidModal.cycleStart" required
@@ -353,7 +395,26 @@
                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                         </div>
                     </div>
-                    <p class="text-xs text-text-muted mb-4">Status will be set to <strong>paid</strong> and subscription marked <strong>active</strong>.</p>
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-text-dark mb-1.5">
+                            Reference <span class="text-text-muted font-normal">(optional)</span>
+                        </label>
+                        <input type="text" name="payment_reference" maxlength="255"
+                               placeholder="e.g. bank transfer ref, receipt no."
+                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-text-dark mb-1.5">
+                            Notes <span class="text-text-muted font-normal">(optional)</span>
+                        </label>
+                        <textarea name="notes" rows="2" maxlength="1000"
+                                  placeholder="Any additional notes…"
+                                  class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-none"></textarea>
+                    </div>
+                    <p class="text-xs text-text-muted mb-4">
+                        Amount: <strong x-text="paidModal.amount ? 'GHS ' + Number(paidModal.amount).toFixed(2) : '—'"></strong> ·
+                        Status will be set to <strong>paid</strong>.
+                    </p>
                     <div class="flex gap-3 justify-end">
                         <button type="button" @click="paidModal.open = false"
                                 class="px-4 py-2 text-sm font-medium text-text-secondary bg-surface border border-border rounded-md hover:bg-surface-secondary transition-colors">
@@ -370,6 +431,145 @@
 
     </div>{{-- /card --}}
 
+    </div>{{-- /schools tab --}}
+
+    {{-- Analytics Tab --}}
+    <div x-show="tab === 'analytics'" x-cloak>
+
+        {{-- Last refreshed + Rebuild --}}
+        <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+            <p class="text-xs text-text-muted">
+                @if ($analyticsData['computed_at'])
+                    Analytics last computed {{ $analyticsData['computed_at']->diffForHumans() }}
+                    ({{ $analyticsData['computed_at']->format('d M Y H:i') }})
+                @else
+                    No analytics data yet. Click <strong>Rebuild</strong> to compute.
+                @endif
+            </p>
+            <form method="POST" action="{{ route('super-admin.analytics.rebuild') }}">
+                @csrf
+                <button type="submit"
+                        class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-surface border border-border text-text-secondary rounded-lg hover:bg-surface-secondary hover:text-text-primary transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Rebuild Analytics
+                </button>
+            </form>
+        </div>
+
+        {{-- KPI Cards --}}
+        @php
+            $kpi      = $analyticsData['kpi'] ?? [];
+            $adoption = $analyticsData['adoption'] ?? [];
+        @endphp
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-surface border border-border rounded-xl p-4">
+                <p class="text-xs font-medium text-text-muted uppercase tracking-wide">Total Schools</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ $kpi['total_schools'] ?? '—' }}</p>
+            </div>
+            <div class="bg-surface border border-border rounded-xl p-4">
+                <p class="text-xs font-medium text-text-muted uppercase tracking-wide">Total Students</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ isset($kpi['total_students']) ? number_format((int) $kpi['total_students']) : '—' }}</p>
+            </div>
+            <div class="bg-surface border border-border rounded-xl p-4">
+                <p class="text-xs font-medium text-text-muted uppercase tracking-wide">MRR (Est.)</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ isset($kpi['mrr']) ? 'GHS ' . number_format((float) $kpi['mrr'], 2) : '—' }}</p>
+                <p class="text-xs text-text-muted mt-0.5">Current month payments</p>
+            </div>
+            <div class="bg-surface border border-border rounded-xl p-4">
+                <p class="text-xs font-medium text-text-muted uppercase tracking-wide">Avg Students / School</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ $kpi['avg_per_school'] ?? '—' }}</p>
+            </div>
+        </div>
+
+        {{-- 4 Charts in 2×2 grid --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-surface border border-border rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-text-darkest mb-4">New Schools / Month</h3>
+                <div style="height:220px;position:relative">
+                    <canvas id="chart-new-schools"></canvas>
+                </div>
+            </div>
+            <div class="bg-surface border border-border rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-text-darkest mb-4">Platform Student Count</h3>
+                <div style="height:220px;position:relative">
+                    <canvas id="chart-students"></canvas>
+                </div>
+            </div>
+            <div class="bg-surface border border-border rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-text-darkest mb-4">Monthly Revenue (GHS)</h3>
+                <div style="height:220px;position:relative">
+                    <canvas id="chart-revenue"></canvas>
+                </div>
+            </div>
+            <div class="bg-surface border border-border rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-text-darkest mb-4">Subscription Status</h3>
+                <div style="height:220px;position:relative">
+                    <canvas id="chart-status"></canvas>
+                </div>
+            </div>
+        </div>
+
+        {{-- Feature Adoption Table --}}
+        <div class="bg-surface border border-border rounded-xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-border">
+                <h3 class="font-semibold text-text-darkest">Feature Adoption</h3>
+                <p class="text-xs text-text-muted mt-0.5">How many schools actively use each platform feature</p>
+            </div>
+            @if (!empty($adoption))
+            @php
+                $total = max(1, (int) ($adoption['total_tenants'] ?? 1));
+                $features = [
+                    ['name' => 'Payroll',                    'key' => 'payroll'],
+                    ['name' => 'REST API (API Tokens)',      'key' => 'api_tokens'],
+                    ['name' => 'Online Payments (Paystack)', 'key' => 'paystack'],
+                ];
+            @endphp
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-border bg-surface-secondary">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wide">Feature</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wide">Schools Using It</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wide">Adoption Rate</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    @foreach ($features as $f)
+                    @php
+                        $count = (int) ($adoption[$f['key']] ?? 0);
+                        $pct   = round(($count / $total) * 100);
+                    @endphp
+                    <tr class="hover:bg-surface-secondary/50 transition-colors">
+                        <td class="px-6 py-4 font-medium text-text-darkest">{{ $f['name'] }}</td>
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-text-darkest">{{ $count }}</span>
+                            <span class="text-text-muted"> / {{ $total }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-surface-secondary rounded-full h-2" style="max-width:200px">
+                                    <div class="bg-accent h-2 rounded-full" style="width:{{ $pct }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-text-primary w-10">{{ $pct }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            @else
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+                <p class="text-sm text-text-muted">No analytics data yet.</p>
+                <p class="text-xs text-text-muted mt-1">Click <strong>Rebuild Analytics</strong> above to compute.</p>
+            </div>
+            @endif
+        </div>
+
+    </div>{{-- /analytics tab --}}
+
+    </div>{{-- /superAdminPage wrapper --}}
+
     <p class="mt-6 text-xs text-text-muted">
         Student counts sync daily via scheduler (<code class="bg-surface-secondary px-1 rounded">skolet:sync-student-counts</code>).
         Use the <strong>Sync Students</strong> button above to force an immediate sync.
@@ -378,12 +578,117 @@
 </main>
 
 <script>
+var _analyticsData = {
+    newSchools:     @json($analyticsData['new_schools'] ?? []),
+    revenue:        @json($analyticsData['revenue'] ?? []),
+    status:         @json($analyticsData['status'] ?? []),
+    studentHistory: @json($analyticsData['student_history'] ?? []),
+};
+
+function initAnalyticsCharts() {
+    var gridColor  = '#E7EAF3';
+    var tickColor  = '#9CA3AF';
+    var gridDash   = [4, 4];
+    var noBorder   = { display: false };
+    var noLegend   = { display: false };
+    var baseScales = function (yCallback) {
+        return {
+            x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } }, border: noBorder },
+            y: { beginAtZero: true, grid: { color: gridColor, borderDash: gridDash }, ticks: { color: tickColor, font: { size: 11 }, callback: yCallback }, border: noBorder }
+        };
+    };
+
+    // Chart 1: New schools / month (bar)
+    var nsEl = document.getElementById('chart-new-schools');
+    if (nsEl && _analyticsData.newSchools.length) {
+        new Chart(nsEl, {
+            type: 'bar',
+            data: {
+                labels: _analyticsData.newSchools.map(function(d) { return d.month; }),
+                datasets: [{ data: _analyticsData.newSchools.map(function(d) { return d.count; }), backgroundColor: '#2563EB', borderRadius: 4, borderSkipped: false }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: baseScales(undefined) }
+        });
+    }
+
+    // Chart 2: Student count over time (line)
+    var stEl = document.getElementById('chart-students');
+    if (stEl && _analyticsData.studentHistory.length) {
+        new Chart(stEl, {
+            type: 'line',
+            data: {
+                labels: _analyticsData.studentHistory.map(function(d) { return d.month; }),
+                datasets: [{
+                    data: _analyticsData.studentHistory.map(function(d) { return d.count; }),
+                    borderColor: '#06B6D4', borderWidth: 2.5,
+                    backgroundColor: 'rgba(6,182,212,0.08)', fill: true,
+                    tension: 0.4, pointRadius: 4, pointBackgroundColor: '#06B6D4',
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: baseScales(undefined) }
+        });
+    }
+
+    // Chart 3: Monthly revenue (bar)
+    var revEl = document.getElementById('chart-revenue');
+    if (revEl && _analyticsData.revenue.length) {
+        new Chart(revEl, {
+            type: 'bar',
+            data: {
+                labels: _analyticsData.revenue.map(function(d) { return d.month; }),
+                datasets: [{ data: _analyticsData.revenue.map(function(d) { return d.total; }), backgroundColor: '#10B981', borderRadius: 4, borderSkipped: false }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: noLegend, tooltip: { callbacks: { label: function(c) { return 'GHS ' + Number(c.raw).toLocaleString(); } } } },
+                scales: baseScales(function(v) { return 'GHS ' + Number(v).toLocaleString(); })
+            }
+        });
+    }
+
+    // Chart 4: Subscription status (doughnut)
+    var stEl2 = document.getElementById('chart-status');
+    var s = _analyticsData.status;
+    if (stEl2 && s && Object.keys(s).length) {
+        new Chart(stEl2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Trial', 'Active', 'Expired', 'Suspended'],
+                datasets: [{
+                    data: [s.trial || 0, s.active || 0, s.expired || 0, s.suspended || 0],
+                    backgroundColor: ['#9CA3AF', '#10B981', '#EF4444', '#F59E0B'],
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { color: '#6B7280', font: { size: 12 }, usePointStyle: true, pointStyleWidth: 10 } } }
+            }
+        });
+    }
+}
+
 function superAdminPage() {
     return {
+        tab: new URLSearchParams(window.location.search).get('tab') || 'schools',
+        chartsReady: false,
         search: '',
         rateModal: { open: false, tenantId: null, tenantName: '', rate: 0 },
-        paidModal: { open: false, tenantId: null, tenantName: '', cycleStart: '', cycleEnd: '' },
+        paidModal: { open: false, tenantId: null, tenantName: '', cycleStart: '', cycleEnd: '', amount: '' },
 
+        init() {
+            if (this.tab === 'analytics') {
+                this.chartsReady = true;
+                this.$nextTick(function() { initAnalyticsCharts(); });
+            }
+        },
+        setTab(t) {
+            this.tab = t;
+            if (t === 'analytics' && !this.chartsReady) {
+                this.chartsReady = true;
+                this.$nextTick(function() { initAnalyticsCharts(); });
+            }
+        },
         matchSearch(name, domain) {
             if (!this.search.trim()) return true;
             const s = this.search.toLowerCase().trim();
@@ -401,6 +706,7 @@ function superAdminPage() {
                 tenantName: data.name,
                 cycleStart: data.cycle_start || today,
                 cycleEnd:   data.cycle_end   || nextYear,
+                amount:     data.amount,
             };
         },
     };

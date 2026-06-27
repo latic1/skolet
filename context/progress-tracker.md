@@ -6,11 +6,17 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** 8/10 — Phase 8 closing item completed; Phase 10 in progress
-**Last completed:** Production 500 Hotfixes — Fixed 4 tenant page crashes: (1) `AppServiceProvider` `once()` → static closure variables (`$resolved`/`$data`) because `once()` is Laravel 11-only; (2) `assignments/index.blade.php` `Js::json()` → `Js::from()` because `Js::json()` is Laravel 11-only; (3) `payroll/index.blade.php` `@json()` → `@js()` inside Alpine `@click` handler because Blade's `compileJson()` splits on internal array commas and generates broken PHP (`Unclosed '[' does not match ')'`); (4) `register/index.blade.php` all `route('tenant.register.*')` and `route('tenant.lesson-plan.*')` replaced with `$base . '/path'` using `request()->getSchemeAndHttpHost()` because domain-scoped routes require `{subdomain}` parameter which is unavailable in views; `students/promote` was already correct — its 500 was caused by the global `once()` crash
+**Phase:** 11 — Phase 11 in progress
+**Last completed:** Feature 53 — Custom Domain Support (already fully implemented in a prior session — no new code required; `Domain` model with `isPrimary()` + `isVerified()` helpers; `StoreCustomDomainRequest` with domain regex validation; `CustomDomainController::index()` splits primary vs custom domains, passes `$cnameTarget`; `store()` blocks skolet subdomain registration + uniqueness check + `tenant()->domains()->create()`; `verify()` calls `dns_get_record($domain, DNS_CNAME)` and checks target matches `baseHost()`, sets `verified_at`; `destroy()` guards against deleting primary domain; `domain.blade.php` full UI with Primary Subdomain card, Add Domain collapsible form + CNAME live-preview script, Custom Domains list with Pending/Verified badges + Verify DNS form + Delete form, CNAME instructions per unverified domain, How it Works numbered steps; central migration `add_verified_at_to_domains_table` already ran; 4 routes: GET/POST /settings/domain, PATCH /settings/domain/{domainId}/verify, DELETE /settings/domain/{domainId}) (3 tenant migrations: `create_webhooks_table` uuid PK + url/events JSON/secret/active/timestamps; `create_webhook_deliveries_table` uuid PK + webhook_id FK + event/payload JSON/response_status smallint/response_body text/attempt_count tinyint/attempted_at/next_retry_at/timestamps; `add_webhooks_permission` migration seeds `webhooks.manage` permission and assigns to school_admin role; `Webhook` + `WebhookDelivery` models with HasUuids; `WebhookDeliveryService` sends signed HTTP POST (`X-Skolet-Signature: sha256=<HMAC-SHA256>`), records delivery row, schedules retry on non-2xx (1min/5min/30min backoff); `SendWebhookPayload` queued job takes tenantId/event/payload, uses `$tenant->run()` to query active subscribed webhooks and call delivery service; `RetryFailedWebhooks` command (`schoolflow:retry-failed-webhooks`) loops all tenants for deliveries with `next_retry_at <= now()` and `attempt_count < 3`, scheduled every 5 minutes; `WebhookController` CRUD: index, store (HTTPS URL required, 16-char min secret), toggle (active/inactive), destroy, deliveries (paginated), retry; `webhooks.manage` permission added to `TenantProvisioningService::seedPermissions()` and `SeedTenantPermissions` command; 6 webhook routes under nested `permission:webhooks.manage` inside `permission:settings.manage`; dispatches hooked into 5 controllers: `StudentController::store()` → `student_enrolled`, `FeeController::pay()` → `payment_received` (cash), `PaystackWebhookController::handle()` → `payment_received` (Paystack), `AttendanceController::save()` → `attendance_marked`, `ExamController::publish()` → `exam_published`, `AnnouncementController::store()` → `announcement_posted`; `settings/webhooks.blade.php` with sub-nav (Webhooks active), webhooks table (URL/events/status toggle/last delivery/actions), Add Endpoint modal (Alpine: URL + auto-generated secret via `window.crypto.getRandomValues` + event checkboxes), HMAC security info card; `settings/webhook-deliveries.blade.php` paginated delivery log with expandable payload+response rows + manual Retry button; Webhooks tab added to all 8 existing settings sub-navs; action required: run `php artisan tenants:migrate`) (new central migration `create_platform_analytics_table`: `id` bigint PK, `metric` string unique, `value` JSON, `computed_at` timestamp; `PlatformAnalytics` model on central connection, `$timestamps = false`; `BuildPlatformAnalyticsCommand` (`schoolflow:build-platform-analytics`) loops all tenants via `$tenant->run()` — counts students, checks payroll/api_tokens/Paystack adoption per tenant; computes MRR from `subscription_payments` for current month; writes 6 metrics: `kpi`, `monthly_new_schools`, `monthly_revenue`, `subscription_status`, `student_snapshot` (monthly history accumulates), `feature_adoption`; scheduled daily at 02:00 in `Kernel.php`; `SuperAdminController::index()` reads `PlatformAnalytics` rows and passes `$analyticsData` to dashboard view; `SuperAdminController::rebuildAnalytics()` calls `Artisan::call()` and redirects back to `?tab=analytics`; new route `POST /super-admin/analytics/rebuild`; dashboard gains Alpine tab switcher (Schools/Analytics) with `tab`, `chartsReady`, `init()`, `setTab()` methods; Analytics tab: last-computed timestamp + Rebuild button, 4 KPI cards (Total Schools/Students/MRR/Avg per School), 2×2 Chart.js grid (new-schools bar, student-count line, revenue bar, status doughnut), feature adoption table with progress bars; Chart.js loaded via CDN; charts initialised lazily on tab switch via `$nextTick`)
+**Previous:** Feature 52 — Outbound Webhook System
+**Previous:** Feature 58 — Platform Analytics Dashboard
+**Previous:** Feature 57 — Invoice & Payment History (central migration `create_subscription_payments_table` with uuid PK, tenant_id/recorded_by FKs, amount decimal:2, cycle dates, payment_reference/notes; `SubscriptionPayment` model on central connection with HasUuids; `SuperAdminController::markPaid()` updated to accept `payment_reference`/`notes` + create a `SubscriptionPayment` row on each payment; `SuperAdminController::tenantDetail()` shows per-school detail page with payment history table; `SuperAdminController::downloadInvoice()` streams dompdf invoice PDF; `BillingController` (tenant side) serves read-only billing page + tenant-owned invoice download; routes: `GET /super-admin/tenants/{tenant}` + `GET /super-admin/tenants/{tenant}/invoices/{payment}` added to central; `GET /settings/billing` + `GET /settings/billing/invoices/{paymentId}` added to tenant settings; Super Admin dashboard "Payments" link per school row + Mark Paid modal gains Reference + Notes fields + shows Amount; standalone `tenant-detail.blade.php` page with school overview, subscription info, inline Mark Paid form, payment history table with invoice PDF download; `invoice-pdf.blade.php` dompdf template with SchoolFlow branding, line items table, total box; tenant `billing.blade.php` with subscription status cards + payment history table + invoice download links; Billing tab added to all 7 settings sub-navs; action required: run `php artisan migrate` on central DB) (no new migrations; `SuperAdminController::auditLog()` paginates `impersonation_logs` with tenant + superAdmin eager-loads, filters by date range + school name search; `SuperAdminController::exportAuditLog()` streams CSV of filtered results; session status resolved as: Normal exit (`ended_at` set), Timed out (`ended_at` null + `started_at` > 1 hour ago), Active (`ended_at` null + within 1 hour); row expand shows full `started_at`/`ended_at` timestamps + duration detail; routes `GET /super-admin/audit-log` + `GET /super-admin/audit-log/export` under `auth:super_admin`; standalone `audit-log.blade.php` self-contained page with filter bar + expandable table rows + manual pagination + footer note; Audit Log ghost button added to Super Admin dashboard header)
+**Previous:** Feature 56 — Impersonation Audit Log UI (2 central DB migrations: `broadcasts` + `broadcast_notifications`; `Broadcast` + `BroadcastNotification` models on central connection; `SendBroadcastJob` queued job loops all active tenants and bulk-inserts `broadcast_notifications`, marks `sent_at`; `CheckPlatformBroadcast` middleware runs on every tenant request, queries undismissed notifications with sent broadcast for the tenant, shares `$activeBroadcast` and `$criticalBroadcast` as View::share() data; `PlatformBroadcastController::dismiss()` PATCH endpoint sets `dismissed_at`; `SuperAdminController::broadcasts()` + `storeBroadcast()` — compose + list page; new central routes: `GET/POST /super-admin/broadcasts`; new tenant route: `PATCH /platform-notice/{notificationId}/dismiss`; Broadcasts page at `resources/views/central/super-admin/broadcasts.blade.php` — left column compose form (subject/message/severity select with live preview/schedule dropdown), right column sent broadcasts table; Broadcasts button added to Super Admin dashboard header; tenant layout updated with Critical non-dismissible red banner on every page, Info/Warning dismissible banner on dashboard only; action required: run `php artisan migrate` on central DB)
+**Previous:** Production 500 Hotfixes — Fixed 4 tenant page crashes: (1) `AppServiceProvider` `once()` → static closure variables (`$resolved`/`$data`) because `once()` is Laravel 11-only; (2) `assignments/index.blade.php` `Js::json()` → `Js::from()` because `Js::json()` is Laravel 11-only; (3) `payroll/index.blade.php` `@json()` → `@js()` inside Alpine `@click` handler because Blade's `compileJson()` splits on internal array commas and generates broken PHP (`Unclosed '[' does not match ')'`); (4) `register/index.blade.php` all `route('tenant.register.*')` and `route('tenant.lesson-plan.*')` replaced with `$base . '/path'` using `request()->getSchemeAndHttpHost()` because domain-scoped routes require `{subdomain}` parameter which is unavailable in views; `students/promote` was already correct — its 500 was caused by the global `once()` crash
 **Previous Feature:** Feature 31b — Extended Test Coverage (Phase 8 close-out: 20 PestPHP test files covering StaffTest, TimetableTest, LeaveTest, SubjectTeacherAssignment, PaystackTest, ReceiptTest, TranscriptTest, ApiTest, ExpenseTest, FeeDiscountTest, AssignmentTest, ParentPortalTest, StudentPromotionTest, NotificationTest, PayrollTest, FinancialSummaryTest, PayrollTaxTest [Unit], GradingScaleTest [Unit], ExamAnalyticsServiceTest [Unit], SuperAdminTest [Central]; 6 new factories: LeaveRequest, Assignment, Expense, SalaryStructure, PayrollRun, PayrollItem; PaystackService tested via ReflectionProperty mock injection; no new migrations)
 **Previous:** Feature 48b — Ghana Payroll Tax Compliance & Payment Tracking (migration adds 7 columns to payroll_items: ssnit_employee/tier2_employee/paye/ssnit_employer/tier2_employer decimal:2 default 0, payment_method string nullable, paid_at timestamp nullable; config/payroll.php with GHA 2024 rates: SSNIT employee 5.5%, Tier2 employee 5%, SSNIT employer 13%, Tier2 employer 5%, progressive PAYE bands; PayrollItem model updated with new fillable + decimal:2 casts + paid_at datetime cast; PayrollRun model adds 5 aggregate accessors: total_ssnit_employee, total_tier2_employee, total_paye, total_ssnit_employer, total_tier2_employer; PayrollService::runPayroll() rewritten to compute Ghana statutory deductions per staff, taxable_income = gross − ssnitEmployee − tier2Employee, computePaye() progressive band loop, net = gross + allowances − deductions − ssnit_employee − tier2_employee − paye, bulk insert via PayrollItem::insert; PayrollController::markPaid() validates payment_method + paid_at, updates payment_status=paid; route PATCH /payroll/{run}/items/{item}/pay under permission:payroll.create; payroll/index.blade.php: inner items table adds − Statutory column (ssnit+tier2+paye combined) + Status badge column + Actions column with Payslip link + per-row Alpine x-data Mark Paid inline form (Method select + Date input + Confirm/Cancel); Remittance Summary panel below items table showing Net Disbursement + SSNIT Emp + Tier2 Emp + PAYE→GRA + Employer Liability; payslip-pdf.blade.php: Statutory Deductions section with named SSNIT 5.5%/Tier2 5%/PAYE rows, Other Deductions section only if manual deductions > 0, net pay box updated, greyed Employer Contributions informational block; paid_at + payment_method displayed on payslip when paid; action required: php artisan tenants:migrate) (2 tenant migrations: class_registers UUID, lesson_plans UUID; ClassRegister + LessonPlan models with HasUuids; RegisterController: index (role-scoped classes/subjects via SubjectTeacherAssignment for teachers, all for admin; loads existing register entry + history; week-based lesson plan listing), store (updateOrCreate by teacher/class/section/subject/date), exportPdf (monthly dompdf A4); LessonPlanController: store (updateOrCreate, snaps week_start to Monday), update, destroy (ownership check); two-tab view (Class Register + Lesson Plans) with Alpine registerPage() — cascading class→section for both register filter and lesson plan modal; weekly navigation with prev/next links; lesson plan cards with inline edit via Alpine x-data={editing}; register filter loads entry form + history table; monthly PDF export via GET /register/pdf/{staff}/{month}; register.view/create/manage permissions; teacher gets register.view+create; sidebar Register nav item) (leave_requests UUID migration; LeaveRequest model with HasUuids, leave_type_label + leave_days accessors; LeaveController: index, store, approve, reject; two-tab view: My Requests (submit form + history list) + All Requests admin tab with inline reject form powered by Alpine; LeaveRequestSubmitted notification → school_admin on new request; LeaveRequestDecided notification → staff user on approve/reject; leave.view + leave.manage permissions seeded; school_admin gets both via \$all, teacher + accountant get leave.view; StaffAttendance integration: AttendanceController::staff() pre-marks on_leave from approved LeaveRequest records overlapping the selected date; SaveStaffAttendanceRequest allows on_leave status; On Leave button + badge added to staff attendance view; Leave nav item in sidebar after Payroll; 4 routes under permission:leave.view) (FinancialSummaryService::build(); income from fee_payments joined with fee_structures filtered by term or academic_year; expenses filtered by date range within year/term; both grouped by category + monthly trend; ReportController extended with FinancialSummaryService injection + financial data loading when tab=financial + financialPdf() method; Financial Summary tab added to reports/index.blade.php with Alpine financialYearId/financialTermId state + cascading year→term filter + Chart.js grouped bar chart for monthly income vs expenses + 3-card summary + income-by-fee-item + expense-by-category tables + Export PDF link; financial-pdf.blade.php A4 landscape self-contained dompdf with summary cards, two-column breakdown tables, monthly trend table; route GET /reports/financial/pdf) (3 tenant migrations: salary_structures, payroll_runs uuid, payroll_items uuid; SalaryStructure/PayrollRun/PayrollItem models; HasOne salaryStructure() added to Staff; PayrollService::runPayroll() wrapped in DB::transaction, bulk-inserts payroll items with manually generated UUIDs; PayrollService::logAsExpense() creates Expense record under Salaries category; PayrollController: index, updateSalaryStructure PATCH, runPayroll POST, downloadPayslip GET, logAsExpense POST; payroll/index.blade.php with Alpine two-tab layout: Salary Structures table with per-row edit modal + Payroll Runs table with collapsible staff items and per-item payslip download; payslip-pdf.blade.php self-contained dompdf with school header, itemised earnings/deductions tables, net pay highlighted box; permissions payroll.view/create/edit added to all list + school_admin + accountant roles; 5 routes in routes/tenant.php; Payroll nav item in sidebar-nav.blade.php; action required: run php artisan tenants:migrate)
-**Next:** Feature 52 — Outbound Webhook System
+**Previous:** Landing Page Redesign — Rewrote `resources/views/central/landing.blade.php` matching the template design language
+**Next:** Feature 54 (Multi-Language UI Support — next unchecked in Phase 10)
 
 ---
 
@@ -102,16 +108,16 @@ Update this file after every completed feature. Any AI agent reading this should
 - [ ] 49 Payment Plans / Installment Support
 - [x] 50 Financial P&L Dashboard
 - [x] 51 Teacher Class Register & Lesson Plans
-- [ ] 52 Outbound Webhook System
-- [ ] 53 Custom Domain Support (Complete Feature 22)
+- [x] 52 Outbound Webhook System
+- [x] 53 Custom Domain Support (Complete Feature 22)
 - [ ] 54 Multi-Language UI Support
 
 ### Phase 11 — Super Admin & Platform Operations
 
-- [ ] 55 Platform Broadcast
-- [ ] 56 Impersonation Audit Log UI
-- [ ] 57 Invoice & Payment History
-- [ ] 58 Platform Analytics Dashboard
+- [x] 55 Platform Broadcast
+- [x] 56 Impersonation Audit Log UI
+- [x] 57 Invoice & Payment History
+- [x] 58 Platform Analytics Dashboard
 
 ---
 
@@ -1648,6 +1654,206 @@ Applied consistent submit-disable pattern (Alpine `submitting` state, `@submit="
 **Sidebar**: "Payroll" nav item added after "Expenses" (permission: payroll.view).
 
 **Action required**: Run `php artisan tenants:migrate` to create the 3 payroll tables in all existing tenant databases.
+
+---
+
+### 55 — Platform Broadcast
+
+**Migrations** (2 central DB migrations):
+- `database/migrations/2026_06_27_000001_create_broadcasts_table.php` — `broadcasts` table on `central` connection. `$connection = 'central'`; `Schema::connection('central')->create()`. Columns: `id` uuid PK, `subject` string, `message` text, `severity` enum(info/warning/critical) default 'info', `send_at` timestamp nullable, `sent_at` timestamp nullable, `sent_by` FK→super_admins cascade. `created_at` via `useCurrent()` — no `updated_at`.
+- `database/migrations/2026_06_27_000002_create_broadcast_notifications_table.php` — `broadcast_notifications` table on central connection. Columns: `id` uuid PK, `broadcast_id` FK→broadcasts cascade, `tenant_id` FK→tenants cascade, `dismissed_at` timestamp nullable, `timestamps()`. Unique constraint `[broadcast_id, tenant_id]`.
+
+**Models** (both in `app/Models/Central/`, `$connection = 'central'`):
+- `Broadcast`: `$table = 'broadcasts'`, `$timestamps = false`, manual UUID in `booted()` creating hook. Casts: `send_at`/`sent_at`/`created_at` datetime. Relationships: `sentBy()` BelongsTo SuperAdmin, `notifications()` HasMany BroadcastNotification. Helpers: `isSent()`, `isScheduled()`.
+- `BroadcastNotification`: manual UUID in boot. Relationships: `broadcast()` BelongsTo Broadcast, `tenant()` BelongsTo Tenant.
+
+**Job** (`app/Jobs/SendBroadcastJob.php`): `ShouldQueue`, `$tries = 3`. Takes `string $broadcastId`. `handle()`: finds broadcast; returns early if not found or already `sent_at`; queries `Tenant::where('status','active')->pluck('id')`; bulk-builds rows with manual UUIDs; `BroadcastNotification::insertOrIgnore()` in chunks of 100; sets `sent_at = now()`. `failed()` logs the error.
+
+**Middleware** (`app/Http/Middleware/CheckPlatformBroadcast.php`): Runs on every tenant domain request (added to top-level domain middleware array in `routes/tenant.php`). Guards with `tenancy()->initialized && auth()->check()`. Queries `BroadcastNotification::on('central')` for current tenant — undismissed notifications where broadcast's `sent_at` is not null and `send_at` is in the past. Splits: critical → `$criticalBroadcast` (first), info/warning → `$activeBroadcast` (first). Both shared via `View::share()`. Entire logic wrapped in `try/catch(\Throwable)` — silently ignores all DB/query errors so tenant pages never break if central DB is unreachable.
+
+**Controller** (`app/Http/Controllers/Tenant/PlatformBroadcastController.php`): `dismiss(Request, string $notificationId)` — queries `BroadcastNotification::on('central')` scoped to current `tenant_id`, guards against dismissing critical severity broadcasts, sets `dismissed_at = now()`.
+
+**SuperAdminController additions**: `broadcasts()` — queries `Broadcast::on('central')->with('sentBy')->latest()->get()`, returns `central.super-admin.broadcasts` view. `storeBroadcast()` — validates subject/message/severity/send_at, creates Broadcast with manual UUID + `Auth::guard('super_admin')->id()` as `sent_by`, dispatches `SendBroadcastJob` immediately or with delay depending on `send_at`.
+
+**Routes**:
+- Central (`routes/web.php`, inside `auth:super_admin` group): `GET /broadcasts` → `broadcasts` (name: `super-admin.broadcasts`), `POST /broadcasts` → `storeBroadcast` (name: `super-admin.broadcasts.store`).
+- Tenant (`routes/tenant.php`, inside `auth` group): `PATCH /platform-notice/{notificationId}/dismiss` → `PlatformBroadcastController::dismiss` (name: `broadcast.dismiss`).
+
+**Design decisions**:
+- Dashboard-only for info/warning: Critical banners appear on every page (non-dismissible). Info/Warning show only on the dashboard (`request()->routeIs('tenant.dashboard')`) to avoid fatigue — implemented with a Blade conditional in `layouts/tenant.blade.php`.
+- Central DB queries from tenant context: `BroadcastNotification::on('central')` and `Tenant::` (always central) — explicit connection targets bypass stancl's active tenant connection.
+- `insertOrIgnore()` + unique constraint on `[broadcast_id, tenant_id]`: idempotent — job can be retried safely.
+- Guard against dismissing critical broadcasts: `PlatformBroadcastController::dismiss()` aborts if the broadcast's severity is 'critical', matching the non-dismissible UX.
+- `CheckPlatformBroadcast` middleware position: added between `ResumeImpersonation` and `SetSentryContext` in the tenant domain middleware array — runs after session/auth initialization, before any page-specific logic.
+
+**Action required**: Run `php artisan migrate` on the central DB (not `tenants:migrate`) to apply the two new broadcast migrations.
+
+---
+
+### 56 — Impersonation Audit Log UI
+
+**No new migrations** — `impersonation_logs` table already exists with: `id` uuid PK, `super_admin_id` FK→super_admins, `tenant_id` FK→tenants, `impersonated_user_id` uuid, `started_at`, `ended_at` nullable. `$connection = 'central'`.
+
+**`SuperAdminController::auditLog(Request)`**: queries `ImpersonationLog::on('central')->with(['superAdmin', 'tenant'])`. Applies three optional filters via `when()`: `date_from` (≥ 00:00:00), `date_to` (≤ 23:59:59), `search` (whereHas tenant name like). Orders `desc('started_at')`. Paginates at 25 with `withQueryString()`. Returns `central.super-admin.audit-log` view.
+
+**`SuperAdminController::exportAuditLog(Request)`**: same query without pagination, calls `response()->streamDownload()` to stream CSV directly — no external package needed. CSV columns: Date, Super Admin, School, Started At, Ended At, Duration, Status. Filename: `impersonation-audit-log-{Y-m-d}.csv`.
+
+**`SuperAdminController::resolveSessionStatus(ImpersonationLog)`** (private helper): returns `'Normal exit'` if `ended_at` is set; `'Timed out'` if `ended_at` is null and `started_at < now()->subHour()`; `'Active'` otherwise.
+
+**Routes** (added to `routes/web.php` inside `auth:super_admin` group):
+- `GET /super-admin/audit-log` → `auditLog` (name: `super-admin.audit-log`)
+- `GET /super-admin/audit-log/export` → `exportAuditLog` (name: `super-admin.audit-log.export`)
+
+**View** (`resources/views/central/super-admin/audit-log.blade.php`): standalone self-contained page (same pattern as `broadcasts.blade.php`). Filter bar with date from/to + school name search input. Export CSV ghost button in page header — passes current query string to export route for filtered downloads. Table columns: (expand chevron) | Date | Super Admin | School | Duration | Status. Each row has Alpine `x-data="{ expanded: false }"` on a `<tbody>` wrapper — clicking the row toggles a detail `<tr x-show="expanded">` below it showing full `started_at`/`ended_at` timestamps, computed duration, session ID (first 8 chars). Manual pagination (prev/next + numbered page links). Footer note explaining timeout semantics.
+
+**Status badge colors**: Normal exit → `bg-success-lightest text-success-foreground`; Timed out → `bg-warning-light text-warning`; Active → `bg-accent-muted text-accent`.
+
+**Duration display**: if `ended_at` set → `{N} min` (or `< 1 min`); if timed out → "Timed out"; if active → "Active" in `text-accent font-medium`.
+
+**Dashboard button**: "Audit Log" ghost button (`bg-surface border border-border text-text-secondary`) added to the Super Admin dashboard header alongside Broadcasts — uses document/list SVG icon.
+
+**Design decision — row expand vs separate page**: all detail is shown inline in a collapsible row (Alpine toggle on `<tbody>`) rather than a separate detail page, keeping navigation minimal for a compliance-oriented read-only view.
+
+---
+
+### 57 — Invoice & Payment History
+
+**New central migration** (`database/migrations/2026_06_27_000003_create_subscription_payments_table.php`):
+- `$connection = 'central'`; `Schema::connection('central')->create('subscription_payments', ...)`
+- Columns: `id` uuid PK, `tenant_id` FK→tenants cascade, `amount` decimal(15,2), `cycle_start` date, `cycle_end` date, `payment_reference` string nullable, `notes` text nullable, `recorded_by` FK→super_admins cascade, `created_at` timestamp `useCurrent()` (no `updated_at`).
+
+**`SubscriptionPayment` model** (`app/Models/Central/SubscriptionPayment.php`):
+- `$connection = 'central'`, `HasUuids`, `$timestamps = false`
+- `$casts`: `amount` decimal:2, `cycle_start`/`cycle_end` date, `created_at` datetime
+- `tenant()` BelongsTo `Tenant`; `recordedBy()` BelongsTo `SuperAdmin` via `recorded_by` FK
+
+**`SuperAdminController` updates**:
+- `markPaid()`: added validation for `payment_reference` (nullable, string, max:255) and `notes` (nullable, string, max:1000). After updating `subscription_plans`, creates a `SubscriptionPayment::create()` row recording `amount`, dates, reference, notes, `recorded_by = Auth::guard('super_admin')->id()`, `created_at = now()`.
+- `tenantDetail(Tenant)`: queries `SubscriptionPlan` + `SubscriptionPayment::on('central')->with('recordedBy')->where('tenant_id', …)->orderByDesc('created_at')->get()`. Returns `central.super-admin.tenant-detail`.
+- `downloadInvoice(Tenant, SubscriptionPayment)`: `abort_if($payment->tenant_id !== $tenant->id, 404)` ownership check. Loads `recordedBy`. Renders `central.super-admin.invoice-pdf` via `Pdf::loadView()`, returns as PDF download. Filename: `invoice-{subdomain}-{Y-m-d}.pdf`.
+- New imports added: `SubscriptionPayment`, `Pdf` (barryvdh), `Response`.
+
+**New routes** (`routes/web.php`, inside `auth:super_admin` group):
+- `GET /super-admin/tenants/{tenant}` → `tenantDetail` (name: `super-admin.tenants.detail`)
+- `GET /super-admin/tenants/{tenant}/invoices/{payment}` → `downloadInvoice` (name: `super-admin.tenants.invoices.download`)
+
+**New routes** (`routes/tenant.php`, inside `permission:settings.manage` group):
+- `GET /settings/billing` → `BillingController::index` (name: `tenant.settings.billing`)
+- `GET /settings/billing/invoices/{paymentId}` → `BillingController::downloadInvoice` (name: `tenant.settings.billing.invoice`)
+
+**`BillingController`** (`app/Http/Controllers/Tenant/BillingController.php`):
+- `index()`: queries `SubscriptionPlan::on('central')` + `SubscriptionPayment::on('central')` by `tenant('id')`. Returns `tenant.settings.billing`.
+- `downloadInvoice(string $paymentId)`: queries SubscriptionPayment scoped to `where('tenant_id', tenant('id'))` for ownership, then renders `central.super-admin.invoice-pdf` (shared template) and returns PDF attachment.
+
+**Views**:
+- `resources/views/central/super-admin/tenant-detail.blade.php`: standalone self-contained page (no `@extends`). Shows school info card + subscription info card in 2-col grid; inline Mark Paid form (if unpaid) with cycle dates + reference + full-width notes; payment history table (Date | Amount | Cycle Period | Reference + Notes | Marked By | Invoice PDF download button).
+- `resources/views/central/super-admin/invoice-pdf.blade.php`: dompdf template. DejaVu Sans, A4. Header: "Skolet" brand (left) + "INVOICE" + `#{id[:8]}` (right), separated by blue bottom border. Meta grid: Billed To (school name + domain) vs Invoice Date + Reference (right-aligned). Line items table: "Platform Subscription Fee" | cycle period | amount. Total box: `bg-#1e3a8a` dark blue, white text, bold amount. Notes box if `$payment->notes`. Recorded by + paid datetime footer. Footer note.
+- `resources/views/tenant/settings/billing.blade.php`: extends `layouts.tenant`. Settings sub-nav with "Billing" tab active. Subscription status 4-card grid (Plan Status / Payment / Cycle Period / Amount). Warning callout if unpaid. Payment history table: Date | Amount | Cycle Period | Reference | "Download PDF" link. Empty states for both sections. Invoice download link uses `$host/settings/billing/invoices/{payment->id}` (explicit $host URL to avoid route name dependency in tenant context).
+
+**Dashboard updates** (`resources/views/central/super-admin/dashboard.blade.php`):
+- Actions column: added "Payments" ghost link button before "Mark Paid" → routes to `super-admin.tenants.detail`.
+- Mark Paid modal: added Reference (text input, nullable) + Notes (textarea, 2 rows, nullable) fields. Amount display line: `x-text="paidModal.amount ? 'GHS ' + Number(paidModal.amount).toFixed(2) : '—'"`. Alpine `paidModal` state gains `amount` field. `openMarkPaid(data)` passes `data.amount`.
+
+**Settings sub-nav**: "Billing" tab added to all 7 settings views that share the sub-nav (academic-year, roles, school-profile, domain, notifications, audit-log, privacy). Active on `billing.blade.php`, inactive on all others.
+
+**Design decisions**:
+- Invoice PDF template is shared between central (super admin download) and tenant (school admin download) — same `central.super-admin.invoice-pdf` view, different controller routing. Ownership verified server-side in both controllers.
+- Tenant billing page uses `$host/settings/billing/invoices/{id}` literal URL (not `route()` helper) to avoid needing named route resolution in tenant context where route() may produce incorrect domain-prefixed URLs.
+- `BillingController::downloadInvoice()` takes a raw `string $paymentId` parameter (not implicit model binding) so it can apply the `where('tenant_id', tenant('id'))` ownership filter before retrieving the record.
+- Mark Paid modal shows the amount due from the plan as a read-only display field — helps the super admin confirm the correct amount before recording.
+
+**Action required**: Run `php artisan migrate` on the central DB to apply `2026_06_27_000003_create_subscription_payments_table.php`.
+
+---
+
+### 58 — Platform Analytics Dashboard
+
+**New central migration** (`database/migrations/2026_06_27_000004_create_platform_analytics_table.php`):
+- `$connection = 'central'`; columns: `id` bigint PK, `metric` string unique, `value` JSON, `computed_at` timestamp (no `timestamps()`).
+
+**`PlatformAnalytics` model** (`app/Models/Central/PlatformAnalytics.php`):
+- `$connection = 'central'`, `$timestamps = false`, casts `value` → `array`, `computed_at` → `datetime`.
+
+**`BuildPlatformAnalyticsCommand`** (`app/Console/Commands/BuildPlatformAnalyticsCommand.php`):
+- Signature: `schoolflow:build-platform-analytics`.
+- Loops all tenants via `$tenant->run()` inside `try/catch` — counts `students`, checks `payroll_runs`, `personal_access_tokens`, `fee_payments.paystack_ref` per tenant.
+- Central-only queries: MRR from `subscription_payments` (current month sum), new-schools by month (last 12), revenue by month (last 12), subscription_status counts per plan status + suspended tenant count.
+- Student snapshot: reads existing `student_snapshot` metric, upserts current month's count into the JSON array, keeps last 12 months.
+- 6 metrics written: `kpi`, `monthly_new_schools`, `monthly_revenue`, `subscription_status`, `student_snapshot`, `feature_adoption`.
+- Scheduled daily at 02:00 via `Kernel.php`.
+
+**`SuperAdminController` changes**:
+- `index()` now reads all 6 `PlatformAnalytics` rows and passes `$analyticsData` array to view.
+- New `rebuildAnalytics()`: calls `Artisan::call('schoolflow:build-platform-analytics')` synchronously, redirects to `dashboard?tab=analytics`.
+- Route added: `POST /super-admin/analytics/rebuild` → `super-admin.analytics.rebuild`.
+
+**`dashboard.blade.php` changes**:
+- Chart.js 4.4.0 loaded via CDN `<script>` tag in `<head>`.
+- `x-data="superAdminPage()"` moved from tenants card up to a wrapper `<div>` covering both tabs.
+- Alpine tab switcher (`Schools` / `Analytics`) using border-b pill pattern.
+- Existing stats + tenants card wrapped in `<div x-show="tab === 'schools'">`.
+- New `<div x-show="tab === 'analytics'" x-cloak>` with: last-computed timestamp + Rebuild form, 4 KPI cards, 2×2 Chart.js canvas grid, feature adoption table.
+- `superAdminPage()` gains `tab` (reads `?tab` URL param), `chartsReady`, `init()`, `setTab()`.
+- `initAnalyticsCharts()` standalone function initialises all 4 charts from `_analyticsData` JS var.
+- Charts lazy-initialised: `init()` draws immediately if `?tab=analytics`, `setTab()` draws on first switch, both via `$nextTick`.
+
+---
+
+### 53 — Custom Domain Support
+
+Already complete when this session ran. No new files created. Verified working state:
+
+- **Central migration** `add_verified_at_to_domains_table` — adds `verified_at` timestamp nullable column to `domains` (central DB). Status: ran.
+- **`Domain` model** (`app/Models/Central/Domain.php`) — extends stancl `BaseDomain`; `$casts = ['verified_at' => 'datetime']`; `isVerified()` = `verified_at !== null`; `isPrimary()` = domain ends with `.{baseHost}` (e.g. `.skolet.test`).
+- **`StoreCustomDomainRequest`** — regex `^[a-z0-9]([a-z0-9\-]{0,61}...)` validates domain format.
+- **`CustomDomainController`** — `index()` splits tenant domains into primary (first) + custom (rest); `store()` blocks subdomains of own base host, checks uniqueness in central `domains` table, calls `tenant()->domains()->create()`; `verify()` uses `dns_get_record($domain, DNS_CNAME)` checks `target` against `baseHost()` or `*.baseHost()`; `destroy()` guards primary; `baseHost()` private helper strips www from `app.url`.
+- **View** `settings/domain.blade.php` — full UI: Primary Subdomain card, collapsible Add Domain form with live CNAME name preview (JS), status badges (Pending/Verified), Verify DNS form, Delete form, CNAME hint per unverified domain, How It Works numbered steps.
+- **Routes** — GET/POST `/settings/domain`, PATCH `/settings/domain/{domainId}/verify`, DELETE `/settings/domain/{domainId}`, all under `permission:settings.manage`.
+
+---
+
+### 52 — Outbound Webhook System
+
+**Tenant migrations** (3 files):
+- `2026_06_27_000011_create_webhooks_table.php` — uuid PK, url, events JSON, secret, active boolean default true, timestamps
+- `2026_06_27_000012_create_webhook_deliveries_table.php` — uuid PK, webhook_id FK cascade, event, payload JSON, response_status smallint nullable, response_body text nullable, attempt_count tinyint default 0, attempted_at timestamp, next_retry_at timestamp nullable, timestamps
+- `2026_06_27_000013_add_webhooks_permission.php` — `Permission::firstOrCreate(['name' => 'webhooks.manage'])` + assigns to school_admin role
+
+**Models:**
+- `Webhook` — HasUuids; events cast to array; active cast to boolean; `deliveries()` hasMany; `latestDelivery()` helper
+- `WebhookDelivery` — HasUuids; payload cast to array; attempt_count/attempted_at/next_retry_at cast; `isSuccess()` = response_status 2xx; `canRetry()` = !isSuccess && attempt_count < 3
+
+**Service — `WebhookDeliveryService`:**
+- `send()`: creates `WebhookDelivery` row (attempt_count=0), calls private `attempt()` which does `Http::timeout(10)->withBody($body, 'application/json')->withHeaders(['X-Skolet-Signature' => 'sha256=<HMAC-SHA256>', 'X-Skolet-Event' => $event])->post($url)`, updates delivery with response_status/body/attempt_count and sets next_retry_at via `match($attemptCount) { 1 => +1min, 2 => +5min, 3 => +30min, default => null }`
+- `retry()`: loads delivery's webhook, re-computes signature from stored payload, calls `attempt()`
+
+**Job — `SendWebhookPayload`:**
+- Constructor: `tenantId`, `event`, `payload` (all primitive types for serialization safety)
+- `handle()`: finds Tenant by ID, calls `$tenant->run()`, queries `Webhook::where('active', true)->whereJsonContains('events', $event)->get()`, calls `$service->send()` for each
+
+**Command — `RetryFailedWebhooks`:** loops all tenants, inside each `$tenant->run()` queries `WebhookDelivery::where('next_retry_at', '<=', now())->where('attempt_count', '<', 3)->with('webhook')->get()`, calls `$service->retry()` for each; scheduled every 5 minutes in `Kernel.php`
+
+**Controller — `WebhookController`:**
+- `index()`: loads webhooks with delivery count + latest delivery via `setRelation('latestDeliveryRecord', ...)`
+- `store()`: validates HTTPS URL (str_starts_with check after `url` rule), min 16 char secret, events array
+- `toggle()`: flips active boolean
+- `destroy()`: deletes webhook (cascade removes deliveries)
+- `deliveries()`: paginated delivery log for one webhook
+- `retry()`: checks ownership via `$delivery->webhook_id !== $webhook->id`, calls service
+
+**Routes** — nested inside `permission:settings.manage` → `permission:webhooks.manage`:
+- GET/POST `/settings/webhooks`, PATCH `/settings/webhooks/{webhook}/toggle`, DELETE `/settings/webhooks/{webhook}`, GET `/settings/webhooks/{webhook}/deliveries`, POST `/settings/webhooks/{webhook}/deliveries/{delivery}/retry`
+
+**Views:**
+- `settings/webhooks.blade.php` — sub-nav (Webhooks active), webhook table with URL/events chips/status toggle form/last-delivery badge, Add Endpoint modal (Alpine `webhooksPage()`: `addOpen`, `secret`, `openAdd()` auto-generates secret via `window.crypto.getRandomValues`, `generateSecret()`), HMAC security info card
+- `settings/webhook-deliveries.blade.php` — breadcrumb back to webhooks, webhook info card, delivery table with event/status badge/attempt count/timestamp + Alpine expandable row showing payload+response JSON + Retry form
+
+**Dispatch hooks (5 events across 6 call sites):**
+- `student_enrolled` — `StudentController::store()` after `Student::create()`
+- `payment_received` — `FeeController::pay()` on cash success; `PaystackWebhookController::handle()` before final 200 return
+- `attendance_marked` — `AttendanceController::save()` before success redirect
+- `exam_published` — `ExamController::publish()` before success redirect
+- `announcement_posted` — `AnnouncementController::store()` after `SendAnnouncementNotifications` dispatch
 
 ---
 

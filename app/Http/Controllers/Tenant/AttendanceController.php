@@ -17,6 +17,7 @@ use App\Models\Tenant\SubjectTeacherAssignment;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Term;
 use App\Models\Tenant\LeaveRequest;
+use App\Jobs\SendWebhookPayload;
 use App\Notifications\AbsenceAlert;
 use App\Notifications\LowAttendanceAlert;
 use App\Services\AttendanceReportService;
@@ -122,6 +123,17 @@ final class AttendanceController extends Controller
                     }
                 }
             }
+
+            SendWebhookPayload::dispatch(tenant('id'), 'attendance_marked', [
+                'event'     => 'attendance_marked',
+                'tenant'    => tenant('id'),
+                'timestamp' => now()->toIso8601String(),
+                'data'      => [
+                    'date'         => $data['date'],
+                    'class_id'     => $data['class_id'] ?? null,
+                    'record_count' => count(array_filter($data['statuses'])),
+                ],
+            ]);
 
             return back()->with('success', 'Attendance saved for ' . Carbon::parse($data['date'])->format('d M Y') . '.');
         } catch (\Throwable $e) {

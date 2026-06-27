@@ -19,6 +19,7 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\Subject;
 use App\Models\Tenant\SubjectTeacherAssignment;
 use App\Models\Tenant\Timetable;
+use App\Jobs\SendWebhookPayload;
 use App\Notifications\ExamResultsPublished;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\RedirectResponse;
@@ -212,6 +213,17 @@ final class ExamController extends Controller
                         }
                     });
             }
+
+            SendWebhookPayload::dispatch(tenant('id'), 'exam_published', [
+                'event'     => 'exam_published',
+                'tenant'    => tenant('id'),
+                'timestamp' => now()->toIso8601String(),
+                'data'      => [
+                    'exam_id'   => $exam->id,
+                    'exam_name' => $exam->name,
+                    'term_id'   => $exam->term_id,
+                ],
+            ]);
 
             return redirect($host . '/exams')->with('success', "'{$exam->name}' has been published. Students and parents can now view results.");
         } catch (\Throwable $e) {

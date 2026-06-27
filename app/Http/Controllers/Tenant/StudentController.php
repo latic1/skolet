@@ -12,6 +12,7 @@ use App\Http\Requests\Tenant\StoreStudentRequest;
 use App\Http\Requests\Tenant\UpdateStudentRequest;
 use App\Imports\StudentImport;
 use App\Jobs\ExportStudentDataJob;
+use App\Jobs\SendWebhookPayload;
 use App\Models\Tenant\AdmissionApplication;
 use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\FeeStructure;
@@ -97,6 +98,18 @@ final class StudentController extends Controller
             $data['admission_no'] = $this->admissionNumberService->generate();
 
             $student = Student::create($data);
+
+            SendWebhookPayload::dispatch(tenant('id'), 'student_enrolled', [
+                'event'        => 'student_enrolled',
+                'tenant'       => tenant('id'),
+                'timestamp'    => now()->toIso8601String(),
+                'data'         => [
+                    'student_id'   => $student->id,
+                    'full_name'    => $student->full_name,
+                    'admission_no' => $student->admission_no,
+                    'class_id'     => $student->class_id,
+                ],
+            ]);
 
             // If this student was created from an admission application, mark it accepted
             if ($request->filled('from_application_id')) {

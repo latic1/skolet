@@ -43,6 +43,7 @@ final class SeedTenantPermissions extends Command
                 'admissions.view', 'admissions.manage',
                 'reports.view',
                 'settings.manage',
+                'webhooks.manage',
             ];
 
             foreach ($all as $name) {

@@ -915,6 +915,135 @@ After building any component — update this file with the component name, file 
 - Footer: `border-top:1px solid #e5e7eb`, generated date + school name.
 - dompdf-safe: uses `DejaVu Sans` font; all layout via `display:table`/`display:table-cell`/`display:table-row`.
 
+### Super Admin Broadcasts Page
+**File:** `resources/views/central/super-admin/broadcasts.blade.php`
+**Description:** Standalone self-contained page (no extends — same pattern as super-admin `dashboard.blade.php`). Two-column layout: left = compose form, right = sent broadcasts table. Alpine component `broadcastsPage()` manages severity preview and schedule toggle.
+- Layout: `grid grid-cols-1 lg:grid-cols-3 gap-6` with `x-data="broadcastsPage()"` on the grid root. Left column `lg:col-span-1`, right `lg:col-span-2`.
+- Compose card: `bg-surface border border-border rounded-2xl shadow-card overflow-hidden`. Form fields: Subject (text input), Message (textarea, resize-y), Severity (select with `x-model="severity"`), Schedule toggle (select with `x-model="scheduleMode"` + `x-show` datetime-local input). Submit button: `disabled:opacity-60 disabled:cursor-not-allowed` with `submitting` guard.
+- Severity live preview: `<div :class="severity === 'critical' ? 'bg-error-light text-error' : (severity === 'warning' ? 'bg-warning-light text-warning' : 'bg-accent-muted text-accent')"` with `<template x-if>` per severity showing a descriptive sentence.
+- Sent broadcasts table: Settings CRUD Table Card pattern; columns: Subject (name + message preview `line-clamp-2`) | Severity badge | Status badge | Sent/Scheduled datetime | Recipients count (schools).
+- Severity badges: Critical = `bg-error-light text-error border border-error/20`; Warning = `bg-warning-light text-warning border border-warning/20`; Info = `bg-accent-muted text-accent border border-accent/20`. All: `inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium`.
+- Status badges: Sent = `bg-success-lightest text-success-foreground`; Scheduled = `bg-accent-muted text-accent`; Pending = `bg-surface-secondary text-text-muted`. All: `inline-flex px-2 py-0.5 rounded-full text-xs font-medium`.
+- Empty state: broadcast/megaphone SVG icon in `w-12 h-12 rounded-xl bg-accent-muted` container, centered `py-16`.
+- Alpine: `broadcastsPage()` returns `{ severity: '{{ old('severity', 'info') }}', scheduleMode: '{{ old('send_at') ? 'schedule' : 'now' }}', submitting: false }`.
+
+---
+
+### Critical Broadcast Banner (Tenant Layout)
+**File:** `resources/views/layouts/tenant.blade.php` — rendered after the impersonation banner, before `<header>`
+**Description:** Non-dismissible full-width alert banner shown on every page when a critical broadcast exists for the tenant. Shared via `View::share('criticalBroadcast', ...)` from `CheckPlatformBroadcast` middleware.
+- Condition: `@if(!empty($criticalBroadcast))`
+- Wrapper: `bg-error-light border-b border-error/30`; inner: `max-w-[1400px] mx-auto px-6 py-2.5 flex items-center gap-3`
+- "Platform Alert" badge: `shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-error text-white`
+- Subject: `text-sm font-semibold text-error`
+- Message (truncated): `text-xs text-error/80 hidden sm:inline` with `Str::limit($criticalBroadcast['message'], 120)`
+- No dismiss button — critical broadcasts are non-dismissible by design.
+
+---
+
+### Info/Warning Broadcast Card (Tenant Layout — Dashboard Only)
+**File:** `resources/views/layouts/tenant.blade.php` — same block as Critical banner, second conditional
+**Description:** Dismissible notification card shown only on the tenant dashboard (`request()->routeIs('tenant.dashboard')`) for info and warning severity broadcasts. Shared via `View::share('activeBroadcast', ...)`.
+- Condition: `@if(!empty($activeBroadcast) && request()->routeIs('tenant.dashboard'))`
+- Wrapper: `border-b` + color-conditional `border-warning/30 bg-warning-light` (warning) or `border-accent/20 bg-accent-muted` (info); inner: `max-w-[1400px] mx-auto px-6 py-2.5 flex items-center justify-between gap-4`
+- Left: severity icon SVG + Subject (`text-sm font-semibold`) + Message truncated (`text-xs hidden sm:inline`). Colors vary: `text-warning` or `text-accent`.
+- Dismiss: `<form method="POST" action="/platform-notice/{notification_id}/dismiss">` with `@csrf @method('PATCH')`. Button: `shrink-0 text-xs font-medium px-2 py-1 rounded hover:bg-black/5 transition-colors` in matching text color.
+
+---
+
+### Super Admin Audit Log Page
+**File:** `resources/views/central/super-admin/audit-log.blade.php`
+**Description:** Standalone self-contained page (no extends). Paginated table of all Super Admin impersonation sessions with filter bar, expandable detail rows, and CSV export.
+- Layout: same header/footer pattern as `broadcasts.blade.php` and `dashboard.blade.php` — no shared layout file.
+- Filter bar: `bg-surface border border-border rounded-2xl shadow-card p-5` — date From/To inputs + school name search (with leading SVG icon) + Filter button + conditional Clear link. GET form targeting `super-admin.audit-log`.
+- Export CSV button (page header, right-aligned): `shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium bg-surface border border-border text-text-secondary rounded-lg hover:bg-surface-secondary hover:text-text-primary` — download SVG icon. Passes current query string for filtered exports.
+- Table columns: (expand chevron col) | Date | Super Admin | School | Duration | Status. `min-width: 700px` for horizontal scroll on mobile.
+- Row expand: each row's `<tbody>` wrapper has Alpine `x-data="{ expanded: false }"`. Clicking the `<tr>` toggles `expanded`. Chevron: `w-4 h-4 text-text-muted transition-transform :class="expanded ? 'rotate-90' : ''"`. Detail `<tr x-show="expanded" x-cloak class="bg-surface-secondary/40">` shows a 4-column `<dl>` grid: Started At (mono font) | Ended At (mono font or status text) | Duration (verbose) | Session ID (first 8 chars of UUID, `font-mono text-xs truncate`).
+- Status badges: Normal exit = `bg-success-lightest text-success-foreground`; Timed out = `bg-warning-light text-warning`; Active = `bg-accent-muted text-accent`. All: `inline-flex px-2 py-0.5 rounded-full text-xs font-medium`.
+- Duration cell: ended → `{N} min` or `< 1 min` (plain text); timed out → `text-text-muted "Timed out"`; active → `text-accent font-medium "Active"`.
+- Pagination: manual prev/next + numbered page range links (`getUrlRange(currentPage-2, currentPage+2)`). Pagination footer shows `Showing X–Y of N sessions`.
+- Empty state: `w-12 h-12 rounded-xl bg-accent-muted` icon container + descriptive text (different messages for filtered vs unfiltered empty).
+
+---
+
+### Super Admin Dashboard — Analytics Tab
+**File:** `resources/views/central/super-admin/dashboard.blade.php`
+**Description:** Alpine-driven tab added to the Super Admin dashboard. "Schools" tab shows existing content; "Analytics" tab shows pre-computed platform metrics from the `platform_analytics` table.
+**Tab switcher:** Border-b pill buttons ("Schools" / "Analytics") with `tab` Alpine state reading `?tab` URL param for deep-linking.
+**Analytics tab content:**
+- Last-computed timestamp + `POST /super-admin/analytics/rebuild` Rebuild button.
+- 4 KPI cards: Total Schools, Total Students, MRR (Est.), Avg Students / School.
+- 2×2 Chart.js grid: new-schools-per-month (bar, `#2563EB`), student-count-over-time (line, `#06B6D4`), monthly-revenue (bar, `#10B981`), subscription-status (doughnut, grey/green/red/amber).
+- Feature Adoption table: Payroll, REST API, Online Payments (Paystack) — count / total + progress bar + %.
+**Chart init:** `initAnalyticsCharts()` called lazily from `setTab('analytics')` or `init()` via `$nextTick`. Chart.js loaded via CDN in `<head>`. Data passed via `var _analyticsData = @json(...)` in page script block.
+**Empty state:** Adoption table and chart canvases show placeholder when no data computed yet.
+
+---
+
+### Super Admin Tenant Detail Page
+**File:** `resources/views/central/super-admin/tenant-detail.blade.php`
+**Description:** Standalone self-contained page (no `@extends`) showing per-school subscription overview, inline Mark Paid form, and complete payment history for a single school. Accessible via "Payments" link in the dashboard actions column.
+- Layout: same header/footer pattern as `broadcasts.blade.php` and `dashboard.blade.php`.
+- Overview section: `grid grid-cols-1 md:grid-cols-2 gap-6`. Left card: School Info (Name, Domain link, Account status badge, Joined date, Students). Right card: Subscription (Plan Status badge, Payment status badge, Cycle period, Rate/student, Amount due — red if unpaid).
+- Mark Paid inline form (only shown if `$plan->payment_status !== 'paid'`): `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end` with Cycle Start / Cycle End / Reference / Confirm Paid button in one row. Notes textarea spans full width below.
+- Payment History table: `bg-surface border border-border rounded-2xl shadow-card overflow-hidden`. Columns: Date | Amount (bold, `GHS {N}`) | Cycle Period (`start – end`) | Reference + Notes (font-mono for ref, line-clamp-1 for notes) | Marked By | Invoice (PDF download button: `border-accent/40 text-accent bg-accent-muted`).
+- Empty state (no payments): icon + text "Mark this school as paid to create the first payment record."
+- Status/amount badges: same token colors as dashboard (`bg-success-lightest text-success-foreground`, `bg-error-light text-error`, etc.).
+
+---
+
+### Invoice PDF
+**File:** `resources/views/central/super-admin/invoice-pdf.blade.php`
+**Description:** Self-contained dompdf template for subscription payment receipts. Shared by both the Super Admin download route and the Tenant billing page download route.
+- Font: `DejaVu Sans, Arial, sans-serif` (dompdf-safe). A4 portrait.
+- Header: two-cell `display:table` row. Left: "Skolet" brand (`font-size:22px, color:#1e3a8a`) + "School Management Platform" sub. Right: "INVOICE" title (`font-size:28px`) + `#{payment_id[:8]}`. Separated from body by `2px solid #2563eb` bottom border.
+- Meta grid: `display:table` 50/50 split. Left: "Billed To" (tenant name + subdomain). Right: Invoice Date + Payment Reference (if set), right-aligned.
+- Line items table: "Platform Subscription Fee" | cycle period (`start – end`) | `GHS {amount}`. Standard `border-collapse` table.
+- Total box: `background:#1e3a8a` dark blue, white text. "Total Amount Paid" label + `GHS {amount}` in `font-size:24px`.
+- Notes box (if `$payment->notes`): `background:#f9fafb border:1px solid #e5e7eb border-radius:6px`. "Notes" label + content.
+- Recorded-by/paid-at line: `display:table` 50/50 footer row before the footer text.
+- Footer: centered, `font-size:10px`, "Skolet Platform · Payment receipt generated…".
+
+---
+
+### Custom Domain Settings Page
+**File:** `resources/views/tenant/settings/domain.blade.php`
+**Description:** Settings sub-page for managing custom domains. Custom Domain tab is active in the 9-tab settings sub-nav. Gated by `permission:settings.manage`.
+- Sub-nav: 9-tab settings sub-nav, Custom Domain tab active (`border-accent text-accent`).
+- Primary Subdomain card: `bg-surface border border-border rounded-2xl shadow-card`. Globe icon in `w-8 h-8 rounded-lg bg-accent-muted`. Domain name as `text-sm font-medium text-text-primary`. "Active" badge: `bg-success-lightest text-success-foreground` with green dot.
+- Custom Domains card: same card style. Header with title + "Add Domain" primary button. Collapsible add form (`x-show="showForm"`) with domain input + CNAME instructions code block (live-updates name preview via `input` event JS) + submitting state on button.
+- CNAME instructions block (inside form): `bg-surface border border-border rounded-xl p-4`. Monospace record: `Type: CNAME   Name: <preview>   Target: {cnameTarget}`.
+- Domains list: `divide-y divide-border`. Per-row: `px-6 py-4 flex items-center justify-between`. Icon box: green `bg-success-lightest` (verified) or amber `bg-warning-light` (pending). Status badge: `bg-success-lightest text-success-foreground` (Verified) or `bg-warning-light text-warning` (Pending DNS). "Verify DNS" button: `px-3 py-1.5 text-xs font-medium text-accent border border-accent rounded-md hover:bg-accent-muted`. Delete: icon button `p-1.5 text-text-muted hover:text-error hover:bg-error-light`.
+- Unverified domain CNAME hint: `px-6 py-3 bg-surface-secondary border-t border-border` — shows record with first subdomain part highlighted as `text-accent`.
+- Empty state: icon + two-line text.
+- How it Works card: 3 numbered steps with `w-7 h-7 rounded-full bg-accent text-accent-foreground` step circles.
+- JS: inline `<script>` at bottom updates `#cname-name-preview` text as user types in domain input.
+
+---
+
+### Tenant Billing Page
+**File:** `resources/views/tenant/settings/billing.blade.php`
+**Description:** Read-only Settings sub-page showing current subscription status and full payment history. Gated by `permission:settings.manage`. Part of the Settings sub-nav (Billing tab active, all other tabs inactive).
+- Sub-nav: standard 8-tab settings sub-nav with Billing as the active tab (`border-accent text-accent`).
+- Subscription Status card: `bg-surface border border-border rounded-2xl shadow-card p-6`. 4-column grid (`grid-cols-2 md:grid-cols-4`) of `bg-surface-secondary rounded-xl p-4` tiles: Plan Status (badge) | Payment (badge) | Cycle Period (start/to end, two lines) | Amount (large bold, red if unpaid + rate/student sub). Warning callout (`bg-warning-light border-warning/20`) shown if `payment_status === 'unpaid'`.
+- Payment History table: same `bg-surface border border-border rounded-2xl shadow-card overflow-hidden` pattern. Columns: Date | Amount | Cycle Period | Reference (`font-mono text-xs` or "—") | "Download PDF" button (`border-accent/40 text-accent bg-accent-muted`). Invoice download links use `$host/settings/billing/invoices/{payment->id}` (not route() helper — avoids tenant domain routing issues).
+- Empty states: icon + text for both sections.
+
+---
+
+### Webhooks Settings Page
+**Files:** `resources/views/tenant/settings/webhooks.blade.php`, `resources/views/tenant/settings/webhook-deliveries.blade.php`
+**Description:** Outbound webhook management UI under Settings. Gated by `permission:webhooks.manage` (school_admin only). Webhooks tab is active in the settings sub-nav (9th tab, after Billing).
+- Sub-nav: 9-tab settings sub-nav, Webhooks tab active (`border-accent text-accent`).
+- Page header: `flex items-center justify-between gap-4` — title + subtitle on left, "Add Endpoint" primary button on right.
+- Webhooks table: `bg-surface border border-border rounded-2xl shadow-card overflow-hidden`. Columns: Endpoint URL (`font-mono text-xs`), Events (chips `bg-surface-secondary border border-border text-text-secondary`), Status (active toggle via PATCH form — green `bg-success-lightest text-success-foreground` or grey badge), Last Delivery (success `text-success-foreground` or error `text-error` with icon + timestamp), Actions (Deliveries link + Remove form).
+- Empty state: icon box + heading + "Add Endpoint" button.
+- Info card: `bg-surface-secondary border border-border rounded-xl p-4 flex items-start gap-3` — explains HMAC signature header and retry schedule.
+- Add Endpoint modal: Alpine `webhooksPage()` — `addOpen` bool + `secret` string; `openAdd()` auto-generates 48-char hex secret via `window.crypto.getRandomValues(new Uint8Array(24))`; form validates HTTPS URL + secret + event checkboxes; "Generate" button regenerates secret.
+- Delivery log page: breadcrumb back to webhooks; webhook info card (`bg-surface border border-border rounded-2xl shadow-card p-5`) with URL + event chips + active badge; delivery table with event/status badge/attempts/timestamp + Alpine `expanded` expandable row showing payload JSON + response body in `<pre>` blocks; status badge: 2xx = green `bg-success-lightest text-success-foreground`, non-2xx = red `bg-error-light text-error`, no-status = orange `bg-warning-light text-warning`.
+
+---
+
 ### API Tokens Card (My Account)
 **File:** `resources/views/tenant/account/edit.blade.php` (bottom card, `id="api-tokens"`)
 **Description:** Sanctum token management UI for every authenticated user — generate named tokens with read-only or full-access scope, copy the plaintext token on creation (one-time display), and revoke tokens.

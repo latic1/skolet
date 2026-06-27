@@ -1,0 +1,40 @@
+; SchoolFlow — Supervisor configuration for production queue workers.
+; Copy to /etc/supervisor/conf.d/schoolflow.conf on your server.
+; After copying: sudo supervisorctl reread && sudo supervisorctl update
+
+; ─── Laravel Horizon (queue dashboard + worker) ───────────────────────────────
+; Requires: composer require laravel/horizon && php artisan horizon:install
+; Gate the /horizon dashboard in AppServiceProvider::boot() with Horizon::auth().
+[program:schoolflow-horizon]
+process_name=%(program_name)s
+command=php /var/www/schoolflow/artisan horizon
+autostart=true
+autorestart=true
+user=www-data
+redirect_stderr=true
+stdout_logfile=/var/log/schoolflow/horizon.log
+stopwaitsecs=3600
+
+; ─── Fallback: plain queue worker (if not using Horizon) ─────────────────────
+; Use this instead of horizon if Redis is unavailable (e.g. lower-tier hosting).
+; Set QUEUE_CONNECTION=database in .env and run: php artisan queue:table && migrate
+;[program:schoolflow-worker]
+;process_name=%(program_name)s_%(process_num)02d
+;command=php /var/www/schoolflow/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+;autostart=true
+;autorestart=true
+;numprocs=2
+;user=www-data
+;redirect_stderr=true
+;stdout_logfile=/var/log/schoolflow/worker.log
+
+; ─── Scheduler (cron alternative via supervisor) ─────────────────────────────
+; Alternative to adding `* * * * * php artisan schedule:run` to crontab.
+;[program:schoolflow-scheduler]
+;process_name=%(program_name)s
+;command=php /var/www/schoolflow/artisan schedule:work
+;autostart=true
+;autorestart=true
+;user=www-data
+;redirect_stderr=true
+;stdout_logfile=/var/log/schoolflow/scheduler.log

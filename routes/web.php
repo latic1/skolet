@@ -55,4 +55,11 @@ Route::middleware(['auth:super_admin'])->prefix('super-admin')->name('super-admi
     Route::patch('/tenants/{tenant}/mark-paid', [SuperAdminController::class, 'markPaid'])->name('tenants.mark-paid');
     Route::patch('/tenants/{tenant}/mark-unpaid', [SuperAdminController::class, 'markUnpaid'])->name('tenants.mark-unpaid');
     Route::delete('/tenants/{tenant}', [SuperAdminController::class, 'destroyTenant'])->name('tenants.destroy');
+    Route::get('/broadcasts', [SuperAdminController::class, 'broadcasts'])->name('broadcasts');
+    Route::post('/broadcasts', [SuperAdminController::class, 'storeBroadcast'])->name('broadcasts.store');
+    Route::get('/audit-log', [SuperAdminController::class, 'auditLog'])->name('audit-log');
+    Route::get('/audit-log/export', [SuperAdminController::class, 'exportAuditLog'])->name('audit-log.export');
+    Route::get('/tenants/{tenant}', [SuperAdminController::class, 'tenantDetail'])->name('tenants.detail');
+    Route::get('/tenants/{tenant}/invoices/{payment}', [SuperAdminController::class, 'downloadInvoice'])->name('tenants.invoices.download');
+    Route::post('/analytics/rebuild', [SuperAdminController::class, 'rebuildAnalytics'])->name('analytics.rebuild');
 });

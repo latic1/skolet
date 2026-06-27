@@ -27,16 +27,12 @@
         <div class="max-w-360 mx-auto px-6 h-16 flex items-center justify-between">
 
             {{-- Logo --}}
-            <a href="{{ route('home') }}" class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
-                     style="background: linear-gradient(45deg, #2563eb 0%, #1e3a8a 100%)">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M10 2L3 6V10C3 13.866 6.134 17 10 17C13.866 17 17 13.866 17 10V6L10 2Z" fill="white" fill-opacity="0.9"/>
-                        <path d="M7 10L9 12L13 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <a href="{{ route('home') }}" class="flex items-center gap-2">
+                <div class="relative flex h-8 w-8 items-center justify-center shrink-0">
+                    <span class="absolute h-5 w-1.5 rounded-full -translate-x-1.5" style="transform: rotate(35deg) translateX(-3px); background: #2563eb;"></span>
+                    <span class="absolute h-6 w-1.5 rounded-full" style="transform: rotate(35deg) translateX(4px); background: #06b6d4;"></span>
                 </div>
                 <span class="text-[19px] font-bold leading-7 text-text-darkest tracking-tight">Skolet</span>
-
             </a>
 
             {{-- Desktop Nav --}}
@@ -104,13 +100,10 @@
 
                 {{-- Brand --}}
                 <div class="flex flex-col gap-4 max-w-xs">
-                    <a href="{{ route('home') }}" class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0"
-                             style="background: linear-gradient(45deg, #2563eb 0%, #1e3a8a 100%)">
-                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 2L3 6V10C3 13.866 6.134 17 10 17C13.866 17 17 13.866 17 10V6L10 2Z" fill="white" fill-opacity="0.9"/>
-                                <path d="M7 10L9 12L13 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
+                    <a href="{{ route('home') }}" class="flex items-center gap-2">
+                        <div class="relative flex h-7 w-7 items-center justify-center shrink-0">
+                            <span class="absolute h-4 w-1 rounded-full" style="transform: rotate(35deg) translateX(-3px); background: #2563eb;"></span>
+                            <span class="absolute h-5 w-1 rounded-full" style="transform: rotate(35deg) translateX(3px); background: #06b6d4;"></span>
                         </div>
                         <span class="text-base font-bold text-text-darkest">Skolet</span>
                     </a>

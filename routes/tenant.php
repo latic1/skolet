@@ -49,7 +49,10 @@ use App\Http\Controllers\Tenant\PublicApplicationController;
 use App\Http\Controllers\Tenant\TranscriptController;
 use App\Http\Controllers\Tenant\SubmissionController;
 use App\Http\Controllers\Tenant\UserNotificationsController;
+use App\Http\Controllers\Tenant\PlatformBroadcastController;
 use App\Http\Controllers\Tenant\PrivacyController;
+use App\Http\Controllers\Tenant\BillingController;
+use App\Http\Controllers\Tenant\WebhookController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -80,6 +83,8 @@ Route::domain('{subdomain}.' . $appHost)
         // Restores the school admin auth for the current request when a valid
         // impersonation session is active — must run after tenancy is initialized.
         \App\Http\Middleware\ResumeImpersonation::class,
+        // Checks for active platform broadcasts for this tenant and shares to view.
+        \App\Http\Middleware\CheckPlatformBroadcast::class,
         // Tags Sentry errors with tenant_id and authenticated user context.
         \App\Http\Middleware\SetSentryContext::class,
     ])
@@ -135,6 +140,9 @@ Route::domain('{subdomain}.' . $appHost)
         Route::middleware('auth')->group(function () {
             Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
             Route::post('/impersonate/exit', [ImpersonateController::class, 'exit'])->name('impersonate.exit');
+
+            // Platform broadcast dismiss (Info/Warning only — Critical is non-dismissible)
+            Route::patch('/platform-notice/{notificationId}/dismiss', [PlatformBroadcastController::class, 'dismiss'])->name('broadcast.dismiss');
 
             // Single permission-aware dashboard — role-filtered widgets rendered in view
             Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('onboarding')->name('dashboard');
@@ -468,6 +476,20 @@ Route::domain('{subdomain}.' . $appHost)
                 // Data & Privacy
                 Route::get('/settings/privacy', [PrivacyController::class, 'index'])->name('settings.privacy');
                 Route::post('/settings/privacy/export', [PrivacyController::class, 'requestFullExport'])->name('settings.privacy.export');
+
+                // Billing (read-only view of subscription + payment history from central DB)
+                Route::get('/settings/billing', [BillingController::class, 'index'])->name('settings.billing');
+                Route::get('/settings/billing/invoices/{paymentId}', [BillingController::class, 'downloadInvoice'])->name('settings.billing.invoice');
+
+                // Webhooks
+                Route::middleware('permission:webhooks.manage')->group(function () {
+                    Route::get('/settings/webhooks', [WebhookController::class, 'index'])->name('settings.webhooks');
+                    Route::post('/settings/webhooks', [WebhookController::class, 'store'])->name('settings.webhooks.store');
+                    Route::patch('/settings/webhooks/{webhook}/toggle', [WebhookController::class, 'toggle'])->name('settings.webhooks.toggle');
+                    Route::delete('/settings/webhooks/{webhook}', [WebhookController::class, 'destroy'])->name('settings.webhooks.destroy');
+                    Route::get('/settings/webhooks/{webhook}/deliveries', [WebhookController::class, 'deliveries'])->name('settings.webhooks.deliveries');
+                    Route::post('/settings/webhooks/{webhook}/deliveries/{delivery}/retry', [WebhookController::class, 'retry'])->name('settings.webhooks.retry');
+                });
             });
 
             // Export download — requires auth + settings.manage (checked in controller)

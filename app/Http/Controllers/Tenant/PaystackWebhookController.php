@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendWebhookPayload;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
 use App\Models\Tenant\SchoolProfile;
@@ -100,6 +101,18 @@ final class PaystackWebhookController extends Controller
                         ->notify(new PaymentConfirmation($latestPayment));
                 }
             }
+            SendWebhookPayload::dispatch(tenant('id'), 'payment_received', [
+                'event'     => 'payment_received',
+                'tenant'    => tenant('id'),
+                'timestamp' => now()->toIso8601String(),
+                'data'      => [
+                    'student_id'     => $student->id,
+                    'student_name'   => $student->full_name,
+                    'amount'         => $verification['amount'],
+                    'payment_method' => 'paystack',
+                    'reference'      => $reference,
+                ],
+            ]);
         } catch (\Throwable $e) {
             Log::error('[PaystackWebhook] Failed to record payment for ref: ' . $reference . ' — ' . $e->getMessage());
 

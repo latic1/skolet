@@ -15,6 +15,7 @@ use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\Term;
+use App\Jobs\SendWebhookPayload;
 use App\Services\FeeStatusService;
 use App\Services\PaystackService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -129,6 +130,19 @@ final class FeeController extends Controller
         $returnUrl = $host . '/fees?student_id=' . $student->id . '&term_id=' . $feeStructure->term_id;
 
         if ($result['success']) {
+            SendWebhookPayload::dispatch(tenant('id'), 'payment_received', [
+                'event'     => 'payment_received',
+                'tenant'    => tenant('id'),
+                'timestamp' => now()->toIso8601String(),
+                'data'      => [
+                    'student_id'     => $student->id,
+                    'student_name'   => $student->full_name,
+                    'amount'         => $amount,
+                    'payment_method' => 'cash',
+                    'fee_structure'  => $feeStructure->name ?? null,
+                ],
+            ]);
+
             return redirect($returnUrl)->with('success', 'Payment of ' . number_format($amount, 2) . ' recorded for ' . $student->full_name . '.');
         }
 
