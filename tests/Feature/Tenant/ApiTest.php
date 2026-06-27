@@ -8,9 +8,10 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
-    // Route the API requests through the tenant domain so domain-constrained routes match.
+    // Build a full base URL using the tenant domain so Symfony's Request::create()
+    // correctly sets HTTP_HOST from the URI (serverVariables alone get overridden).
     $domain = $this->tenant->domains()->first()->domain;
-    $this->serverVariables['HTTP_HOST'] = $domain;
+    $this->apiBase = 'http://' . $domain;
 
     Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
     Role::firstOrCreate(['name' => 'teacher',      'guard_name' => 'web']);
@@ -44,7 +45,7 @@ beforeEach(function (): void {
 });
 
 test('unauthenticated request to students API returns 401', function (): void {
-    $response = $this->getJson('/api/v1/students');
+    $response = $this->getJson($this->apiBase . '/api/v1/students');
 
     expect($response->status())->toBe(401);
 });
@@ -53,7 +54,7 @@ test('authenticated request with valid Sanctum token returns paginated student l
     $token = $this->adminUser->createToken('test-token', ['*'])->plainTextToken;
 
     $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-        ->getJson('/api/v1/students');
+        ->getJson($this->apiBase . '/api/v1/students');
 
     expect($response->status())->toBe(200);
     $data = $response->json();
@@ -73,7 +74,7 @@ test('token revocation invalidates subsequent API calls', function (): void {
 
     // Token works before revocation
     $before = $this->withHeader('Authorization', 'Bearer ' . $plainToken)
-        ->getJson('/api/v1/students');
+        ->getJson($this->apiBase . '/api/v1/students');
     expect($before->status())->toBe(200);
 
     // Revoke the token
@@ -81,7 +82,7 @@ test('token revocation invalidates subsequent API calls', function (): void {
 
     // Token is invalid after revocation
     $after = $this->withHeader('Authorization', 'Bearer ' . $plainToken)
-        ->getJson('/api/v1/students');
+        ->getJson($this->apiBase . '/api/v1/students');
     expect($after->status())->toBe(401);
 });
 
@@ -97,7 +98,7 @@ test('user without students.view permission cannot access students API', functio
     $token = $teacherUser->createToken('no-perm-token', ['*'])->plainTextToken;
 
     $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-        ->getJson('/api/v1/students');
+        ->getJson($this->apiBase . '/api/v1/students');
 
     // Teacher role doesn't have students.view by default
     expect($response->status())->toBeIn([403, 401]);
@@ -107,7 +108,7 @@ test('announcements API is accessible to any authenticated token', function (): 
     $token = $this->adminUser->createToken('announce-token', ['*'])->plainTextToken;
 
     $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-        ->getJson('/api/v1/announcements');
+        ->getJson($this->apiBase . '/api/v1/announcements');
 
     expect($response->status())->toBe(200);
 });
