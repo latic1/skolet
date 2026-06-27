@@ -20,22 +20,25 @@ class AppServiceProvider extends ServiceProvider
         // variables added only to layouts.tenant arrive too late for child views.
         // once() ensures SchoolProfile is queried at most once per request.
         View::composer(['layouts.tenant', 'tenant.*', 'tenant.*.*', 'tenant.*.*.*'], function ($view) {
-            $data = once(function () {
+            static $resolved = false;
+            static $data     = null;
+
+            if (! $resolved) {
+                $resolved = true;
                 try {
                     $tenancy = app(\Stancl\Tenancy\Tenancy::class);
 
                     if ($tenancy->initialized) {
                         $profile = \App\Models\Tenant\SchoolProfile::first();
-
-                        return [
+                        $data    = [
                             'schoolProfile'  => $profile,
                             'currencySymbol' => $profile?->currency_symbol ?? '₵',
                         ];
                     }
                 } catch (\Throwable) {}
 
-                return ['schoolProfile' => null, 'currencySymbol' => '₵'];
-            });
+                $data ??= ['schoolProfile' => null, 'currencySymbol' => '₵'];
+            }
 
             $view->with($data);
         });
