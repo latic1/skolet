@@ -1055,6 +1055,7 @@
 
 @push('scripts')
 <script>
+document.addEventListener('alpine:init', () => {
 Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab, examsData, chartData, financialChartData, academicYearsData, selectedFinancialYearId, selectedFinancialTermId) => ({
     activeTab,
     classId: selectedClassId || '',
@@ -1216,5 +1217,6 @@ Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeT
         }
     },
 }));
+});
 </script>
 @endpush

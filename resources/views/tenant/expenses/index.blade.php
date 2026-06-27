@@ -350,6 +350,7 @@
 
 @push('scripts')
 <script>
+document.addEventListener('alpine:init', () => {
 Alpine.data('expensesPage', (categories, expenses) => ({
     showModal: false,
     showCategoryModal: false,
@@ -415,5 +416,6 @@ Alpine.data('expensesPage', (categories, expenses) => ({
         this.submitting = false;
     },
 }));
+});
 </script>
 @endpush
