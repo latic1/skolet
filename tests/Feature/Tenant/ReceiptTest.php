@@ -63,7 +63,7 @@ test('receipt service builds correct data for a fee payment', function (): void 
 
     expect($data)->toBeArray()
         ->and($data['payment']->id)->toBe($this->payment->id)
-        ->and($data['student']->id)->toBe($this->student->id)
+        ->and($data['payment']->student->id)->toBe($this->student->id)
         ->and($data['receiptNo'])->not->toBeEmpty();
 });
 

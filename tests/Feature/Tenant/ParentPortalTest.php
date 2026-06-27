@@ -7,6 +7,7 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\User;
 use App\Services\FeeStatusService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -47,6 +48,7 @@ beforeEach(function (): void {
 
     // Link parent to their child via parent_student pivot
     DB::table('parent_student')->insert([
+        'id'         => (string) Str::uuid(),
         'user_id'    => $this->parentUser->id,
         'student_id' => $this->student->id,
         'created_at' => now(),
@@ -103,6 +105,7 @@ test('parent with multiple children can select active child via session', functi
     ]);
 
     DB::table('parent_student')->insert([
+        'id'         => (string) Str::uuid(),
         'user_id'    => $this->parentUser->id,
         'student_id' => $secondChild->id,
         'created_at' => now(),

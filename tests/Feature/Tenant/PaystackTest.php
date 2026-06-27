@@ -12,6 +12,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Spatie\Permission\Models\Role;
 
+
 beforeEach(function (): void {
     Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
 
@@ -46,12 +47,7 @@ function makePaystackServiceWithMock(array $responses): PaystackService
     $handler = HandlerStack::create($mock);
     $client  = new Client(['handler' => $handler]);
 
-    $service  = new PaystackService();
-    $property = new ReflectionProperty($service, 'client');
-    $property->setAccessible(true);
-    $property->setValue($service, $client);
-
-    return $service;
+    return new PaystackService($client);
 }
 
 test('initializeTransaction returns authorization URL on success', function (): void {
@@ -117,23 +113,16 @@ test('verifyTransaction returns amount and metadata on success', function (): vo
 });
 
 test('verifyWebhookSignature returns true for valid HMAC', function (): void {
-    $service    = app(PaystackService::class);
-    $payload    = '{"event":"charge.success","data":{"reference":"SF-123"}}';
-    $signature  = hash_hmac('sha512', $payload, 'sk_test_dummy_key_for_testing');
-
-    $property = new ReflectionProperty($service, 'secretKey');
-    $property->setAccessible(true);
-    $property->setValue($service, 'sk_test_dummy_key_for_testing');
+    // secretKey is set from config in beforeEach
+    $service   = app(PaystackService::class);
+    $payload   = '{"event":"charge.success","data":{"reference":"SF-123"}}';
+    $signature = hash_hmac('sha512', $payload, 'sk_test_dummy_key_for_testing');
 
     expect($service->verifyWebhookSignature($payload, $signature))->toBeTrue();
 });
 
 test('verifyWebhookSignature returns false for invalid HMAC', function (): void {
     $service = app(PaystackService::class);
-
-    $property = new ReflectionProperty($service, 'secretKey');
-    $property->setAccessible(true);
-    $property->setValue($service, 'sk_test_dummy_key_for_testing');
 
     expect($service->verifyWebhookSignature('{"event":"charge.success"}', 'wrong-signature'))->toBeFalse();
 });

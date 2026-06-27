@@ -5,23 +5,27 @@ use App\Models\Central\SubscriptionPlan;
 use App\Models\Central\Tenant;
 
 beforeEach(function (): void {
-    $this->superAdmin = SuperAdmin::create([
-        'name'     => 'Super Admin',
-        'email'    => 'super@schoolflow.test',
-        'password' => bcrypt('SuperSecret1!'),
-    ]);
+    $this->superAdmin = SuperAdmin::firstOrCreate(
+        ['email' => 'super@schoolflow.test'],
+        ['name' => 'Super Admin', 'password' => bcrypt('SuperSecret1!')]
+    );
+});
+
+afterEach(function (): void {
+    SuperAdmin::where('email', 'super@schoolflow.test')->delete();
 });
 
 test('unauthenticated request to super-admin dashboard redirects to login', function (): void {
     $response = $this->get('/super-admin');
 
-    $response->assertRedirect(route('super-admin.login'));
+    // Authenticate middleware redirects super-admin paths to the super-admin login
+    $response->assertRedirect('/super-admin/login');
 });
 
 test('unauthenticated request to tenant toggle redirects to login', function (): void {
     $response = $this->patch('/super-admin/tenants/fake-id/toggle');
 
-    $response->assertRedirect(route('super-admin.login'));
+    $response->assertRedirect('/super-admin/login');
 });
 
 test('authenticated super admin can access the dashboard', function (): void {
@@ -104,7 +108,7 @@ test('dashboard auto-expires unpaid tenants whose cycle_end has passed', functio
         'student_count'    => 0,
         'amount_due'       => 0.00,
         'cycle_start'      => '2025-01-01',
-        'cycle_end'        => '2025-03-31', // in the past
+        'cycle_end'        => '2025-03-31',
     ]);
 
     $this->actingAs($this->superAdmin, 'super_admin')
@@ -114,11 +118,4 @@ test('dashboard auto-expires unpaid tenants whose cycle_end has passed', functio
     expect($plan->status)->toBe('expired');
 
     $tenant->delete();
-});
-
-test('non-super-admin regular user is redirected away from the super-admin area', function (): void {
-    // Regular web user — no super_admin guard
-    $response = $this->get('/super-admin');
-
-    $response->assertRedirect(route('super-admin.login'));
 });

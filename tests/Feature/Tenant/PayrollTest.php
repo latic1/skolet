@@ -101,7 +101,7 @@ test('payroll item net pay equals gross minus statutory employee deductions', fu
     $ssnitEmployee = round($gross * 0.055, 2);
     $tier2Employee = round($gross * 0.05, 2);
     $taxable       = max(0, $gross - $ssnitEmployee - $tier2Employee);
-    $paye          = $this->computeExpectedPaye($taxable);
+    $paye          = computeExpectedPaye($taxable);
     $expectedNet   = max(0.0, $gross - $ssnitEmployee - $tier2Employee - $paye);
 
     expect(abs((float) $item->net - $expectedNet))->toBeLessThan(0.02);

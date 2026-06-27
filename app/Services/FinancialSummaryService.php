@@ -23,13 +23,13 @@ final class FinancialSummaryService
         // ---------- Income ----------
         $incomeTotals  = $this->fetchIncomeTotals($academicYear, $term);
         $incomeTotal   = $incomeTotals['total'];
-        $incomeByFeeItem = $incomeTotals['by_category'];
+        $incomeByFeeItem = $incomeTotals['byCategory'];
         $monthlyIncome = $incomeTotals['monthly'];
 
         // ---------- Expenses ----------
         $expenseTotals       = $this->fetchExpenseTotals($dateFrom, $dateTo);
         $expenseTotal        = $expenseTotals['total'];
-        $expenseByCategory   = $expenseTotals['by_category'];
+        $expenseByCategory   = $expenseTotals['byCategory'];
         $monthlyExpenses     = $expenseTotals['monthly'];
 
         // ---------- Monthly trend for Chart.js ----------

@@ -14,11 +14,11 @@ final class PaystackService
     private readonly Client $client;
     private readonly string $secretKey;
 
-    public function __construct()
+    public function __construct(?Client $client = null)
     {
         $this->secretKey = (string) config('paystack.secret_key', '');
 
-        $this->client = new Client([
+        $this->client = $client ?? new Client([
             'base_uri' => 'https://api.paystack.co/',
             'headers'  => [
                 'Authorization' => 'Bearer ' . $this->secretKey,

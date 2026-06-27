@@ -65,10 +65,8 @@ test('expense category can be created inline if it does not exist', function ():
 test('monthly total is computed correctly from expenses table', function (): void {
     $month = now()->format('Y-m');
 
-    Expense::insert([
-        ['category_id' => $this->category->id, 'amount' => 200.00, 'date' => now()->toDateString(), 'description' => 'E1', 'recorded_by' => $this->adminUser->id, 'created_at' => now(), 'updated_at' => now()],
-        ['category_id' => $this->category->id, 'amount' => 350.00, 'date' => now()->toDateString(), 'description' => 'E2', 'recorded_by' => $this->adminUser->id, 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    Expense::create(['category_id' => $this->category->id, 'amount' => 200.00, 'date' => now()->toDateString(), 'description' => 'E1', 'recorded_by' => $this->adminUser->id]);
+    Expense::create(['category_id' => $this->category->id, 'amount' => 350.00, 'date' => now()->toDateString(), 'description' => 'E2', 'recorded_by' => $this->adminUser->id]);
 
     $total = (float) Expense::whereYear('date', now()->year)
         ->whereMonth('date', now()->month)

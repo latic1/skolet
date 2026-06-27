@@ -12,9 +12,16 @@ class Authenticate extends Middleware
      */
     protected function redirectTo(Request $request): ?string
     {
+        if ($request->expectsJson()) {
+            return null;
+        }
+        // Super admin routes have their own login page.
+        if (str_starts_with($request->path(), 'super-admin')) {
+            return route('super-admin.login');
+        }
         // Use host-based URL so unauthenticated tenant users land on the tenant login
         // page, not the central domain. route() cannot auto-bind {subdomain} from
         // domain-parameterised routes, so we build the URL from the request host.
-        return $request->expectsJson() ? null : $request->getSchemeAndHttpHost() . '/login';
+        return $request->getSchemeAndHttpHost() . '/login';
     }
 }

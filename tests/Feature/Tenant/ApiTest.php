@@ -8,6 +8,10 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
+    // Route the API requests through the tenant domain so domain-constrained routes match.
+    $domain = $this->tenant->domains()->first()->domain;
+    $this->serverVariables['HTTP_HOST'] = $domain;
+
     Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
     Role::firstOrCreate(['name' => 'teacher',      'guard_name' => 'web']);
 
