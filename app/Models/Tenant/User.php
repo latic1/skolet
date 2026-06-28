@@ -35,6 +35,16 @@ final class User extends Authenticatable
         'password'          => 'hashed',
     ];
 
+    public function sendPasswordResetNotification($token): void
+    {
+        \Illuminate\Auth\Notifications\ResetPassword::createUrlUsing(function ($notifiable, $token) {
+            return request()->getSchemeAndHttpHost() . '/reset-password/' . $token
+                . '?' . http_build_query(['email' => $notifiable->getEmailForPasswordReset()]);
+        });
+
+        $this->notify(new \Illuminate\Auth\Notifications\ResetPassword($token));
+    }
+
     public function linkedChildren(): BelongsToMany
     {
         return $this->belongsToMany(Student::class, 'parent_student', 'user_id', 'student_id')

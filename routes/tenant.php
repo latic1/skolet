@@ -12,6 +12,8 @@ use App\Http\Controllers\Tenant\ImpersonateController;
 use App\Http\Controllers\Tenant\AnnouncementController;
 use App\Http\Controllers\Tenant\AttendanceController;
 use App\Http\Controllers\Tenant\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Tenant\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Tenant\Auth\NewPasswordController;
 use App\Http\Controllers\Tenant\CustomDomainController;
 use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\ExamController;
@@ -131,6 +133,12 @@ Route::domain('{subdomain}.' . $appHost)
         Route::middleware('guest')->group(function () {
             Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
             Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:tenant-login');
+
+            // Password reset
+            Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+            Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+            Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+            Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.update');
         });
 
         // Super Admin impersonation handshake — unauthenticated, one-time token (60s TTL)
