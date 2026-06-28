@@ -15,10 +15,24 @@
 </head>
 <body class="font-sans bg-background min-h-screen" x-data="{ sidebarOpen: false }">
 
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex h-screen lg:overflow-hidden">
+
+        {{-- Mobile sidebar backdrop --}}
+        <div x-show="sidebarOpen"
+             x-cloak
+             @click="sidebarOpen = false"
+             class="fixed inset-0 z-40 bg-black/50 lg:hidden"
+             x-transition:enter="transition-opacity ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+        </div>
 
         {{-- Sidebar --}}
-        <aside class="w-65 shrink-0 bg-surface border-r border-border flex flex-col sticky top-0 h-screen">
+        <aside class="fixed inset-y-0 left-0 z-50 w-65 bg-surface border-r border-border flex flex-col h-screen transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:shrink-0"
+               :class="sidebarOpen ? 'translate-x-0 shadow-2xl lg:shadow-none' : '-translate-x-full'">
 
             {{-- Logo --}}
             <div class="flex items-center gap-2.5 px-4 h-16 border-b border-border shrink-0">
@@ -131,8 +145,19 @@
             @endif
 
             {{-- Top bar --}}
-            <header class="h-16 shrink-0 bg-surface border-b border-border flex items-center px-6 gap-4">
-                <h2 class="text-base font-semibold text-text-primary flex-1">
+            <header class="h-16 shrink-0 bg-surface border-b border-border flex items-center px-4 lg:px-6 gap-3">
+
+                {{-- Hamburger (mobile only) --}}
+                <button @click="sidebarOpen = !sidebarOpen"
+                        class="lg:hidden p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-secondary transition-colors shrink-0"
+                        aria-label="Open navigation">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+
+                <h2 class="text-base font-semibold text-text-primary flex-1 truncate">
                     @yield('page-title', 'Dashboard')
                 </h2>
 
@@ -301,7 +326,7 @@
             </header>
 
             {{-- Page content --}}
-            <main class="flex-1 p-8">
+            <main class="flex-1 p-4 lg:p-8">
                 @yield('content')
             </main>
         </div>

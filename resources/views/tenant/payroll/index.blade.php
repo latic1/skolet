@@ -102,7 +102,8 @@
         </div>
         @else
         <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
-            <table class="w-full text-sm">
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm" style="min-width:640px">
                 <thead>
                     <tr class="border-b border-border bg-surface-secondary">
                         <th class="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wide">Staff Member</th>
@@ -157,6 +158,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         @endif
     </div>
@@ -173,7 +175,8 @@
         </div>
         @else
         <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
-            <table class="w-full text-sm">
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm" style="min-width:640px">
                 <thead>
                     <tr class="border-b border-border bg-surface-secondary">
                         <th class="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wide w-4"></th>
@@ -360,6 +363,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         @if($runs->hasPages())
         <div class="mt-4">{{ $runs->links() }}</div>

@@ -43,7 +43,7 @@
     @endif
 
     {{-- Summary strip --}}
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-surface border border-border rounded-2xl p-5 shadow-card">
             <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">This Month</p>
             <p class="text-[26px] font-semibold text-text-primary leading-none">{{ format_money($totalThisMonth, $currencySymbol) }}</p>
