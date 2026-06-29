@@ -9,6 +9,7 @@ use App\Models\Central\SubscriptionPlan;
 use App\Models\Central\Tenant;
 use App\Models\Tenant\ExpenseCategory;
 use App\Models\Tenant\User;
+use App\Support\TenantPermissions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
@@ -106,68 +107,11 @@ final class TenantProvisioningService
 
     private function seedPermissions(): void
     {
-        $all = [
-            'students.view', 'students.create', 'students.edit', 'students.delete',
-            'staff.view', 'staff.create', 'staff.edit', 'staff.delete',
-            'attendance.view', 'attendance.edit',
-            'timetable.view', 'timetable.edit',
-            'exams.view', 'exams.create', 'exams.edit', 'exams.delete',
-            'fees.view', 'fees.create', 'fees.edit',
-            'announcements.view', 'announcements.create', 'announcements.edit', 'announcements.delete',
-            'assignments.view', 'assignments.create', 'assignments.edit', 'assignments.delete', 'assignments.submit',
-            'behavior.view', 'behavior.create', 'behavior.edit', 'behavior.delete',
-            'expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete',
-            'admissions.view', 'admissions.manage',
-            'payroll.view', 'payroll.create', 'payroll.edit',
-            'leave.view', 'leave.manage',
-            'register.view', 'register.create', 'register.manage',
-            'reports.view',
-            'settings.manage',
-            'webhooks.manage',
-        ];
-
-        foreach ($all as $name) {
+        foreach (TenantPermissions::all() as $name) {
             Permission::create(['name' => $name, 'guard_name' => 'web']);
         }
 
-        $rolePermissions = [
-            'school_admin' => $all,
-            'teacher'      => [
-                'students.view',
-                'attendance.view', 'attendance.edit',
-                'timetable.view', 'timetable.edit',
-                'exams.view', 'exams.create', 'exams.edit',
-                'announcements.view', 'announcements.create', 'announcements.edit',
-                'assignments.view', 'assignments.create', 'assignments.edit', 'assignments.delete',
-                'behavior.view', 'behavior.create',
-                'leave.view',
-                'register.view', 'register.create',
-            ],
-            'accountant' => [
-                'fees.view', 'fees.create', 'fees.edit',
-                'expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete',
-                'payroll.view', 'payroll.create', 'payroll.edit',
-                'leave.view',
-                'reports.view',
-                'announcements.view',
-            ],
-            'student' => [
-                'attendance.view',
-                'exams.view',
-                'fees.view',
-                'announcements.view',
-                'assignments.view', 'assignments.submit',
-            ],
-            'parent' => [
-                'attendance.view',
-                'exams.view',
-                'fees.view',
-                'announcements.view',
-                'assignments.view',
-            ],
-        ];
-
-        foreach ($rolePermissions as $roleName => $permissions) {
+        foreach (TenantPermissions::byRole() as $roleName => $permissions) {
             $role = Role::create(['name' => $roleName, 'guard_name' => 'web']);
             $role->givePermissionTo($permissions);
         }
