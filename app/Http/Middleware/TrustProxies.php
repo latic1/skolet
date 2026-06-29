@@ -10,9 +10,14 @@ class TrustProxies extends Middleware
     /**
      * The trusted proxies for this application.
      *
+     * Trust all proxies — standard for apps behind Nginx / Cloudflare / a load balancer.
+     * Without this, request()->isSecure() returns false even on HTTPS connections,
+     * causing every redirect to generate an http:// URL which the server then 301s
+     * back to https://, creating infinite redirect chains.
+     *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.

@@ -136,20 +136,6 @@
         </div>
     </form>
 
-    {{-- Info card --}}
-    <div class="bg-surface-secondary border border-border rounded-xl p-4 flex items-start gap-3">
-        <svg class="w-4 h-4 text-text-muted shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <div>
-            <p class="text-xs font-medium text-text-primary mb-0.5">Mail configuration</p>
-            <p class="text-xs text-text-muted leading-relaxed">
-                Emails are sent via your server's <code class="bg-surface border border-border px-1 rounded text-xs">MAIL_*</code> configuration in <code class="bg-surface border border-border px-1 rounded text-xs">.env</code>.
-                Use <strong>SMTP</strong> (e.g. Mailgun, Brevo, SendGrid) in production.
-                SMS notifications are not yet enabled — contact support for availability.
-            </p>
-        </div>
-    </div>
 
 </div>
 @endsection

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Central\ImpersonationLog;
 use App\Models\Tenant\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -21,7 +22,7 @@ final class ImpersonateController extends Controller
      * are read by ResumeImpersonation middleware on every subsequent tenant request
      * to re-authenticate as the school admin without persisting auth state.
      */
-    public function handle(string $token): RedirectResponse
+    public function handle(Request $request, string $token): RedirectResponse
     {
         // Use the 'central' store — bypasses CacheTenancyBootstrapper tenant tag wrapping.
         $data = Cache::store('central')->pull("impersonate:{$token}");
@@ -36,7 +37,12 @@ final class ImpersonateController extends Controller
             abort(404, 'School admin account not found.');
         }
 
-        session([
+        // Regenerate the session to clear any stale cookies from a previous
+        // login or impersonation session on this subdomain, then write the
+        // impersonation keys into the fresh session.
+        $request->session()->regenerate(true);
+
+        $request->session()->put([
             'impersonating'            => true,
             'impersonating_tenant_id'  => $data['tenant_id'],
             'impersonating_user_id'    => $data['user_id'],
