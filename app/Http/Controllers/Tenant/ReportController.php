@@ -345,10 +345,25 @@ final class ReportController extends Controller
     {
         $term = Term::with('academicYear')->findOrFail($termId);
 
-        $feeStructures = FeeStructure::where('term_id', $termId)
-            ->orderBy('target_class')
-            ->orderBy('fee_item')
-            ->get();
+        $academicYearId = $term->academic_year_id;
+
+        $feeStructures = FeeStructure::where(function ($q) use ($termId, $academicYearId) {
+            $q->where(function ($q2) use ($termId) {
+                $q2->where('billing_cycle', 'term')->where('term_id', $termId);
+            });
+            if ($academicYearId) {
+                $q->orWhere(function ($q2) use ($academicYearId) {
+                    $q2->where('billing_cycle', 'annual')->where('academic_year_id', $academicYearId);
+                });
+            }
+            $q->orWhere(function ($q2) use ($termId) {
+                $q2->whereNull('billing_cycle')->where('term_id', $termId);
+            });
+        })
+        ->orderBy('billing_cycle')
+        ->orderBy('target_class')
+        ->orderBy('fee_item')
+        ->get();
 
         if ($feeStructures->isEmpty()) {
             return [

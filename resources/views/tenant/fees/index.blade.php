@@ -71,17 +71,34 @@
                             </div>
                         </div>
 
+                        {{-- Year filter --}}
+                        <div class="min-w-40">
+                            <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Academic Year</label>
+                            <select x-model="collectionYearId" @change="collectionTermId = ''"
+                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                <option value="">All years</option>
+                                <template x-for="y in collectionYearsData" :key="y.id">
+                                    <option :value="y.id" :selected="y.id === collectionYearId" x-text="y.name"></option>
+                                </template>
+                            </select>
+                        </div>
+
                         {{-- Term --}}
-                        <div class="min-w-48">
+                        <div class="min-w-40">
                             <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term</label>
-                            <select name="term_id"
+                            <select name="term_id" x-model="collectionTermId"
                                     class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                                 <option value="">All terms</option>
-                                @foreach($terms as $t)
-                                <option value="{{ $t->id }}" {{ $filterTermId === $t->id ? 'selected' : '' }}>
-                                    {{ $t->name }}{{ $t->academicYear ? ' (' . $t->academicYear->name . ')' : '' }}
-                                </option>
-                                @endforeach
+                                <template x-if="collectionYearId">
+                                    <template x-for="t in collectionTermsForYear" :key="t.id">
+                                        <option :value="t.id" :selected="t.id === collectionTermId" x-text="t.name"></option>
+                                    </template>
+                                </template>
+                                <template x-if="!collectionYearId">
+                                    <template x-for="t in allCollectionTerms" :key="t.id">
+                                        <option :value="t.id" :selected="t.id === collectionTermId" x-text="t.name + (t.year_name ? ' (' + t.year_name + ')' : '')"></option>
+                                    </template>
+                                </template>
                             </select>
                         </div>
 
@@ -437,27 +454,38 @@
          ==================================================================== --}}
     <div x-show="activeTab === 'structure'" x-cloak x-data="feeStructureTab(
         {{ Js::from($classes) }},
-        {{ Js::from($currentYearTerms) }},
-        {{ Js::from($currentYear?->name) }},
+        {{ Js::from($academicYears->map(fn($y) => ['id' => $y->id, 'name' => $y->name, 'terms' => $y->terms->map(fn($t) => ['id' => $t->id, 'name' => $t->name])->values()])->values()) }},
         {{ Js::from($currentYear?->id) }}
     )" x-init="init()">
 
         <div class="flex flex-col gap-6">
 
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-base font-semibold text-text-primary">Fee Structure</h2>
-                    <p class="text-xs text-text-muted mt-0.5">{{ $feeStructures->count() }} fee {{ Str::plural('item', $feeStructures->count()) }} defined</p>
+                    <p class="text-xs text-text-muted mt-0.5">{{ $feeStructures->count() }} fee {{ Str::plural('item', $feeStructures->count()) }}{{ $structureYearId ? ' for selected year' : ' across all years' }}</p>
                 </div>
-                @can('fees.create')
-                <button @click="openAdd()"
-                        class="flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Configure New Fee
-                </button>
-                @endcan
+                <div class="flex items-center gap-3">
+                    <form method="GET" action="{{ $host }}/fees" class="flex items-center gap-2">
+                        <input type="hidden" name="tab" value="structure">
+                        <select name="structure_year_id" onchange="this.form.submit()"
+                                class="px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                            <option value="">All Years</option>
+                            @foreach($academicYears as $y)
+                            <option value="{{ $y->id }}" {{ $structureYearId === $y->id ? 'selected' : '' }}>{{ $y->name }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                    @can('fees.create')
+                    <button @click="openAdd()"
+                            class="flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Configure New Fee
+                    </button>
+                    @endcan
+                </div>
             </div>
 
             {{-- Fee Structure CRUD table --}}
@@ -673,21 +701,29 @@
                             @error('billing_cycle')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                         </div>
 
-                        {{-- Academic Year (read-only) + Academic Term (hidden when Annual) --}}
+                        {{-- Academic Year + Academic Term --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Year</label>
-                                <input type="text" value="{{ $currentYear?->name ?? 'No active year' }}" readonly
-                                       class="w-full px-3 py-2 bg-surface-secondary border border-border rounded-md text-sm text-text-muted cursor-not-allowed">
-                                <input type="hidden" name="academic_year_id" value="{{ $currentYear?->id ?? '' }}">
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Year <span class="text-error">*</span></label>
+                                <select name="academic_year_id" x-model="form.academic_year_id"
+                                        @change="onYearChange()"
+                                        required
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                    <option value="">Select year&hellip;</option>
+                                    <template x-for="y in allYears" :key="y.id">
+                                        <option :value="y.id" :selected="form.academic_year_id === y.id" x-text="y.name"></option>
+                                    </template>
+                                </select>
+                                @error('academic_year_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                             </div>
                             <div x-show="form.billing_cycle === 'term'">
                                 <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Term <span class="text-error">*</span></label>
                                 <select name="term_id" x-model="form.term_id"
                                         :required="form.billing_cycle === 'term'"
-                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                                    <option value="">Select a term</option>
-                                    <template x-for="t in currentYearTerms" :key="t.id">
+                                        :disabled="!form.academic_year_id"
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <option value="" x-text="form.academic_year_id ? 'Select a term' : 'Select a year first'"></option>
+                                    <template x-for="t in termsForSelectedYear" :key="t.id">
                                         <option :value="t.id" :selected="form.term_id === t.id" x-text="t.name"></option>
                                     </template>
                                 </select>
@@ -790,21 +826,28 @@
                             <input type="hidden" name="billing_cycle" :value="form.billing_cycle">
                         </div>
 
-                        {{-- Academic Year (read-only) + Academic Term (hidden when Annual) --}}
+                        {{-- Academic Year + Academic Term --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Year</label>
-                                <input type="text" value="{{ $currentYear?->name ?? 'No active year' }}" readonly
-                                       class="w-full px-3 py-2 bg-surface-secondary border border-border rounded-md text-sm text-text-muted cursor-not-allowed">
-                                <input type="hidden" name="academic_year_id" :value="form.academic_year_id">
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Year <span class="text-error">*</span></label>
+                                <select name="academic_year_id" x-model="form.academic_year_id"
+                                        @change="onYearChange()"
+                                        required
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                    <option value="">Select year&hellip;</option>
+                                    <template x-for="y in allYears" :key="y.id">
+                                        <option :value="y.id" :selected="form.academic_year_id === y.id" x-text="y.name"></option>
+                                    </template>
+                                </select>
                             </div>
                             <div x-show="form.billing_cycle === 'term'">
                                 <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Term <span class="text-error">*</span></label>
                                 <select name="term_id" x-model="form.term_id"
                                         :required="form.billing_cycle === 'term'"
-                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                                    <option value="">Select a term</option>
-                                    <template x-for="t in currentYearTerms" :key="t.id">
+                                        :disabled="!form.academic_year_id"
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <option value="" x-text="form.academic_year_id ? 'Select a term' : 'Select a year first'"></option>
+                                    <template x-for="t in termsForSelectedYear" :key="t.id">
                                         <option :value="t.id" :selected="form.term_id === t.id" x-text="t.name"></option>
                                     </template>
                                 </select>
@@ -860,25 +903,69 @@ function feesAdminPage(classes, terms) {
         activeTab: 'collection',
         classes,
         terms,
+        collectionYearId: '',
+        collectionTermId: '{{ $filterTermId ?? '' }}',
+
+        get collectionYearsData() {
+            const map = {};
+            this.terms.forEach(t => {
+                if (t.academic_year && !map[t.academic_year.id]) {
+                    map[t.academic_year.id] = { id: t.academic_year.id, name: t.academic_year.name, terms: [] };
+                }
+                if (t.academic_year) {
+                    map[t.academic_year.id].terms.push({ id: t.id, name: t.name });
+                }
+            });
+            return Object.values(map);
+        },
+
+        get collectionTermsForYear() {
+            const y = this.collectionYearsData.find(y => y.id === this.collectionYearId);
+            return y ? y.terms : [];
+        },
+
+        get allCollectionTerms() {
+            return this.terms.map(t => ({
+                id: t.id,
+                name: t.name,
+                year_name: t.academic_year ? t.academic_year.name : '',
+            }));
+        },
+
         initTab(tab) {
             this.activeTab = tab === 'structure' ? 'structure' : 'collection';
+            // Pre-select the year that matches the currently filtered term
+            if (this.collectionTermId) {
+                const term = this.terms.find(t => t.id === this.collectionTermId);
+                if (term?.academic_year) {
+                    this.collectionYearId = term.academic_year.id;
+                }
+            }
         },
     };
 }
 
-function feeStructureTab(classes, currentYearTerms, currentYearName, currentYearId) {
+function feeStructureTab(classes, allYears, currentYearId) {
     return {
         showModal: false,
         submitting: false,
         mode: 'add',
         classes,
-        currentYearTerms,
-        currentYearName,
+        allYears,
         currentYearId,
         form: {
             id: '', billing_cycle: 'term', target_classes: ['all'], target_class: 'all',
             term_id: '', academic_year_id: currentYearId || '',
             fee_item: '', amount: '', is_mandatory: true, due_date: '',
+        },
+
+        get termsForSelectedYear() {
+            const y = this.allYears.find(y => y.id === this.form.academic_year_id);
+            return y ? y.terms : [];
+        },
+
+        onYearChange() {
+            this.form.term_id = '';
         },
 
         init() {
@@ -890,7 +977,7 @@ function feeStructureTab(classes, currentYearTerms, currentYearName, currentYear
                         id:               @json(old('_fee_id', '')),
                         billing_cycle:    @json(old('billing_cycle', 'term')),
                         term_id:          @json(old('term_id', '')),
-                        academic_year_id: @json(old('academic_year_id', '')),
+                        academic_year_id: @json(old('academic_year_id', currentYearId || '')),
                         fee_item:         @json(old('fee_item', '')),
                         amount:           @json(old('amount', '')),
                         is_mandatory:     @json(old('is_mandatory', '1')) == '1',

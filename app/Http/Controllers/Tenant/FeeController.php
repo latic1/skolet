@@ -327,7 +327,18 @@ final class FeeController extends Controller
 
     private function adminView(Request $request): View
     {
+        $academicYears   = AcademicYear::with('terms')->orderByDesc('start_date')->get();
+        $structureYearId = $request->input('structure_year_id', '');
+
         $feeStructures = FeeStructure::with(['term.academicYear', 'academicYear'])
+            ->when($structureYearId, function ($q) use ($structureYearId) {
+                $q->where(function ($inner) use ($structureYearId) {
+                    $inner->where('academic_year_id', $structureYearId)
+                        ->orWhereHas('term', function ($q2) use ($structureYearId) {
+                            $q2->where('academic_year_id', $structureYearId);
+                        });
+                });
+            })
             ->orderBy('billing_cycle')
             ->orderBy('fee_item')
             ->get();
@@ -374,7 +385,8 @@ final class FeeController extends Controller
         return view('tenant.fees.index', compact(
             'feeStructures', 'classes', 'terms',
             'searchQuery', 'searchResults', 'selectedStudent', 'feeItems',
-            'filterTermId', 'activeTab', 'currentYear', 'currentYearTerms', 'currentTerm'
+            'filterTermId', 'activeTab', 'currentYear', 'currentYearTerms', 'currentTerm',
+            'academicYears', 'structureYearId'
         ));
     }
 
