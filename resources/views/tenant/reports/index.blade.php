@@ -1089,14 +1089,14 @@ Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeT
     classId: selectedClassId || '',
     sectionId: selectedSectionId || '',
     academicYearId: selectedTermYearId || '',
-    academicTermId: '{{ $selectedTermId }}',
-    academicExamId: '{{ $selectedExamId }}',
+    academicTermId: {{ Js::from($selectedTermId) }},
+    academicExamId: {{ Js::from($selectedExamId) }},
     financialYearId: selectedFinancialYearId || '',
     financialTermId: selectedFinancialTermId || '',
     feeYearId: selectedTermYearId || '',
-    feeTermId: '{{ $selectedTermId }}',
+    feeTermId: {{ Js::from($selectedTermId) }},
     alertYearId: selectedTermYearId || '',
-    alertTermId: '{{ $selectedTermId }}',
+    alertTermId: {{ Js::from($selectedTermId) }},
     get academicTermsForYear() {
         if (!this.academicYearId) return academicYearsData.flatMap(y => y.terms);
         const y = academicYearsData.find(y => y.id === this.academicYearId);
