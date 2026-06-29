@@ -28,7 +28,10 @@ final class SyncTenantStudentCounts extends Command
                 $studentCount = 0;
 
                 $tenant->run(function () use (&$studentCount): void {
-                    $studentCount = DB::table('students')->count();
+                    $studentCount = DB::table('students')
+                        ->whereNull('deleted_at')
+                        ->where('status', 'active')
+                        ->count();
                 });
 
                 $plan = SubscriptionPlan::where('tenant_id', $tenant->id)->first();

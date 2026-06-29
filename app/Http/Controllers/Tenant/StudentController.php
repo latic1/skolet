@@ -19,6 +19,7 @@ use App\Models\Tenant\FeeStructure;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\User;
+use App\Actions\SyncTenantStudentCount;
 use App\Services\AdmissionNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -98,6 +99,8 @@ final class StudentController extends Controller
             $data['admission_no'] = $this->admissionNumberService->generate();
 
             $student = Student::create($data);
+
+            SyncTenantStudentCount::run();
 
             SendWebhookPayload::dispatch(tenant('id'), 'student_enrolled', [
                 'event'        => 'student_enrolled',
@@ -183,6 +186,10 @@ final class StudentController extends Controller
         try {
             $student->update($request->validated());
 
+            if ($student->wasChanged('status')) {
+                SyncTenantStudentCount::run();
+            }
+
             return redirect(request()->getSchemeAndHttpHost() . '/students/' . $student->id)
                 ->with('success', 'Student updated successfully.');
         } catch (\Throwable $e) {
@@ -196,6 +203,8 @@ final class StudentController extends Controller
     {
         try {
             $student->delete();
+
+            SyncTenantStudentCount::run();
 
             return redirect(request()->getSchemeAndHttpHost() . '/students')
                 ->with('success', $student->full_name . ' moved to trash.');
@@ -218,6 +227,8 @@ final class StudentController extends Controller
         try {
             $student = Student::onlyTrashed()->findOrFail($id);
             $student->restore();
+
+            SyncTenantStudentCount::run();
 
             return redirect(request()->getSchemeAndHttpHost() . '/students')
                 ->with('success', $student->full_name . ' restored successfully.');
@@ -289,6 +300,8 @@ final class StudentController extends Controller
             if (!empty($import->errors)) {
                 return back()->with('student_import_errors', $import->errors);
             }
+
+            SyncTenantStudentCount::run();
 
             return redirect(request()->getSchemeAndHttpHost() . '/students')
                 ->with('success', "{$import->imported} student" . ($import->imported !== 1 ? 's' : '') . ' imported successfully.');

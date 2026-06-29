@@ -43,11 +43,16 @@
                     </p>
                 </div>
                 <div class="bg-surface-secondary rounded-xl p-4">
-                    <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Amount</p>
+                    <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Amount Due</p>
                     <p class="text-lg font-bold {{ $plan->payment_status === 'unpaid' ? 'text-error' : 'text-text-darkest' }}">
                         GHS {{ number_format((float) $plan->amount_due, 2) }}
                     </p>
-                    <p class="text-xs text-text-muted">GHS {{ number_format((float) $plan->rate_per_student, 2) }} / student</p>
+                    <p class="text-xs text-text-muted mt-0.5">
+                        GHS {{ number_format((float) $plan->rate_per_student, 2) }} &times; {{ number_format($plan->student_count ?? 0) }} active students
+                    </p>
+                    @if($plan->student_count_synced_at)
+                    <p class="text-[10px] text-text-muted mt-1">Updated {{ $plan->student_count_synced_at->diffForHumans() }}</p>
+                    @endif
                 </div>
             </div>
 
