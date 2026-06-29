@@ -34,24 +34,34 @@
         'name'  => $y->name,
         'terms' => $y->terms->map(fn($t) => ['id' => $t->id, 'name' => $t->name])->values(),
     ])->values()->toArray();
+    $classesForJs = $classes->map(fn($c) => [
+        'id'       => $c->id,
+        'name'     => $c->name,
+        'sections' => $c->sections->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values(),
+    ])->values()->toArray();
     // Derive the year of the currently selected term (used to pre-select year in fee/alerts filters)
     $selectedTermYearId = $selectedTermId
         ? ($terms->firstWhere('id', $selectedTermId)?->academicYear?->id ?? '')
         : '';
 @endphp
-<div x-data='reportsPage(
-    {{ Js::from($classes->map(fn($c) => ["id" => $c->id, "name" => $c->name, "sections" => $c->sections->map(fn($s) => ["id" => $s->id, "name" => $s->name])->values()])->values()) }},
-    {{ Js::from($selectedClassId) }},
-    {{ Js::from($selectedSection) }},
-    {{ Js::from($activeTab) }},
-    {{ Js::from($examsForJs) }},
-    {{ Js::from($chartData) }},
-    {{ Js::from($financialChartData) }},
-    {{ Js::from($academicYearsForJs) }},
-    {{ Js::from($selectedFinancialYearId) }},
-    {{ Js::from($selectedFinancialTermId) }},
-    {{ Js::from($selectedTermYearId) }}
-)'>
+<script>
+window.__reportsPage = {
+    classes:                 {!! Js::from($classesForJs) !!},
+    selectedClassId:         {!! Js::from($selectedClassId) !!},
+    selectedSection:         {!! Js::from($selectedSection) !!},
+    activeTab:               {!! Js::from($activeTab) !!},
+    examsForJs:              {!! Js::from($examsForJs) !!},
+    chartData:               {!! Js::from($chartData) !!},
+    financialChartData:      {!! Js::from($financialChartData) !!},
+    academicYearsForJs:      {!! Js::from($academicYearsForJs) !!},
+    selectedFinancialYearId: {!! Js::from($selectedFinancialYearId) !!},
+    selectedFinancialTermId: {!! Js::from($selectedFinancialTermId) !!},
+    selectedTermYearId:      {!! Js::from($selectedTermYearId) !!},
+    selectedTermId:          {!! Js::from($selectedTermId) !!},
+    selectedExamId:          {!! Js::from($selectedExamId) !!},
+};
+</script>
+<div x-data="reportsPage()">
 
     {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
@@ -1084,19 +1094,26 @@
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
-Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab, examsData, chartData, financialChartData, academicYearsData, selectedFinancialYearId, selectedFinancialTermId, selectedTermYearId) => ({
-    activeTab,
-    classId: selectedClassId || '',
-    sectionId: selectedSectionId || '',
-    academicYearId: selectedTermYearId || '',
-    academicTermId: {{ Js::from($selectedTermId) }},
-    academicExamId: {{ Js::from($selectedExamId) }},
-    financialYearId: selectedFinancialYearId || '',
-    financialTermId: selectedFinancialTermId || '',
-    feeYearId: selectedTermYearId || '',
-    feeTermId: {{ Js::from($selectedTermId) }},
-    alertYearId: selectedTermYearId || '',
-    alertTermId: {{ Js::from($selectedTermId) }},
+Alpine.data('reportsPage', () => {
+const _d = window.__reportsPage;
+const classes = _d.classes;
+const examsData = _d.examsForJs;
+const chartData = _d.chartData;
+const financialChartData = _d.financialChartData;
+const academicYearsData = _d.academicYearsForJs;
+return ({
+    activeTab: _d.activeTab,
+    classId: _d.selectedClassId || '',
+    sectionId: _d.selectedSection || '',
+    academicYearId: _d.selectedTermYearId || '',
+    academicTermId: _d.selectedTermId,
+    academicExamId: _d.selectedExamId,
+    financialYearId: _d.selectedFinancialYearId || '',
+    financialTermId: _d.selectedFinancialTermId || '',
+    feeYearId: _d.selectedTermYearId || '',
+    feeTermId: _d.selectedTermId,
+    alertYearId: _d.selectedTermYearId || '',
+    alertTermId: _d.selectedTermId,
     get academicTermsForYear() {
         if (!this.academicYearId) return academicYearsData.flatMap(y => y.terms);
         const y = academicYearsData.find(y => y.id === this.academicYearId);
@@ -1266,7 +1283,8 @@ Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeT
             this.$nextTick(() => this.initFinancialChart());
         }
     },
-}));
+});
+});
 });
 </script>
 @endpush
