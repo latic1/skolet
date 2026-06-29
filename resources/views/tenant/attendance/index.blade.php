@@ -115,7 +115,7 @@
             <div class="flex items-center justify-between px-6 py-4 border-b border-border">
                 <div>
                     <h3 class="text-sm font-semibold text-text-primary">
-                        {{ $selectedClass?->name }}{{ $selectedSection ? ' — ' . $selectedSection->name : '' }}
+                        {{ $selectedClass?->name }}{{ $selectedSection ? ' &mdash; ' . $selectedSection->name : '' }}
                         &middot; {{ \Carbon\Carbon::parse($date)->format('D, d M Y') }}
                     </h3>
                     <p class="text-xs text-text-muted mt-0.5">

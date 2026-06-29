@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” Billing')
+@section('title', 'Settings &mdash; Billing')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -36,10 +36,10 @@
                 <div class="bg-surface-secondary rounded-xl p-4">
                     <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Cycle Period</p>
                     <p class="text-sm font-medium text-text-primary">
-                        {{ $plan->cycle_start?->format('d M Y') ?? 'â€”' }}
+                        {{ $plan->cycle_start?->format('d M Y') ?? '&mdash;' }}
                     </p>
                     <p class="text-xs text-text-muted">
-                        to {{ $plan->cycle_end?->format('d M Y') ?? 'â€”' }}
+                        to {{ $plan->cycle_end?->format('d M Y') ?? '&mdash;' }}
                     </p>
                 </div>
                 <div class="bg-surface-secondary rounded-xl p-4">
@@ -100,13 +100,13 @@
                                 GHS {{ number_format((float) $payment->amount, 2) }}
                             </td>
                             <td class="px-5 py-4 text-text-secondary">
-                                {{ $payment->cycle_start->format('d M Y') }} â€“ {{ $payment->cycle_end->format('d M Y') }}
+                                {{ $payment->cycle_start->format('d M Y') }} &ndash; {{ $payment->cycle_end->format('d M Y') }}
                             </td>
                             <td class="px-5 py-4">
                                 @if ($payment->payment_reference)
                                     <span class="font-mono text-xs text-text-primary">{{ $payment->payment_reference }}</span>
                                 @else
-                                    <span class="text-text-muted">â€”</span>
+                                    <span class="text-text-muted">&mdash;</span>
                                 @endif
                             </td>
                             <td class="px-5 py-4">

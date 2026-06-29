@@ -1,11 +1,11 @@
 @extends('layouts.central')
 
-@section('title', 'Skolet — The Complete School Management Platform')
-@section('meta_description', 'Skolet helps schools manage attendance, exams, fee collection, and communication — all in one place. Every school gets its own isolated database and free subdomain.')
+@section('title', 'Skolet &mdash; The Complete School Management Platform')
+@section('meta_description', 'Skolet helps schools manage attendance, exams, fee collection, and communication &mdash; all in one place. Every school gets its own isolated database and free subdomain.')
 
 @push('og_tags')
 <meta property="og:type" content="website">
-<meta property="og:title" content="Skolet — The Complete School Management Platform">
+<meta property="og:title" content="Skolet &mdash; The Complete School Management Platform">
 <meta property="og:description" content="Streamline attendance, exams, fees, and communications. Every school gets its own secure database with a free subdomain.">
 <meta property="og:url" content="{{ url('/') }}">
 @endpush
@@ -57,7 +57,7 @@
 @section('content')
 
 {{-- ═══════════════════════════════════════════
-     HERO SECTION — dark purple-black background
+     HERO SECTION &mdash; dark purple-black background
      ═══════════════════════════════════════════ --}}
 <section class="relative w-full overflow-hidden px-6 md:px-12 pt-16 pb-24" style="background: #1a0d32;">
 
@@ -80,7 +80,7 @@
                     <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
                 </svg>
                 <span class="text-xs font-semibold tracking-wider uppercase" style="color: #93c5fd;">
-                    Multi-tenant · Per-school isolated database
+                    Multi-tenant &middot; Per-school isolated database
                 </span>
             </div>
 
@@ -93,7 +93,7 @@
             {{-- Subtext --}}
             <p class="text-base sm:text-lg leading-relaxed max-w-2xl mb-10 font-light" style="color: #d1d5db;">
                 Your all-in-one SaaS solution for effortless school administration and academic
-                excellence. Attendance, exams, fee collection, timetables, and communication —
+                excellence. Attendance, exams, fee collection, timetables, and communication &mdash;
                 every school gets its own secure database and subdomain.
             </p>
 
@@ -151,7 +151,7 @@
                 </div>
             </div>
 
-            {{-- Card 2: Stat — attendance rate --}}
+            {{-- Card 2: Stat &mdash; attendance rate --}}
             <div class="lg:w-[15%] min-w-[160px] rounded-3xl bg-white p-6 flex flex-col justify-between" style="box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
                 <div>
                     <div class="h-10 w-10 rounded-full flex items-center justify-center mb-6" style="background: #ecfdf5;">
@@ -179,7 +179,7 @@
                 </div>
             </div>
 
-            {{-- Card 4: Stat — modules --}}
+            {{-- Card 4: Stat &mdash; modules --}}
             <div class="lg:w-[15%] min-w-[160px] rounded-3xl bg-white p-6 flex flex-col justify-between" style="box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
                 <div>
                     <div class="h-10 w-10 rounded-full flex items-center justify-center mb-6" style="background: #eff6ff;">
@@ -216,7 +216,7 @@
 
 
 {{-- ═══════════════════════════════════════════
-     FEATURE ONE — attendance & records
+     FEATURE ONE &mdash; attendance & records
      bg-slate-50 / left: mockup / right: copy
      ═══════════════════════════════════════════ --}}
 <section class="relative w-full py-24 px-6 md:px-12 overflow-hidden bg-surface-secondary">
@@ -305,7 +305,7 @@
             </h2>
             <p class="text-gray-600 leading-relaxed font-light mb-8 max-w-xl">
                 Track attendance for every class and student in seconds. Mark Present, Absent, or Late,
-                view monthly summaries, and generate automated reports — all without spreadsheets.
+                view monthly summaries, and generate automated reports &mdash; all without spreadsheets.
                 Skolet keeps your records accurate and your admin team free to focus on what matters.
             </p>
             <div class="flex flex-wrap items-center gap-4">
@@ -327,7 +327,7 @@
 
 
 {{-- ═══════════════════════════════════════════
-     FEATURE TWO — fee & analytics
+     FEATURE TWO &mdash; fee & analytics
      bg-white / left: copy / right: chart card
      ═══════════════════════════════════════════ --}}
 <section class="relative w-full bg-white py-24 px-6 md:px-12 overflow-hidden">
@@ -342,7 +342,7 @@
             <p class="text-gray-600 leading-relaxed font-light mb-8 max-w-xl">
                 Record cash payments or let parents pay online via Paystack. Auto-generate PDF receipts,
                 track outstanding balances, and get powerful analytics on collection rates and exam
-                results — all from one unified dashboard.
+                results &mdash; all from one unified dashboard.
             </p>
             <div>
                 <a href="{{ route('register-school') }}"
@@ -518,7 +518,7 @@
                         {{-- Fee collection chart --}}
                         <div class="rounded-2xl border border-border bg-white p-5">
                             <div class="flex items-center justify-between mb-4">
-                                <h4 class="font-bold text-gray-900 text-sm">Fee Collection — This Year</h4>
+                                <h4 class="font-bold text-gray-900 text-sm">Fee Collection &mdash; This Year</h4>
                                 <div class="flex items-center gap-3 text-xs text-gray-400 font-medium">
                                     <div class="flex items-center gap-1"><span class="h-2 w-2 rounded-full inline-block" style="background: #2563eb;"></span>Collected</div>
                                     <div class="flex items-center gap-1"><span class="h-2 w-2 rounded-full inline-block" style="background: #06b6d4;"></span>Expected</div>
@@ -582,7 +582,7 @@
                                 </div>
                                 <div class="flex-1 text-left min-w-0">
                                     <p class="text-xs font-bold text-gray-900 truncate">Mathematics Mid-Term Exam</p>
-                                    <span class="text-[10px] text-gray-400 block mt-0.5">Thursday · Classes 5–6 · 2 Hours</span>
+                                    <span class="text-[10px] text-gray-400 block mt-0.5">Thursday &middot; Classes 5&ndash;6 &middot; 2 Hours</span>
                                 </div>
                             </div>
                         </div>
@@ -596,7 +596,7 @@
 
 
 {{-- ═══════════════════════════════════════════
-     STEP BY STEP — onboarding in 3 steps
+     STEP BY STEP &mdash; onboarding in 3 steps
      bg-white / interactive
      ═══════════════════════════════════════════ --}}
 <section class="relative w-full bg-white py-24 px-6 md:px-12 overflow-hidden" x-data="{ activeStep: 1 }">
@@ -608,7 +608,7 @@
             </h2>
             <p class="text-gray-600 leading-relaxed font-light max-w-2xl mx-auto">
                 No technical setup required. From registration to a fully operational school platform
-                in minutes — not days.
+                in minutes &mdash; not days.
             </p>
         </div>
 
@@ -699,9 +699,9 @@
             {{-- Right: Step list --}}
             <div class="lg:col-span-6 flex flex-col gap-4">
                 @foreach ([
-                    [1, 'Register Your School', 'Pick a subdomain, set up your admin account, and your isolated private database is provisioned automatically — in seconds.', 'border-purple-600 bg-purple-50/50 text-purple-700'],
-                    [2, 'Configure Your Modules', 'Enable the modules your school needs — attendance, exams, fees, timetable, HR, payroll — and invite your staff to get started.', 'border-blue-600 bg-blue-50/50 text-blue-700'],
-                    [3, 'Go Live Instantly', 'Your school is immediately accessible at yourschool.skolet.com. Add students, take attendance, collect fees — everything from day one.', 'border-emerald-600 bg-emerald-50/50 text-emerald-700'],
+                    [1, 'Register Your School', 'Pick a subdomain, set up your admin account, and your isolated private database is provisioned automatically &mdash; in seconds.', 'border-purple-600 bg-purple-50/50 text-purple-700'],
+                    [2, 'Configure Your Modules', 'Enable the modules your school needs &mdash; attendance, exams, fees, timetable, HR, payroll &mdash; and invite your staff to get started.', 'border-blue-600 bg-blue-50/50 text-blue-700'],
+                    [3, 'Go Live Instantly', 'Your school is immediately accessible at yourschool.skolet.com. Add students, take attendance, collect fees &mdash; everything from day one.', 'border-emerald-600 bg-emerald-50/50 text-emerald-700'],
                 ] as [$id, $title, $desc, $activeClass])
                 <div @click="activeStep = {{ $id }}"
                      class="group text-left p-6 rounded-2xl border-l-4 cursor-pointer transition-all duration-200"
@@ -723,7 +723,7 @@
 
 
 {{-- ═══════════════════════════════════════════
-     FEATURES GRID — all modules at a glance
+     FEATURES GRID &mdash; all modules at a glance
      bg-slate-50
      ═══════════════════════════════════════════ --}}
 <section class="bg-surface-secondary py-20 px-6 md:px-12">
@@ -740,7 +740,7 @@
                 ['Fee Collection & Paystack', 'Record cash payments or let parents pay online via Paystack. Auto-generate PDF receipts and track outstanding balances.', '#ecfeff', '#06b6d4', 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z'],
                 ['Exams & Report Cards', 'Schedule exams, enter marks per subject, and generate beautifully formatted PDF report cards with auto-computed grades.', '#f5f3ff', '#7c3aed', 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
                 ['Timetable Builder', 'Build weekly timetables per class with conflict detection. Teachers see their own schedule across all classes automatically.', '#eff6ff', '#2563eb', 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
-                ['Auto School Public Page', 'Each school automatically gets a public page at their subdomain — with logo, announcements, and contact info. No extra setup.', '#ecfdf5', '#10b981', 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9'],
+                ['Auto School Public Page', 'Each school automatically gets a public page at their subdomain &mdash; with logo, announcements, and contact info. No extra setup.', '#ecfdf5', '#10b981', 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9'],
             ] as [$title, $desc, $bg, $color, $path])
             <div class="bg-white rounded-3xl p-6 border border-border hover:-translate-y-1 transition-transform duration-200" style="box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style="background: {{ $bg }};">
@@ -758,7 +758,7 @@
 
 
 {{-- ═══════════════════════════════════════════
-     TESTIMONIALS — school leader reviews
+     TESTIMONIALS &mdash; school leader reviews
      bg-white
      ═══════════════════════════════════════════ --}}
 <section class="relative w-full bg-white py-24 px-6 md:px-12 overflow-hidden">
@@ -849,7 +849,7 @@
 
         <div class="flex flex-wrap items-center justify-center gap-2 mb-10 text-sm text-gray-600 font-medium">
             <span class="font-bold text-gray-900">No credit card required</span>
-            <span class="text-gray-300 hidden sm:inline">·</span>
+            <span class="text-gray-300 hidden sm:inline">&middot;</span>
             <div class="flex items-center" style="color: #fbbf24;">
                 @for ($i = 0; $i < 5; $i++)
                 <svg class="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
@@ -893,10 +893,10 @@
             @php
             $faqs = [
                 ['How much does Skolet cost?', 'Skolet offers multiple plans starting from free. Our Basic plan is free for smaller schools, and our paid plans unlock advanced features like custom domains, bulk imports, and priority support. See the Pricing page for full details.'],
-                ['Can I try it before paying?', 'Yes — you can register your school and use the full platform during the trial period, no credit card required. Upgrade only when you are ready.'],
+                ['Can I try it before paying?', 'Yes &mdash; you can register your school and use the full platform during the trial period, no credit card required. Upgrade only when you are ready.'],
                 ['How does the subdomain work?', 'When you register your school, you pick a subdomain like "greenfield" and your school lives at greenfield.skolet.com. Students, staff, and parents access everything through that address.'],
                 ['Can I use my own domain name?', 'Yes. Once your school is set up, you can add a custom domain (e.g. admin.yourschool.com) by pointing a CNAME record to Skolet. We handle SSL automatically.'],
-                ['Is our school\'s data safe?', 'Absolutely. Every school runs on its own isolated database — your data never mixes with another school\'s. We take security seriously at every layer of the stack.'],
+                ['Is our school\'s data safe?', 'Absolutely. Every school runs on its own isolated database &mdash; your data never mixes with another school\'s. We take security seriously at every layer of the stack.'],
                 ['Can I manage multiple school branches?', 'Each branch would have its own Skolet account and subdomain. Cross-branch management is on the roadmap for a future release.'],
             ];
             @endphp

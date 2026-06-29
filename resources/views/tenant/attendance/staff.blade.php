@@ -112,7 +112,7 @@
                                 <span class="text-sm font-medium text-text-primary">{{ $staffMember->full_name }}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-3.5 text-sm text-text-muted hidden sm:table-cell">{{ $staffMember->role_title ?? '—' }}</td>
+                        <td class="px-6 py-3.5 text-sm text-text-muted hidden sm:table-cell">{{ $staffMember->role_title ?? '&mdash;' }}</td>
                         <td class="px-6 py-3.5">
                             {{-- Hidden input tracks Alpine status --}}
                             <input type="hidden" name="statuses[{{ $staffMember->id }}]"

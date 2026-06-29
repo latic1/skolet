@@ -58,7 +58,7 @@
     @if(! $selectedClass)
     <div class="bg-surface border border-border rounded-2xl shadow-card">
         <div class="px-6 py-4 border-b border-border">
-            <h3 class="text-base font-semibold text-text-primary">Step 1 — Select Class</h3>
+            <h3 class="text-base font-semibold text-text-primary">Step 1 &mdash; Select Class</h3>
             <p class="text-xs text-text-muted mt-0.5">Choose the class you want to run promotion for. All active students in that class will be listed.</p>
         </div>
         <form method="GET" action="{{ $host }}/students/promote" class="p-6 space-y-4"
@@ -112,8 +112,8 @@
         <div class="px-6 py-4 border-b border-border flex items-center justify-between gap-4 flex-wrap">
             <div>
                 <h3 class="text-base font-semibold text-text-primary">
-                    Step 2 — Assign Outcomes
-                    <span class="text-text-muted font-normal">·</span>
+                    Step 2 &mdash; Assign Outcomes
+                    <span class="text-text-muted font-normal">&middot;</span>
                     <span class="text-text-muted font-normal text-sm">{{ $selectedClass->name }}{{ $selectedSection ? ' / ' . $selectedSection->name : '' }}</span>
                 </h3>
                 <p class="text-xs text-text-muted mt-0.5">
@@ -121,7 +121,7 @@
                     @if($nextClass)
                     Promoting moves students to <span class="font-medium text-text-primary">{{ $nextClass->name }}</span>.
                     @else
-                    This is the highest class — students can be Retained or Graduated.
+                    This is the highest class &mdash; students can be Retained or Graduated.
                     @endif
                 </p>
             </div>
@@ -175,7 +175,7 @@
                                 <span class="font-medium text-text-primary">{{ $student->full_name }}</span>
                             </td>
                             <td class="px-6 py-3 text-text-muted">{{ $student->admission_no }}</td>
-                            <td class="px-6 py-3 text-text-muted hidden sm:table-cell">{{ $student->section?->name ?? '—' }}</td>
+                            <td class="px-6 py-3 text-text-muted hidden sm:table-cell">{{ $student->section?->name ?? '&mdash;' }}</td>
                             <td class="px-6 py-3">
                                 <select name="outcomes[{{ $student->id }}]" required
                                         class="w-full px-2 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
@@ -201,7 +201,7 @@
                     <button type="submit" :disabled="submitting"
                             class="inline-flex items-center gap-2 px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                         <span x-show="!submitting">Execute Promotion</span>
-                        <span x-show="submitting">Processing…</span>
+                        <span x-show="submitting">Processing&hellip;</span>
                     </button>
                 </div>
             </div>

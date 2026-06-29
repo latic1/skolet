@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” Data & Privacy')
+@section('title', 'Settings &mdash; Data & Privacy')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -79,7 +79,7 @@
         <h3 class="text-base font-semibold text-text-primary mb-1">Export All School Data</h3>
         <p class="text-sm text-text-muted mb-5">
             Download a full export of your school's data as a ZIP of CSV files. The export includes students, staff, attendance, exam results, fees, and all other records.
-            A download link will be emailed to you â€” exports are ready within a few minutes.
+            A download link will be emailed to you &mdash; exports are ready within a few minutes.
         </p>
         <form method="POST" action="{{ $host }}/settings/privacy/export"
               @submit="submitting = true">
@@ -90,7 +90,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span x-text="submitting ? 'Requestingâ€¦' : 'Request Full Export'"></span>
+                <span x-text="submitting ? 'Requesting&hellip;' : 'Request Full Export'"></span>
             </button>
         </form>
     </div>

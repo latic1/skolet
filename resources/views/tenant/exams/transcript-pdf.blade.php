@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Transcript — {{ $student->full_name }}</title>
+<title>Transcript &mdash; {{ $student->full_name }}</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -274,7 +274,7 @@
         <div class="report-title">
             <h1>STUDENT TRANSCRIPT</h1>
             <p>Issued: {{ now()->format('d M Y') }}</p>
-            <p>All Academic Records — Published Exams</p>
+            <p>All Academic Records &mdash; Published Exams</p>
         </div>
     </div>
 </div>
@@ -292,24 +292,24 @@
         </div>
         <div class="info-cell">
             <span class="info-label">Date of Birth</span>
-            <span class="info-value">{{ $student->date_of_birth?->format('d M Y') ?? '—' }}</span>
+            <span class="info-value">{{ $student->date_of_birth?->format('d M Y') ?? '&mdash;' }}</span>
         </div>
     </div>
     <div class="info-row">
         <div class="info-cell">
             <span class="info-label">Class</span>
             <span class="info-value">
-                {{ $student->schoolClass?->name ?? '—' }}
+                {{ $student->schoolClass?->name ?? '&mdash;' }}
                 @if($student->section) / {{ $student->section->name }}@endif
             </span>
         </div>
         <div class="info-cell">
             <span class="info-label">Gender</span>
-            <span class="info-value">{{ $student->gender ? ucfirst($student->gender) : '—' }}</span>
+            <span class="info-value">{{ $student->gender ? ucfirst($student->gender) : '&mdash;' }}</span>
         </div>
         <div class="info-cell">
             <span class="info-label">Guardian</span>
-            <span class="info-value">{{ $student->guardian_name ?? '—' }}</span>
+            <span class="info-value">{{ $student->guardian_name ?? '&mdash;' }}</span>
         </div>
     </div>
 </div>
@@ -331,7 +331,7 @@
             {{ number_format($yearData['year_average'], 1) }} / 100
             ({{ $yearData['year_grade'] }})
         @else
-            —
+            &mdash;
         @endif
     </div>
 </div>
@@ -359,7 +359,7 @@
             {{ number_format($termData['term_average'], 1) }}
             ({{ $termData['term_grade'] }})
         @else
-            —
+            &mdash;
         @endif
     </div>
 </div>
@@ -372,7 +372,7 @@
     {{ $exam->name }}
     @if($exam->start_date)
         &mdash; {{ $exam->start_date->format('d M Y') }}
-        @if($exam->end_date) – {{ $exam->end_date->format('d M Y') }}@endif
+        @if($exam->end_date) &ndash; {{ $exam->end_date->format('d M Y') }}@endif
     @endif
 </div>
 
@@ -424,7 +424,7 @@
 
 {{-- Year cumulative row --}}
 <div class="year-total">
-    <div class="year-total-left">{{ $ay->name }} — Cumulative Average</div>
+    <div class="year-total-left">{{ $ay->name }} &mdash; Cumulative Average</div>
     <div class="year-total-right">
         @if($yearData['year_average'] !== null)
             {{ number_format($yearData['year_average'], 1) }} / 100
@@ -432,7 +432,7 @@
             <span class="grade-badge grade-{{ $yearData['year_grade'] }}" style="display:inline-block">{{ $yearData['year_grade'] }}</span>
             &nbsp;&nbsp;{{ $yearData['year_remark'] }}
         @else
-            —
+            &mdash;
         @endif
     </div>
 </div>
@@ -448,9 +448,9 @@
     <div class="cum-right">
         @if($cumulative_average !== null)
         <div class="cum-avg">{{ number_format($cumulative_average, 1) }}<span style="font-size:12px; font-weight:400"> / 100</span></div>
-        <div style="font-size:10px; color:#bfdbfe; margin-top:2px">{{ $cumulative_grade }} — {{ $cumulative_remark }}</div>
+        <div style="font-size:10px; color:#bfdbfe; margin-top:2px">{{ $cumulative_grade }} &mdash; {{ $cumulative_remark }}</div>
         @else
-        <div class="cum-avg">—</div>
+        <div class="cum-avg">&mdash;</div>
         @endif
     </div>
 </div>
@@ -463,7 +463,7 @@
         <div class="scale-row">
             @foreach($scale as $band)
             <div class="scale-cell">
-                <strong>{{ $band['grade'] }}</strong> — {{ $band['min'] }}–{{ $band['max'] }} ({{ $band['remark'] }})
+                <strong>{{ $band['grade'] }}</strong> &mdash; {{ $band['min'] }}&ndash;{{ $band['max'] }} ({{ $band['remark'] }})
             </div>
             @endforeach
         </div>

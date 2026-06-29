@@ -67,7 +67,7 @@
                         <option value="">Select Exam</option>
                         @foreach($exams as $exam)
                         <option value="{{ $exam->id }}" @selected(request('exam_id') === $exam->id)>
-                            {{ $exam->name }}{{ $exam->term ? ' — ' . $exam->term->name : '' }}
+                            {{ $exam->name }}{{ $exam->term ? ' &mdash; ' . $exam->term->name : '' }}
                         </option>
                         @endforeach
                     </select>
@@ -154,7 +154,7 @@
                 <div>
                     <h3 class="text-sm font-semibold text-text-primary">
                         {{ $selectedExam?->name }}
-                        &middot; {{ $selectedClass?->name }}{{ $selectedSection ? ' — ' . $selectedSection->name : '' }}
+                        &middot; {{ $selectedClass?->name }}{{ $selectedSection ? ' &mdash; ' . $selectedSection->name : '' }}
                         &middot; {{ $selectedSubject?->name }}
                     </h3>
                     <p class="text-xs text-text-muted mt-0.5">
@@ -219,11 +219,11 @@
                                            @input="updateMarks('{{ $student->id }}', $event.target.value)"
                                            value="{{ $existingMarks[$student->id]?->marks ?? '' }}"
                                            min="0" max="100" step="0.5"
-                                           placeholder="—"
+                                           placeholder="&mdash;"
                                            class="w-24 px-3 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary text-center placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                                     @else
                                     <span class="text-sm {{ isset($existingMarks[$student->id]) ? 'text-text-primary font-medium' : 'text-text-muted' }}">
-                                        {{ isset($existingMarks[$student->id]) ? number_format($existingMarks[$student->id]->marks, 1) : '—' }}
+                                        {{ isset($existingMarks[$student->id]) ? number_format($existingMarks[$student->id]->marks, 1) : '&mdash;' }}
                                     </span>
                                     @endif
                                 </td>
@@ -248,7 +248,7 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-error-light text-error">{{ $grade }}</span>
                                         @endif
                                         @else
-                                        <span class="text-xs text-text-muted">—</span>
+                                        <span class="text-xs text-text-muted">&mdash;</span>
                                         @endif
                                     @endif
                                 </td>
@@ -327,7 +327,7 @@
         return {
             classes,
             subjects,
-            assignments, // [{class_id, section_id, subject_id}] — empty for admins
+            assignments, // [{class_id, section_id, subject_id}] &mdash; empty for admins
             role,        // 'admin' | 'teacher'
             examId:    examId || '',
             classId:   classId || '',
@@ -412,7 +412,7 @@
             },
 
             gradeLabel(studentId) {
-                return this.computeGrade(studentId) || '—';
+                return this.computeGrade(studentId) || '&mdash;';
             },
 
             gradeClass(studentId) {

@@ -47,7 +47,7 @@
     </div>
 
     {{-- ====================================================================
-         TAB 1 — FEE COLLECTION
+         TAB 1 &mdash; FEE COLLECTION
          ==================================================================== --}}
     <div x-show="activeTab === 'collection'" x-cloak>
         <div class="flex flex-col gap-6">
@@ -136,7 +136,7 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-text-primary truncate">{{ $result->full_name }}</p>
-                                <p class="text-xs text-text-muted">{{ $result->admission_no }} · {{ $result->schoolClass?->name ?? '—' }}</p>
+                                <p class="text-xs text-text-muted">{{ $result->admission_no }} &middot; {{ $result->schoolClass?->name ?? '&mdash;' }}</p>
                             </div>
                             <svg class="w-4 h-4 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -169,7 +169,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-semibold text-text-primary">{{ $selectedStudent->full_name }}</p>
-                    <p class="text-xs text-text-muted">{{ $selectedStudent->admission_no }} · {{ $selectedStudent->schoolClass?->name ?? '—' }}{{ $selectedStudent->section ? ' · ' . $selectedStudent->section->name : '' }}</p>
+                    <p class="text-xs text-text-muted">{{ $selectedStudent->admission_no }} &middot; {{ $selectedStudent->schoolClass?->name ?? '&mdash;' }}{{ $selectedStudent->section ? ' &middot; ' . $selectedStudent->section->name : '' }}</p>
                 </div>
                 @php
                     $totalOwed  = collect($feeItems)->sum('effective_amount');
@@ -233,7 +233,7 @@
                     @if($filterTermId)
                     @php $filteredTerm = $terms->firstWhere('id', $filterTermId); @endphp
                     <p class="text-xs text-text-muted mt-0.5">
-                        Filtered by {{ $filteredTerm?->name }}{{ $filteredTerm?->academicYear ? ' · ' . $filteredTerm->academicYear->name : '' }}
+                        Filtered by {{ $filteredTerm?->name }}{{ $filteredTerm?->academicYear ? ' &middot; ' . $filteredTerm->academicYear->name : '' }}
                     </p>
                     @endif
                 </div>
@@ -289,14 +289,14 @@
                                             @if($fs->due_date)
                                             <p class="text-xs {{ $isOverdue ? 'text-error font-medium' : 'text-text-muted' }} mt-0.5">
                                                 Due {{ $fs->due_date->format('M j, Y') }}
-                                                @if($isOverdue) · Overdue @endif
+                                                @if($isOverdue) &middot; Overdue @endif
                                             </p>
                                             @endif
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-text-primary hidden md:table-cell">
-                                    {{ $fs->term?->name ?? '—' }}{{ $fs->term?->academicYear ? ' · ' . $fs->term->academicYear->name : '' }}
+                                    {{ $fs->term?->name ?? '&mdash;' }}{{ $fs->term?->academicYear ? ' &middot; ' . $fs->term->academicYear->name : '' }}
                                 </td>
                                 <td class="px-6 py-4">
                                     @if($hasDiscount)
@@ -424,7 +424,7 @@
                                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                         class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                                     <span x-show="!submitting">Record Cash Payment</span>
-                                    <span x-show="submitting">Saving…</span>
+                                    <span x-show="submitting">Saving&hellip;</span>
                                 </button>
                             </div>
                         </form>
@@ -450,7 +450,7 @@
     </div>
 
     {{-- ====================================================================
-         TAB 2 — FEE STRUCTURE
+         TAB 2 &mdash; FEE STRUCTURE
          ==================================================================== --}}
     <div x-show="activeTab === 'structure'" x-cloak x-data="feeStructureTab(
         {{ Js::from($classes) }},
@@ -529,7 +529,7 @@
                                     @if($fee->target_class === 'all')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-secondary">All Classes</span>
                                     @else
-                                        {{ $classes->firstWhere('id', $fee->target_class)?->name ?? '—' }}
+                                        {{ $classes->firstWhere('id', $fee->target_class)?->name ?? '&mdash;' }}
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-sm text-text-primary hidden md:table-cell">
@@ -537,7 +537,7 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent">Annual</span>
                                         <span class="text-xs text-text-muted ml-1">{{ $fee->academicYear?->name ?? '' }}</span>
                                     @else
-                                        {{ $fee->term?->name ?? '—' }}{{ $fee->term?->academicYear ? ' · ' . $fee->term->academicYear->name : '' }}
+                                        {{ $fee->term?->name ?? '&mdash;' }}{{ $fee->term?->academicYear ? ' &middot; ' . $fee->term->academicYear->name : '' }}
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 hidden lg:table-cell">
@@ -548,7 +548,7 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-sm text-text-muted hidden lg:table-cell">
-                                    {{ $fee->due_date ? $fee->due_date->format('M j, Y') : '—' }}
+                                    {{ $fee->due_date ? $fee->due_date->format('M j, Y') : '&mdash;' }}
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-end gap-2">
@@ -761,7 +761,7 @@
                                     :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                     class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                                 <span x-show="!submitting">Save Fee</span>
-                                <span x-show="submitting">Saving…</span>
+                                <span x-show="submitting">Saving&hellip;</span>
                             </button>
                         </div>
                     </form>
@@ -883,7 +883,7 @@
                                     :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                     class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                                 <span x-show="!submitting">Save Changes</span>
-                                <span x-show="submitting">Saving…</span>
+                                <span x-show="submitting">Saving&hellip;</span>
                             </button>
                         </div>
                     </form>

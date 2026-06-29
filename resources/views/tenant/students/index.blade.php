@@ -17,7 +17,7 @@
             </svg>
             <div class="min-w-0">
                 <p class="text-sm font-semibold text-error mb-1">
-                    Import failed — {{ count(session('student_import_errors')) }} {{ count(session('student_import_errors')) !== 1 ? 'errors' : 'error' }} found. No records were imported.
+                    Import failed &mdash; {{ count(session('student_import_errors')) }} {{ count(session('student_import_errors')) !== 1 ? 'errors' : 'error' }} found. No records were imported.
                 </p>
                 <p class="text-xs text-text-secondary mb-3">Fix these errors in your file and try again.</p>
                 <ul class="space-y-1 max-h-48 overflow-y-auto">
@@ -39,7 +39,7 @@
         </svg>
         <div>
             <span class="font-medium">Promotion complete.</span>
-            {{ $pr['promoted'] }} promoted · {{ $pr['retained'] }} retained · {{ $pr['graduated'] }} graduated
+            {{ $pr['promoted'] }} promoted &middot; {{ $pr['retained'] }} retained &middot; {{ $pr['graduated'] }} graduated
             @if(! empty($pr['errors']))
             <ul class="mt-1 list-disc list-inside text-xs text-warning space-y-0.5">
                 @foreach($pr['errors'] as $err)<li>{{ $err }}</li>@endforeach
@@ -182,11 +182,11 @@
                                 {{ $student->full_name }}
                             </a>
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->schoolClass?->name ?? '—' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->schoolClass?->name ?? '&mdash;' }}</td>
                         @if($anyClassHasSections)
-                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->section?->name ?? '—' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->section?->name ?? '&mdash;' }}</td>
                         @endif
-                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $student->guardian_contact ?? '—' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $student->guardian_contact ?? '&mdash;' }}</td>
                         <td class="px-6 py-4">
                             @php
                                 $statusClass = match($student->status) {
@@ -275,7 +275,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-xs font-medium text-text-primary mb-1">Step 1 — Download the template</p>
+                    <p class="text-xs font-medium text-text-primary mb-1">Step 1 &mdash; Download the template</p>
                     <p class="text-xs text-text-secondary mb-2">Fill in your student data. Do not change the column headers.</p>
                     <a href="{{ $host }}/students/import/template"
                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-dark transition-colors">
@@ -293,11 +293,11 @@
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-text-dark mb-1.5">
-                        Step 2 — Upload completed file <span class="text-error">*</span>
+                        Step 2 &mdash; Upload completed file <span class="text-error">*</span>
                     </label>
                     <input type="file" name="import_file" accept=".xlsx,.csv" required
                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-accent-muted file:text-accent hover:file:bg-accent-light">
-                    <p class="mt-1 text-xs text-text-muted">Accepts .xlsx or .csv — max 5 MB</p>
+                    <p class="mt-1 text-xs text-text-muted">Accepts .xlsx or .csv &mdash; max 5 MB</p>
                     @error('import_file')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
                 <div class="flex items-center justify-end gap-2 pt-1">
@@ -310,7 +310,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Import Students</span>
-                        <span x-show="submitting">Importing…</span>
+                        <span x-show="submitting">Importing&hellip;</span>
                     </button>
                 </div>
             </form>

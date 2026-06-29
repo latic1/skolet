@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Financial Summary — {{ $report['term'] ? $report['term']->name . ' ' . $report['academic_year']->name : $report['academic_year']->name }}</title>
+    <title>Financial Summary &mdash; {{ $report['term'] ? $report['term']->name . ' ' . $report['academic_year']->name : $report['academic_year']->name }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 11px; color: #1f2937; background: #fff; }
@@ -67,12 +67,12 @@
             <div class="report-title">Financial Summary Report</div>
             <div class="period-label">
                 @if($report['term'])
-                    {{ $report['term']->name }} — {{ $report['academic_year']->name }}
+                    {{ $report['term']->name }} &mdash; {{ $report['academic_year']->name }}
                 @else
                     {{ $report['academic_year']->name }} (Full Year)
                 @endif
-                &nbsp;·&nbsp;
-                {{ $report['date_from']->format('d M Y') }} – {{ $report['date_to']->format('d M Y') }}
+                &nbsp;&middot;&nbsp;
+                {{ $report['date_from']->format('d M Y') }} &ndash; {{ $report['date_to']->format('d M Y') }}
             </div>
         </div>
         <div class="header-right">
@@ -184,10 +184,10 @@
             @php $net = $row['income'] - $row['expenses']; @endphp
             <tr class="{{ ($row['income'] > 0 || $row['expenses'] > 0) ? 'has-data' : '' }}">
                 <td>{{ $row['month'] }}</td>
-                <td class="right text-green">{{ $row['income'] > 0 ? number_format($row['income'], 2) : '—' }}</td>
-                <td class="right text-red">{{ $row['expenses'] > 0 ? number_format($row['expenses'], 2) : '—' }}</td>
+                <td class="right text-green">{{ $row['income'] > 0 ? number_format($row['income'], 2) : '&mdash;' }}</td>
+                <td class="right text-red">{{ $row['expenses'] > 0 ? number_format($row['expenses'], 2) : '&mdash;' }}</td>
                 <td class="right {{ $net >= 0 ? 'text-green' : 'text-red' }}">
-                    {{ ($row['income'] > 0 || $row['expenses'] > 0) ? number_format($net, 2) : '—' }}
+                    {{ ($row['income'] > 0 || $row['expenses'] > 0) ? number_format($net, 2) : '&mdash;' }}
                 </td>
             </tr>
             @endforeach
@@ -196,7 +196,7 @@
     @endif
 
     <div class="footer">
-        {{ $profile?->name ?? 'SchoolFlow' }} · Financial Summary · Generated {{ now()->format('d M Y H:i') }}
+        {{ $profile?->name ?? 'SchoolFlow' }} &middot; Financial Summary &middot; Generated {{ now()->format('d M Y H:i') }}
     </div>
 
 </div>

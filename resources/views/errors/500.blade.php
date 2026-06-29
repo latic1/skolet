@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Server Error — {{ config('app.name') }}</title>
+    <title>Server Error &mdash; {{ config('app.name') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css'])
@@ -28,7 +28,7 @@
 
         {{-- Description --}}
         <p class="text-sm text-text-muted mb-8 leading-relaxed">
-            An unexpected error occurred on our end. Please try again — if the problem persists, contact support.
+            An unexpected error occurred on our end. Please try again &mdash; if the problem persists, contact support.
         </p>
 
         {{-- Actions --}}

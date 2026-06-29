@@ -180,8 +180,8 @@
                     <h3 class="text-base font-semibold text-text-primary">{{ $student->full_name }}</h3>
                     <p class="text-xs text-text-muted mt-0.5">
                         Adm. No: <span class="font-medium text-text-secondary">{{ $student->admission_no }}</span>
-                        &nbsp;·&nbsp;
-                        {{ $student->schoolClass?->name ?? '—' }}
+                        &nbsp;&middot;&nbsp;
+                        {{ $student->schoolClass?->name ?? '&mdash;' }}
                         @if($student->section) / {{ $student->section->name }}@endif
                     </p>
                     <div class="flex items-center gap-2 mt-1.5">
@@ -192,7 +192,7 @@
                         <span class="text-xs text-text-muted">{{ $exam->term->academicYear->name }}</span>
                         @endif
                         @if($exam->term)
-                        <span class="text-xs text-text-muted">· {{ $exam->term->name }}</span>
+                        <span class="text-xs text-text-muted">&middot; {{ $exam->term->name }}</span>
                         @endif
                     </div>
                 </div>
@@ -320,7 +320,7 @@
             @foreach(config('skolet.default_grading_scale') as $band)
             <span class="inline-flex items-center gap-1.5 text-xs text-text-secondary">
                 <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold {{ $gradeBadge($band['grade']) }}">{{ $band['grade'] }}</span>
-                {{ $band['min'] }}–{{ $band['max'] }} ({{ $band['remark'] }})
+                {{ $band['min'] }}&ndash;{{ $band['max'] }} ({{ $band['remark'] }})
             </span>
             @endforeach
         </div>

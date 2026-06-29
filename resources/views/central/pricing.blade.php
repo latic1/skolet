@@ -1,11 +1,11 @@
 @extends('layouts.central')
 
-@section('title', 'Pricing — Skolet')
+@section('title', 'Pricing &mdash; Skolet')
 @section('meta_description', 'Skolet pricing plans for schools of every size. Start free, upgrade when you\'re ready. Basic, Standard, and Premium plans with transparent pricing.')
 
 @push('og_tags')
 <meta property="og:type" content="website">
-<meta property="og:title" content="Pricing — Skolet">
+<meta property="og:title" content="Pricing &mdash; Skolet">
 <meta property="og:description" content="Transparent pricing for schools of every size. Start free with the Basic plan, upgrade to unlock advanced features.">
 <meta property="og:url" content="{{ url('/pricing') }}">
 @endpush
@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            {{-- Standard Plan — Most Popular --}}
+            {{-- Standard Plan &mdash; Most Popular --}}
             <div class="bg-surface border-2 border-accent rounded-2xl p-6 shadow-card flex flex-col relative">
                 <div class="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span class="bg-accent text-accent-foreground text-xs font-semibold px-3 py-1 rounded-full">Most Popular</span>
@@ -75,7 +75,7 @@
                         <span class="text-xl font-semibold text-text-secondary">GH₵</span>
                         <span class="text-4xl font-bold text-text-primary">500</span>
                     </div>
-                    <p class="text-sm text-text-secondary">per term · billed termly</p>
+                    <p class="text-sm text-text-secondary">per term &middot; billed termly</p>
                 </div>
 
                 <a href="{{ route('register-school') }}"
@@ -115,7 +115,7 @@
                         <span class="text-xl font-semibold text-text-secondary">GH₵</span>
                         <span class="text-4xl font-bold text-text-primary">1,200</span>
                     </div>
-                    <p class="text-sm text-text-secondary">per term · billed termly</p>
+                    <p class="text-sm text-text-secondary">per term &middot; billed termly</p>
                 </div>
 
                 <a href="{{ route('register-school') }}"
@@ -207,7 +207,7 @@
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                             </svg>
                         @elseif ($cell === false)
-                            <span class="text-border-muted">—</span>
+                            <span class="text-border-muted">&mdash;</span>
                         @else
                             <span class="text-sm font-medium text-text-primary">{{ $cell }}</span>
                         @endif

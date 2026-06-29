@@ -7,9 +7,9 @@
      * item renders as a live link (route registered) or a disabled span (not yet).
      *
      * Each item:
-     *   permission  — null = visible to all authenticated users
-     *   route       — named route; Route::has() checks registration
-     *   path        — appended to the current request host to build the href
+     *   permission  &mdash; null = visible to all authenticated users
+     *   route       &mdash; named route; Route::has() checks registration
+     *   path        &mdash; appended to the current request host to build the href
      */
     $navItems = [
         [

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invoice — {{ $tenant->name }}</title>
+    <title>Invoice &mdash; {{ $tenant->name }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #1a1a2e; background: #ffffff; }
@@ -102,7 +102,7 @@
                     <span style="font-size: 11px; color: #6b7280;">Skolet School Management Platform</span>
                 </td>
                 <td>
-                    {{ $payment->cycle_start->format('d M Y') }} – {{ $payment->cycle_end->format('d M Y') }}
+                    {{ $payment->cycle_start->format('d M Y') }} &ndash; {{ $payment->cycle_end->format('d M Y') }}
                 </td>
                 <td class="right">
                     <strong>GHS {{ number_format((float) $payment->amount, 2) }}</strong>
@@ -143,7 +143,7 @@
 
     {{-- Footer --}}
     <div class="footer">
-        Skolet Platform · Payment receipt generated {{ now()->format('d M Y') }} · For support contact hello@skolet.com
+        Skolet Platform &middot; Payment receipt generated {{ now()->format('d M Y') }} &middot; For support contact hello@skolet.com
     </div>
 
 </div>

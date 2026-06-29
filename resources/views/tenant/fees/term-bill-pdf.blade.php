@@ -80,7 +80,7 @@ table.fees .center { text-align: center; }
     $grandOutstanding = $totalOutstanding + $arrearsTotal;
     $printDate        = now()->format('d M Y');
     $termLabel        = $term
-        ? ($term->name . ($term->academicYear ? ' · ' . $term->academicYear->name : ''))
+        ? ($term->name . ($term->academicYear ? ' &middot; ' . $term->academicYear->name : ''))
         : 'All Terms';
 @endphp
 
@@ -104,7 +104,7 @@ table.fees .center { text-align: center; }
         </div>
         <div class="header-info">
             <div class="school-name">{{ $schoolProfile?->school_name ?? 'School' }}</div>
-            <div class="bill-title">TERM FEE BILL — {{ strtoupper($termLabel) }}</div>
+            <div class="bill-title">TERM FEE BILL &mdash; {{ strtoupper($termLabel) }}</div>
         </div>
         <div class="header-right">
             <div>Date: {{ $printDate }}</div>
@@ -124,11 +124,11 @@ table.fees .center { text-align: center; }
         </div>
         <div class="strip-cell" style="width:20%">
             <span class="strip-label">Admission No</span>
-            <span class="strip-value">{{ $student->admission_no ?? '—' }}</span>
+            <span class="strip-value">{{ $student->admission_no ?? '&mdash;' }}</span>
         </div>
         <div class="strip-cell" style="width:20%">
             <span class="strip-label">Class</span>
-            <span class="strip-value">{{ $student->schoolClass?->name ?? '—' }}{{ $student->section ? ' · ' . $student->section->name : '' }}</span>
+            <span class="strip-value">{{ $student->schoolClass?->name ?? '&mdash;' }}{{ $student->section ? ' &middot; ' . $student->section->name : '' }}</span>
         </div>
         <div class="strip-cell" style="width:20%;text-align:right">
             <span class="strip-label">Term</span>
@@ -193,7 +193,7 @@ table.fees .center { text-align: center; }
     @endif
 
     <div class="footer-note">
-        {{ $schoolProfile?->address ?? '' }}{{ ($schoolProfile?->address && $schoolProfile?->phone) ? ' · ' : '' }}{{ $schoolProfile?->phone ?? '' }}
+        {{ $schoolProfile?->address ?? '' }}{{ ($schoolProfile?->address && $schoolProfile?->phone) ? ' &middot; ' : '' }}{{ $schoolProfile?->phone ?? '' }}
         @if($schoolProfile?->address || $schoolProfile?->phone) <br> @endif
         This bill is computer-generated. Please keep it for your records.
     </div>

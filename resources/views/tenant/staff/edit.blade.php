@@ -1,6 +1,6 @@
 @extends('layouts.tenant')
 
-@section('title', 'Edit — ' . $staff->full_name)
+@section('title', 'Edit &mdash; ' . $staff->full_name)
 @section('page-title', 'Staff')
 
 @section('content')
@@ -141,7 +141,7 @@
                     :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                     class="px-6 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                 <span x-show="!submitting">Save Changes</span>
-                <span x-show="submitting">Saving…</span>
+                <span x-show="submitting">Saving&hellip;</span>
             </button>
         </div>
 

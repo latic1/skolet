@@ -84,7 +84,7 @@
                                 {{ $subject->code }}
                             </span>
                         @else
-                            <span class="text-xs text-text-muted">—</span>
+                            <span class="text-xs text-text-muted">&mdash;</span>
                         @endif
                     </td>
                     <td class="px-6 py-4">
@@ -171,7 +171,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Add Subject</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>
@@ -207,7 +207,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Save Changes</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>

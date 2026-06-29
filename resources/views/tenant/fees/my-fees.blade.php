@@ -64,9 +64,9 @@
                 <h2 class="text-base font-semibold text-text-primary">{{ $student->full_name }}</h2>
                 <p class="text-xs text-text-muted mt-0.5">
                     {{ $student->admission_no }}
-                    @if($student->schoolClass) · {{ $student->schoolClass->name }}@endif
-                    @if($student->section) · {{ $student->section->name }}@endif
-                    @if($currentTerm) · {{ $currentTerm->name }}{{ $currentTerm->academicYear ? ' · ' . $currentTerm->academicYear->name : '' }}@endif
+                    @if($student->schoolClass) &middot; {{ $student->schoolClass->name }}@endif
+                    @if($student->section) &middot; {{ $student->section->name }}@endif
+                    @if($currentTerm) &middot; {{ $currentTerm->name }}{{ $currentTerm->academicYear ? ' &middot; ' . $currentTerm->academicYear->name : '' }}@endif
                 </p>
             </div>
         </div>
@@ -93,7 +93,7 @@
         <div class="px-6 py-4 border-b border-border">
             <h3 class="text-base font-semibold text-text-primary">Fee Items</h3>
             @if($currentTerm)
-            <p class="text-xs text-text-muted mt-0.5">{{ $currentTerm->name }}{{ $currentTerm->academicYear ? ' · ' . $currentTerm->academicYear->name : '' }}</p>
+            <p class="text-xs text-text-muted mt-0.5">{{ $currentTerm->name }}{{ $currentTerm->academicYear ? ' &middot; ' . $currentTerm->academicYear->name : '' }}</p>
             @endif
         </div>
 
@@ -151,13 +151,13 @@
                                     @if($fs->due_date)
                                     <p class="text-xs {{ $isOverdue ? 'text-error font-medium' : 'text-text-muted' }} mt-0.5">
                                         Due {{ $fs->due_date->format('M j, Y') }}
-                                        @if($isOverdue) · Overdue @endif
+                                        @if($isOverdue) &middot; Overdue @endif
                                     </p>
                                     @endif
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-primary hidden sm:table-cell">{{ $fs->term?->name ?? '—' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-primary hidden sm:table-cell">{{ $fs->term?->name ?? '&mdash;' }}</td>
                         <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ format_money((float) $fs->amount, $currencySymbol) }}</td>
                         <td class="px-6 py-4 text-sm text-success-foreground font-medium hidden md:table-cell">{{ format_money($paidAmount, $currencySymbol) }}</td>
                         <td class="px-6 py-4 text-sm font-medium hidden md:table-cell {{ $outstanding > 0 ? 'text-error' : 'text-text-muted' }}">

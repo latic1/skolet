@@ -106,7 +106,7 @@
             <button type="submit" :disabled="submitting"
                     class="inline-flex items-center gap-2 px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 <span x-show="!submitting">Continue</span>
-                <span x-show="submitting">Saving…</span>
+                <span x-show="submitting">Saving&hellip;</span>
                 <svg x-show="!submitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -163,7 +163,7 @@
                            {{ old('period_system', '3_term') === '3_term' ? 'checked' : '' }}>
                     <div class="p-4 rounded-xl border-2 border-border peer-checked:border-accent peer-checked:bg-accent-muted transition-colors">
                         <p class="text-sm font-semibold text-text-primary">3-Term System</p>
-                        <p class="text-xs text-text-muted mt-0.5">Term 1 · Term 2 · Term 3</p>
+                        <p class="text-xs text-text-muted mt-0.5">Term 1 &middot; Term 2 &middot; Term 3</p>
                     </div>
                 </label>
                 <label class="cursor-pointer">
@@ -171,7 +171,7 @@
                            {{ old('period_system') === '2_semester' ? 'checked' : '' }}>
                     <div class="p-4 rounded-xl border-2 border-border peer-checked:border-accent peer-checked:bg-accent-muted transition-colors">
                         <p class="text-sm font-semibold text-text-primary">2-Semester System</p>
-                        <p class="text-xs text-text-muted mt-0.5">Semester 1 · Semester 2</p>
+                        <p class="text-xs text-text-muted mt-0.5">Semester 1 &middot; Semester 2</p>
                     </div>
                 </label>
             </div>
@@ -182,7 +182,7 @@
             <button type="submit" :disabled="submitting"
                     class="inline-flex items-center gap-2 px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 <span x-show="!submitting">Continue</span>
-                <span x-show="submitting">Saving…</span>
+                <span x-show="submitting">Saving&hellip;</span>
                 <svg x-show="!submitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -236,7 +236,7 @@
             <button type="submit" :disabled="submitting"
                     class="inline-flex items-center gap-2 px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 <span x-show="!submitting">Continue</span>
-                <span x-show="submitting">Saving…</span>
+                <span x-show="submitting">Saving&hellip;</span>
                 <svg x-show="!submitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -290,7 +290,7 @@
                 <button type="submit" :disabled="submitting"
                         class="inline-flex items-center gap-2 px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                     <span x-show="!submitting">Continue</span>
-                    <span x-show="submitting">Saving…</span>
+                    <span x-show="submitting">Saving&hellip;</span>
                     <svg x-show="!submitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>

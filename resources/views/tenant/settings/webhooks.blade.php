@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” Webhooks')
+@section('title', 'Settings &mdash; Webhooks')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -220,20 +220,20 @@
                     </label>
                     <div class="flex flex-col gap-2">
                         @foreach ([
-                            'student_enrolled'   => 'Student Enrolled â€” when a new student is added',
-                            'payment_received'   => 'Payment Received â€” when a fee payment is recorded',
-                            'attendance_marked'  => 'Attendance Marked â€” when a class attendance session is saved',
-                            'exam_published'     => 'Exam Published â€” when exam results are made visible to students',
-                            'announcement_posted'=> 'Announcement Posted â€” when a new announcement is created',
+                            'student_enrolled'   => 'Student Enrolled &mdash; when a new student is added',
+                            'payment_received'   => 'Payment Received &mdash; when a fee payment is recorded',
+                            'attendance_marked'  => 'Attendance Marked &mdash; when a class attendance session is saved',
+                            'exam_published'     => 'Exam Published &mdash; when exam results are made visible to students',
+                            'announcement_posted'=> 'Announcement Posted &mdash; when a new announcement is created',
                         ] as $value => $label)
                         <label class="flex items-start gap-3 cursor-pointer group">
                             <input type="checkbox" name="events[]" value="{{ $value }}"
                                    class="mt-0.5 h-4 w-4 rounded border-border text-accent focus:ring-accent">
                             <div>
                                 <p class="text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
-                                    {{ Str::before($label, ' â€”') }}
+                                    {{ Str::before($label, ' &mdash;') }}
                                 </p>
-                                <p class="text-xs text-text-muted">{{ Str::after($label, 'â€” ') }}</p>
+                                <p class="text-xs text-text-muted">{{ Str::after($label, '&mdash; ') }}</p>
                             </div>
                         </label>
                         @endforeach

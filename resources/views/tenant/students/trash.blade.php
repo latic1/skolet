@@ -24,7 +24,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-base font-semibold text-text-primary">Deleted Students</h2>
-            <p class="text-sm text-text-muted mt-0.5">Soft-deleted records — permanently purged after 90 days</p>
+            <p class="text-sm text-text-muted mt-0.5">Soft-deleted records &mdash; permanently purged after 90 days</p>
         </div>
         <a href="{{ $host }}/students"
            class="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-xl hover:bg-surface-secondary transition-colors">
@@ -63,7 +63,7 @@
                     <tr class="hover:bg-surface-secondary transition-colors">
                         <td class="px-4 py-3 font-medium text-text-primary">{{ $student->full_name }}</td>
                         <td class="px-4 py-3 text-text-muted hidden md:table-cell">{{ $student->admission_no }}</td>
-                        <td class="px-4 py-3 text-text-muted hidden sm:table-cell">{{ $student->schoolClass?->name ?? '—' }}</td>
+                        <td class="px-4 py-3 text-text-muted hidden sm:table-cell">{{ $student->schoolClass?->name ?? '&mdash;' }}</td>
                         <td class="px-4 py-3 text-text-muted text-xs">{{ $student->deleted_at?->diffForHumans() }}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">

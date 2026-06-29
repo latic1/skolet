@@ -41,7 +41,7 @@
                 <label class="text-xs font-medium text-text-dark">View timetable for</label>
                 <select name="teacher_id"
                         class="px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                    <option value="">Select teacher…</option>
+                    <option value="">Select teacher&hellip;</option>
                     @foreach($allStaff as $member)
                     <option value="{{ $member->id }}" @selected($teacherId === $member->id)>{{ $member->full_name }}</option>
                     @endforeach
@@ -116,13 +116,13 @@
                                     <div>
                                         <p class="text-xs font-semibold text-success-foreground leading-snug">{{ $entry['subject_name'] }}</p>
                                         <p class="text-xs text-text-secondary mt-0.5 leading-snug">
-                                            {{ $entry['class_name'] }}{{ $entry['section_name'] ? ' — ' . $entry['section_name'] : '' }}
+                                            {{ $entry['class_name'] }}{{ $entry['section_name'] ? ' &mdash; ' . $entry['section_name'] : '' }}
                                         </p>
                                     </div>
                                 </div>
                                 @else
                                 <div class="rounded-xl border border-dashed border-border min-h-[68px] flex items-center justify-center">
-                                    <span class="text-xs text-text-muted">—</span>
+                                    <span class="text-xs text-text-muted">&mdash;</span>
                                 </div>
                                 @endif
                             </td>

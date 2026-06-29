@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” School Profile')
+@section('title', 'Settings &mdash; School Profile')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -68,7 +68,7 @@
                         </label>
                         <input id="logo" type="file" name="logo" accept="image/*" class="hidden"
                                @change="previewUrl = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : previewUrl">
-                        <p class="text-xs text-text-muted">PNG, JPG, SVG up to 2 MB. Square, min 128 Ã— 128 px recommended.</p>
+                        <p class="text-xs text-text-muted">PNG, JPG, SVG up to 2 MB. Square, min 128 Ã&mdash; 128 px recommended.</p>
                     </div>
                 </div>
                 @error('logo')
@@ -215,9 +215,9 @@
 
                     {{-- Token reference --}}
                     <div class="text-xs text-text-muted space-y-1">
-                        <p><span class="font-mono text-text-dark">{YEAR}</span> â€” 4-digit year (e.g. {{ now()->year }})</p>
-                        <p><span class="font-mono text-text-dark">{YY}</span> â€” 2-digit year (e.g. {{ now()->format('y') }})</p>
-                        <p><span class="font-mono text-text-dark">{SEQ:4}</span> â€” sequence padded to N digits (e.g. 0001, 0042)</p>
+                        <p><span class="font-mono text-text-dark">{YEAR}</span> &mdash; 4-digit year (e.g. {{ now()->year }})</p>
+                        <p><span class="font-mono text-text-dark">{YY}</span> &mdash; 2-digit year (e.g. {{ now()->format('y') }})</p>
+                        <p><span class="font-mono text-text-dark">{SEQ:4}</span> &mdash; sequence padded to N digits (e.g. 0001, 0042)</p>
                     </div>
                 </div>
             </div>
@@ -242,11 +242,11 @@
                             x-model="selected"
                             @change="$el.form.querySelector('#currency_symbol').value = symbol"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                        <option value="GHS" @selected(old('currency_code', $profile?->currency_code ?? 'GHS') === 'GHS')>GHS â€” Ghanaian Cedi (â‚µ)</option>
-                        <option value="NGN" @selected(old('currency_code', $profile?->currency_code) === 'NGN')>NGN â€” Nigerian Naira (â‚¦)</option>
-                        <option value="KES" @selected(old('currency_code', $profile?->currency_code) === 'KES')>KES â€” Kenyan Shilling (KSh)</option>
-                        <option value="USD" @selected(old('currency_code', $profile?->currency_code) === 'USD')>USD â€” US Dollar ($)</option>
-                        <option value="EUR" @selected(old('currency_code', $profile?->currency_code) === 'EUR')>EUR â€” Euro (â‚¬)</option>
+                        <option value="GHS" @selected(old('currency_code', $profile?->currency_code ?? 'GHS') === 'GHS')>GHS &mdash; Ghanaian Cedi (â‚µ)</option>
+                        <option value="NGN" @selected(old('currency_code', $profile?->currency_code) === 'NGN')>NGN &mdash; Nigerian Naira (â‚¦)</option>
+                        <option value="KES" @selected(old('currency_code', $profile?->currency_code) === 'KES')>KES &mdash; Kenyan Shilling (KSh)</option>
+                        <option value="USD" @selected(old('currency_code', $profile?->currency_code) === 'USD')>USD &mdash; US Dollar ($)</option>
+                        <option value="EUR" @selected(old('currency_code', $profile?->currency_code) === 'EUR')>EUR &mdash; Euro (â‚¬)</option>
                     </select>
                     <input type="hidden" name="currency_symbol" id="currency_symbol"
                            value="{{ old('currency_symbol', $profile?->currency_symbol ?? 'â‚µ') }}">
@@ -277,7 +277,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                         class="px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                     <span x-show="!submitting">Save Profile</span>
-                    <span x-show="submitting">Savingâ€¦</span>
+                    <span x-show="submitting">Saving&hellip;</span>
                 </button>
             </div>
         </form>
@@ -289,7 +289,7 @@
             <h3 class="text-base font-semibold text-text-primary">Index Number Sequence</h3>
             <p class="text-xs text-text-muted mt-0.5">
                 Current counter: <span class="font-semibold text-text-primary">{{ $profile?->admission_counter ?? 0 }}</span>
-                â€” the next student will get sequence <span class="font-semibold text-text-primary">{{ ($profile?->admission_counter ?? 0) + 1 }}</span>.
+                &mdash; the next student will get sequence <span class="font-semibold text-text-primary">{{ ($profile?->admission_counter ?? 0) + 1 }}</span>.
             </p>
         </div>
         <div class="px-6 py-4">

@@ -22,7 +22,7 @@
         </div>
         <select name="category_id" x-model="form.category_id" required
                 class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent {{ $errors->has('category_id') ? 'border-error focus:ring-error' : '' }}">
-            <option value="">Select category…</option>
+            <option value="">Select category&hellip;</option>
             @foreach($categories as $cat)
             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
             @endforeach
@@ -67,7 +67,7 @@
 
     {{-- Receipt upload (optional) --}}
     <div class="flex flex-col gap-1.5">
-        <label class="block text-sm font-medium text-text-dark">Receipt <span class="text-xs text-text-muted font-normal">(optional — JPG, PNG, PDF · max 5 MB)</span></label>
+        <label class="block text-sm font-medium text-text-dark">Receipt <span class="text-xs text-text-muted font-normal">(optional &mdash; JPG, PNG, PDF &middot; max 5 MB)</span></label>
         <input type="file" name="receipt" accept=".jpg,.jpeg,.png,.pdf"
                class="w-full text-sm text-text-secondary file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-accent-muted file:text-accent hover:file:bg-accent-light transition-colors">
         @error('receipt')

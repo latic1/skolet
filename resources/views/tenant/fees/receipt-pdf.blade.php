@@ -252,7 +252,7 @@
             @if($schoolProfile?->phone || $schoolProfile?->email)
                 <div class="school-sub">
                     @if($schoolProfile->phone){{ $schoolProfile->phone }}@endif
-                    @if($schoolProfile->phone && $schoolProfile->email) &nbsp;·&nbsp; @endif
+                    @if($schoolProfile->phone && $schoolProfile->email) &nbsp;&middot;&nbsp; @endif
                     @if($schoolProfile->email){{ $schoolProfile->email }}@endif
                 </div>
             @endif
@@ -286,9 +286,9 @@
         <div class="detail-box">
             <div class="detail-box-header">Student Details</div>
             <div class="detail-box-body">
-                <p style="font-weight: 700; font-size: 12px;">{{ $payment->student?->full_name ?? '—' }}</p>
-                <p class="muted">Adm No: {{ $payment->student?->admission_no ?? '—' }}</p>
-                <p class="muted">{{ $payment->student?->schoolClass?->name ?? '' }}{{ $payment->student?->section ? ' · ' . $payment->student->section->name : '' }}</p>
+                <p style="font-weight: 700; font-size: 12px;">{{ $payment->student?->full_name ?? '&mdash;' }}</p>
+                <p class="muted">Adm No: {{ $payment->student?->admission_no ?? '&mdash;' }}</p>
+                <p class="muted">{{ $payment->student?->schoolClass?->name ?? '' }}{{ $payment->student?->section ? ' &middot; ' . $payment->student->section->name : '' }}</p>
             </div>
         </div>
     </div>
@@ -326,7 +326,7 @@
 <table class="detail-table">
     <tr>
         <td class="detail-label">Fee Item</td>
-        <td class="detail-value">{{ $payment->feeStructure?->fee_item ?? '—' }}</td>
+        <td class="detail-value">{{ $payment->feeStructure?->fee_item ?? '&mdash;' }}</td>
     </tr>
     <tr>
         <td class="detail-label">Total Fee Amount</td>

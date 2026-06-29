@@ -99,7 +99,7 @@
                         <div class="flex flex-wrap items-center gap-2 mt-1">
                             <span class="text-xs text-text-muted">
                                 {{ $announcement->created_at->format('M j, Y') }}
-                                · Posted by {{ $announcement->postedBy?->name ?? 'Unknown' }}
+                                &middot; Posted by {{ $announcement->postedBy?->name ?? 'Unknown' }}
                             </span>
                             {{-- Public badge --}}
                             @if($announcement->is_public)
@@ -249,7 +249,7 @@
                             Body <span class="text-error">*</span>
                         </label>
                         <textarea name="body" x-model="form.body" rows="5"
-                                  placeholder="Write the full announcement text here…"
+                                  placeholder="Write the full announcement text here&hellip;"
                                   maxlength="5000"
                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
                                   required></textarea>
@@ -337,7 +337,7 @@
                                 :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                 class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                             <span x-show="!submitting">Post Announcement</span>
-                            <span x-show="submitting">Saving…</span>
+                            <span x-show="submitting">Saving&hellip;</span>
                         </button>
                     </div>
                 </form>
@@ -452,7 +452,7 @@
                                 :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                 class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                             <span x-show="!submitting">Save Changes</span>
-                            <span x-show="submitting">Saving…</span>
+                            <span x-show="submitting">Saving&hellip;</span>
                         </button>
                     </div>
                 </form>

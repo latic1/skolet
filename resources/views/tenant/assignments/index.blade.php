@@ -93,7 +93,7 @@
                                         <p class="text-xs text-text-muted mt-0.5">
                                             {{ $assignment->subject->name }}
                                             @if ($assignment->teacher)
-                                                · {{ $assignment->teacher->full_name }}
+                                                &middot; {{ $assignment->teacher->full_name }}
                                             @endif
                                         </p>
                                     </div>
@@ -137,14 +137,14 @@
                                             <input type="file" name="file"
                                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip"
                                                    class="w-full text-sm text-text-secondary file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-accent-muted file:text-accent cursor-pointer">
-                                            <p class="mt-1 text-xs text-text-muted">PDF, Word, image, or ZIP · max 10 MB</p>
+                                            <p class="mt-1 text-xs text-text-muted">PDF, Word, image, or ZIP &middot; max 10 MB</p>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <button type="submit"
                                                     :disabled="submitting"
                                                     class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60">
                                                 <span x-show="!submitting">Submit Assignment</span>
-                                                <span x-show="submitting">Submitting…</span>
+                                                <span x-show="submitting">Submitting&hellip;</span>
                                             </button>
                                             <button type="button" @click="showSubmit = false"
                                                     class="px-4 py-2 text-sm font-medium bg-surface border border-border text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
@@ -186,7 +186,7 @@
                                     <div>
                                         <h3 class="text-sm font-semibold text-text-primary">{{ $assignment->title }}</h3>
                                         <p class="text-xs text-text-muted mt-0.5">
-                                            {{ $assignment->subject->name }} · Submitted {{ $submission->submitted_at->format('d M Y') }}
+                                            {{ $assignment->subject->name }} &middot; Submitted {{ $submission->submitted_at->format('d M Y') }}
                                         </p>
                                     </div>
                                 </div>
@@ -241,7 +241,7 @@
                                     </div>
                                 </div>
                                 <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-error-light text-error">
-                                    Overdue · {{ $assignment->due_date->format('d M Y') }}
+                                    Overdue &middot; {{ $assignment->due_date->format('d M Y') }}
                                 </span>
                             </div>
                             <div class="px-6 py-4">
@@ -385,7 +385,7 @@
                                     <td class="px-6 py-4 text-sm text-text-secondary hidden md:table-cell">
                                         {{ $assignment->schoolClass->name }}
                                         @if ($assignment->section)
-                                            · {{ $assignment->section->name }}
+                                            &middot; {{ $assignment->section->name }}
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 text-sm">
@@ -403,12 +403,12 @@
                                             {{ $ungraded > 0 ? 'bg-warning-light text-warning' : 'bg-success-lightest text-success-foreground' }}">
                                             {{ $assignment->submissions_count }} submitted
                                             @if ($ungraded > 0)
-                                                · {{ $ungraded }} ungraded
+                                                &middot; {{ $ungraded }} ungraded
                                             @endif
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-text-secondary hidden lg:table-cell">
-                                        {{ $assignment->total_marks ? number_format($assignment->total_marks, 0) : '—' }}
+                                        {{ $assignment->total_marks ? number_format($assignment->total_marks, 0) : '&mdash;' }}
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center justify-end gap-2">
@@ -499,7 +499,7 @@
                         <button type="submit" :disabled="submitting"
                                 class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60">
                             <span x-show="!submitting">Create Assignment</span>
-                            <span x-show="submitting">Saving…</span>
+                            <span x-show="submitting">Saving&hellip;</span>
                         </button>
                     </div>
                 </form>
@@ -519,7 +519,7 @@
                         <button type="submit" :disabled="submitting"
                                 class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60">
                             <span x-show="!submitting">Save Changes</span>
-                            <span x-show="submitting">Saving…</span>
+                            <span x-show="submitting">Saving&hellip;</span>
                         </button>
                     </div>
                 </form>
@@ -582,13 +582,13 @@
                                     <div class="flex flex-col gap-1 flex-1 min-w-[140px]">
                                         <label class="text-xs font-medium text-text-dark">Feedback</label>
                                         <input type="text" name="feedback" :value="submission.feedback"
-                                               placeholder="Optional feedback…"
+                                               placeholder="Optional feedback&hellip;"
                                                class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
                                     </div>
                                     <button type="submit" :disabled="submitting"
                                             class="px-3 py-2 text-xs font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60">
                                         <span x-show="!submitting">Save Grade</span>
-                                        <span x-show="submitting">Saving…</span>
+                                        <span x-show="submitting">Saving&hellip;</span>
                                     </button>
                                 </form>
                             @endcan

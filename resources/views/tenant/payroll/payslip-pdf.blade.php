@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payslip — {{ $item->staff->full_name }} — {{ $run->period_label }}</title>
+    <title>Payslip &mdash; {{ $item->staff->full_name }} &mdash; {{ $run->period_label }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #1a1a2e; background: #ffffff; }
@@ -76,7 +76,7 @@
         </div>
         <div class="info-grid-row">
             <div class="info-label">Role / Title</div>
-            <div class="info-value">{{ $item->staff->role_title ?? '—' }}</div>
+            <div class="info-value">{{ $item->staff->role_title ?? '&mdash;' }}</div>
         </div>
         <div class="info-grid-row">
             <div class="info-label">Pay Period</div>
@@ -84,14 +84,14 @@
         </div>
         <div class="info-grid-row">
             <div class="info-label">Processed</div>
-            <div class="info-value">{{ $run->processed_at?->format('d M Y') ?? '—' }}</div>
+            <div class="info-value">{{ $run->processed_at?->format('d M Y') ?? '&mdash;' }}</div>
         </div>
         <div class="info-grid-row">
             <div class="info-label">Payment Status</div>
             <div class="info-value">
                 {{ ucfirst($item->payment_status) }}
                 @if($item->paid_at)
-                    — {{ $item->paid_at->format('d M Y') }}
+                    &mdash; {{ $item->paid_at->format('d M Y') }}
                     ({{ match($item->payment_method) {
                         'bank_transfer' => 'Bank Transfer',
                         'mobile_money'  => 'Mobile Money',
@@ -152,15 +152,15 @@
         </thead>
         <tbody>
             <tr>
-                <td class="text-red">SSNIT — Employee Contribution (5.5%)</td>
+                <td class="text-red">SSNIT &mdash; Employee Contribution (5.5%)</td>
                 <td class="amount text-red">− {{ number_format((float) $item->ssnit_employee, 2) }}</td>
             </tr>
             <tr>
-                <td class="text-red">Tier 2 — Employee Contribution (5%)</td>
+                <td class="text-red">Tier 2 &mdash; Employee Contribution (5%)</td>
                 <td class="amount text-red">− {{ number_format((float) $item->tier2_employee, 2) }}</td>
             </tr>
             <tr>
-                <td class="text-red">PAYE — Income Tax (GRA 2024)</td>
+                <td class="text-red">PAYE &mdash; Income Tax (GRA 2024)</td>
                 <td class="amount text-red">− {{ number_format((float) $item->paye, 2) }}</td>
             </tr>
             <tr class="subtotal">
@@ -215,13 +215,13 @@
 
     {{-- Employer Contributions (informational) --}}
     <div class="employer-block">
-        <div class="employer-block-title">Employer Contributions (School Liability — not deducted from employee)</div>
+        <div class="employer-block-title">Employer Contributions (School Liability &mdash; not deducted from employee)</div>
         <div class="employer-row">
-            <div class="employer-row-label">SSNIT — Employer Contribution (13%)</div>
+            <div class="employer-row-label">SSNIT &mdash; Employer Contribution (13%)</div>
             <div class="employer-row-amount">GHS {{ number_format((float) $item->ssnit_employer, 2) }}</div>
         </div>
         <div class="employer-row">
-            <div class="employer-row-label">Tier 2 — Employer Contribution (5%)</div>
+            <div class="employer-row-label">Tier 2 &mdash; Employer Contribution (5%)</div>
             <div class="employer-row-amount">GHS {{ number_format((float) $item->tier2_employer, 2) }}</div>
         </div>
         <div class="employer-row">

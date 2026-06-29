@@ -111,7 +111,7 @@
             <dl class="flex flex-col gap-2">
                 <div>
                     <dt class="text-xs text-text-muted">Class</dt>
-                    <dd class="text-sm text-text-primary">{{ $selectedStudent->schoolClass?->name ?? '—' }}</dd>
+                    <dd class="text-sm text-text-primary">{{ $selectedStudent->schoolClass?->name ?? '&mdash;' }}</dd>
                 </div>
                 @if($selectedStudent->section)
                 <div>

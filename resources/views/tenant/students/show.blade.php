@@ -1,6 +1,6 @@
 @extends('layouts.tenant')
 
-@section('title', $student->full_name . ' — Student Profile')
+@section('title', $student->full_name . ' &mdash; Student Profile')
 @section('page-title', 'Students')
 
 @section('content')
@@ -50,7 +50,7 @@
                         </span>
                         @if($student->schoolClass)
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent">
-                            {{ $student->schoolClass->name }}{{ $student->section ? ' — ' . $student->section->name : '' }}
+                            {{ $student->schoolClass->name }}{{ $student->section ? ' &mdash; ' . $student->section->name : '' }}
                         </span>
                         @endif
                     </div>
@@ -120,15 +120,15 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Date of Birth</dt>
-                <dd class="text-sm text-text-primary">{{ $student->date_of_birth?->format('d M Y') ?? '—' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->date_of_birth?->format('d M Y') ?? '&mdash;' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Gender</dt>
-                <dd class="text-sm text-text-primary">{{ $student->gender ? ucfirst($student->gender) : '—' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->gender ? ucfirst($student->gender) : '&mdash;' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Address</dt>
-                <dd class="text-sm text-text-primary">{{ $student->address ?? '—' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->address ?? '&mdash;' }}</dd>
             </div>
         </dl>
     </div>
@@ -139,11 +139,11 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Guardian Name</dt>
-                <dd class="text-sm text-text-primary">{{ $student->guardian_name ?? '—' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->guardian_name ?? '&mdash;' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Contact</dt>
-                <dd class="text-sm text-text-primary">{{ $student->guardian_contact ?? '—' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->guardian_contact ?? '&mdash;' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Email</dt>
@@ -151,7 +151,7 @@
                     @if($student->guardian_email)
                     <a href="mailto:{{ $student->guardian_email }}" class="text-accent hover:text-accent-dark transition-colors">{{ $student->guardian_email }}</a>
                     @else
-                    —
+                    &mdash;
                     @endif
                 </dd>
             </div>
@@ -164,11 +164,11 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Class</dt>
-                <dd class="text-sm text-text-primary">{{ $student->schoolClass?->name ?? '—' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->schoolClass?->name ?? '&mdash;' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Section</dt>
-                <dd class="text-sm text-text-primary">{{ $student->section?->name ?? '—' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->section?->name ?? '&mdash;' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Admission Number</dt>
@@ -428,7 +428,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-red-100'"
                         class="px-3 py-1.5 bg-error-light text-error text-xs font-medium rounded-md transition-colors">
                     <span x-show="!submitting">Revoke Access</span>
-                    <span x-show="submitting">Revoking…</span>
+                    <span x-show="submitting">Revoking&hellip;</span>
                 </button>
             </form>
         </div>
@@ -477,7 +477,7 @@
                 <div>
                     <label class="block text-sm font-medium text-text-dark mb-1.5">Account Role</label>
                     <input type="hidden" name="role" value="student">
-                    <p class="text-sm text-text-muted py-2">Student — logs in as themselves</p>
+                    <p class="text-sm text-text-muted py-2">Student &mdash; logs in as themselves</p>
                     <p class="text-xs text-text-muted">To give parents access, use the <strong>Parent Accounts</strong> section below.</p>
                 </div>
             </div>
@@ -487,7 +487,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                         class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                     <span x-show="!submitting">Create Login Account</span>
-                    <span x-show="submitting">Creating…</span>
+                    <span x-show="submitting">Creating&hellip;</span>
                 </button>
             </div>
         </form>
@@ -529,7 +529,7 @@
                     <tr>
                         <td class="py-2.5 pr-4 font-medium text-text-primary">{{ $parent->name }}</td>
                         <td class="py-2.5 pr-4 text-text-secondary">{{ $parent->email }}</td>
-                        <td class="py-2.5 pr-4 text-text-secondary capitalize">{{ $parent->pivot->relationship ?? '—' }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary capitalize">{{ $parent->pivot->relationship ?? '&mdash;' }}</td>
                         <td class="py-2.5 text-right">
                             <form method="POST" action="{{ $host }}/students/{{ $student->id }}/parents/{{ $parent->id }}">
                                 @csrf
@@ -618,7 +618,7 @@
                         <label class="block text-xs text-text-muted mb-1">Relationship</label>
                         <select name="relationship"
                                 class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                            <option value="">Select…</option>
+                            <option value="">Select&hellip;</option>
                             <option value="father"   @selected(old('relationship') === 'father')>Father</option>
                             <option value="mother"   @selected(old('relationship') === 'mother')>Mother</option>
                             <option value="guardian" @selected(old('relationship') === 'guardian')>Guardian</option>
@@ -638,7 +638,7 @@
                         <label class="block text-xs text-text-muted mb-1">Relationship</label>
                         <select name="relationship"
                                 class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                            <option value="">Select…</option>
+                            <option value="">Select&hellip;</option>
                             <option value="father"   @selected(old('relationship') === 'father')>Father</option>
                             <option value="mother"   @selected(old('relationship') === 'mother')>Mother</option>
                             <option value="guardian" @selected(old('relationship') === 'guardian')>Guardian</option>
@@ -652,7 +652,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting" x-text="mode === 'create' ? 'Create & Link Parent' : 'Link Parent'"></span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>
@@ -771,7 +771,7 @@
                             @endif
                             <div class="flex items-center gap-3 mt-1.5 flex-wrap">
                                 <span class="text-xs text-text-muted">{{ $record->date->format('d M Y') }}</span>
-                                <span class="text-xs text-text-muted">by {{ $record->reportedBy?->name ?? '—' }}</span>
+                                <span class="text-xs text-text-muted">by {{ $record->reportedBy?->name ?? '&mdash;' }}</span>
                                 @if($record->parent_notified)
                                 <span class="text-xs text-success-foreground font-medium">Parent notified</span>
                                 @endif
@@ -826,7 +826,7 @@
                  x-transition:leave-end="opacity-0 scale-95">
 
                 <div class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                    <h3 class="text-base font-semibold text-text-primary">Log Incident — {{ $student->full_name }}</h3>
+                    <h3 class="text-base font-semibold text-text-primary">Log Incident &mdash; {{ $student->full_name }}</h3>
                     <button @click="showModal = false" class="p-1.5 rounded-md text-text-muted hover:bg-surface-secondary transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -846,7 +846,7 @@
                                 <label class="block text-sm font-medium text-text-dark mb-1.5">Type <span class="text-error">*</span></label>
                                 <select name="incident_type" x-model="form.incident_type" required
                                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                                    <option value="">Select…</option>
+                                    <option value="">Select&hellip;</option>
                                     @foreach(['warning','detention','suspension','expulsion','commendation'] as $type)
                                     <option value="{{ $type }}">{{ ucfirst($type) }}</option>
                                     @endforeach
@@ -897,7 +897,7 @@
                                     :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                     class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                                 <span x-show="!submitting">Log Incident</span>
-                                <span x-show="submitting">Saving…</span>
+                                <span x-show="submitting">Saving&hellip;</span>
                             </button>
                         </div>
                     </form>

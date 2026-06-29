@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Class Register — {{ $staff->full_name }} — {{ $month->format('F Y') }}</title>
+    <title>Class Register &mdash; {{ $staff->full_name }} &mdash; {{ $month->format('F Y') }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 11px; color: #1f2937; background: #fff; }
@@ -45,7 +45,7 @@
     <div class="header">
         <div class="header-left">
             <div class="school-name">{{ $profile?->name ?? 'School' }}</div>
-            <div class="report-title">Class Register — {{ $month->format('F Y') }}</div>
+            <div class="report-title">Class Register &mdash; {{ $month->format('F Y') }}</div>
         </div>
         <div class="header-right">
             <div class="period-label">Generated {{ now()->format('d M Y') }}</div>
@@ -90,7 +90,7 @@
                 </td>
                 <td class="subject-cell">{{ $entry->subject->name }}</td>
                 <td class="topic-cell">{{ $entry->topic_covered }}</td>
-                <td class="notes-cell">{{ $entry->notes ?? '—' }}</td>
+                <td class="notes-cell">{{ $entry->notes ?? '&mdash;' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -102,7 +102,7 @@
     @endif
 
     <div class="footer">
-        {{ $profile?->name ?? 'SchoolFlow' }} · Class Register · {{ $staff->full_name }} · {{ $month->format('F Y') }} · Generated {{ now()->format('d M Y H:i') }}
+        {{ $profile?->name ?? 'SchoolFlow' }} &middot; Class Register &middot; {{ $staff->full_name }} &middot; {{ $month->format('F Y') }} &middot; Generated {{ now()->format('d M Y H:i') }}
     </div>
 
 </div>

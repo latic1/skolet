@@ -150,7 +150,7 @@
                                class="text-sm font-medium text-text-primary hover:text-accent transition-colors">
                                 {{ $record->student->full_name }}
                             </a>
-                            <p class="text-xs text-text-muted mt-0.5">{{ $record->student->schoolClass?->name ?? '—' }}</p>
+                            <p class="text-xs text-text-muted mt-0.5">{{ $record->student->schoolClass?->name ?? '&mdash;' }}</p>
                         </td>
                         <td class="px-5 py-3.5">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $typeBadge }}">
@@ -164,7 +164,7 @@
                             <p class="text-sm text-text-primary line-clamp-2 max-w-xs">{{ $record->description }}</p>
                         </td>
                         <td class="px-5 py-3.5 hidden lg:table-cell">
-                            <p class="text-sm text-text-primary">{{ $record->reportedBy?->name ?? '—' }}</p>
+                            <p class="text-sm text-text-primary">{{ $record->reportedBy?->name ?? '&mdash;' }}</p>
                         </td>
                         <td class="px-5 py-3.5">
                             @if($record->parent_notified)
@@ -175,7 +175,7 @@
                                 Notified
                             </span>
                             @else
-                            <span class="text-xs text-text-muted">—</span>
+                            <span class="text-xs text-text-muted">&mdash;</span>
                             @endif
                         </td>
                         <td class="px-5 py-3.5 text-right">
@@ -248,7 +248,7 @@
                         </label>
                         <select name="student_id" x-model="form.student_id" required
                                 class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                            <option value="">Select student…</option>
+                            <option value="">Select student&hellip;</option>
                             @foreach($students as $student)
                             <option value="{{ $student->id }}">{{ $student->full_name }} ({{ $student->admission_no }})</option>
                             @endforeach
@@ -264,7 +264,7 @@
                             </label>
                             <select name="incident_type" x-model="form.incident_type" required
                                     class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                                <option value="">Select…</option>
+                                <option value="">Select&hellip;</option>
                                 @foreach(['warning','detention','suspension','expulsion','commendation'] as $type)
                                 <option value="{{ $type }}">{{ ucfirst($type) }}</option>
                                 @endforeach
@@ -322,7 +322,7 @@
                                 :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                 class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                             <span x-show="!submitting">Log Incident</span>
-                            <span x-show="submitting">Saving…</span>
+                            <span x-show="submitting">Saving&hellip;</span>
                         </button>
                     </div>
                 </form>

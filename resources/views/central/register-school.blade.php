@@ -1,6 +1,6 @@
 @extends('layouts.central')
 
-@section('title', 'Register Your School — Skolet')
+@section('title', 'Register Your School &mdash; Skolet')
 @section('meta_description', 'Register your school on Skolet in minutes. Choose a subdomain, create your admin account, and your school management platform is ready.')
 
 @section('content')
@@ -160,7 +160,7 @@
                         {{-- Admin Phone --}}
                         <div class="mb-4">
                             <label for="admin_phone" class="block text-sm font-medium text-text-dark mb-1.5">
-                                Phone number <span class="text-text-muted text-xs font-normal">(optional — for SMS backup)</span>
+                                Phone number <span class="text-text-muted text-xs font-normal">(optional &mdash; for SMS backup)</span>
                             </label>
                             <div class="flex items-stretch rounded-md overflow-hidden border transition-colors
                                         {{ $errors->has('admin_phone') ? 'border-error' : 'border-border focus-within:ring-1 focus-within:ring-accent focus-within:border-accent' }}">

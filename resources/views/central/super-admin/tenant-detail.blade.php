@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $tenant->name }} — School Detail — Skolet Super Admin</title>
+    <title>{{ $tenant->name }} &mdash; School Detail &mdash; Skolet Super Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
     <div class="mb-8 flex items-start justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-darkest">{{ $tenant->name }}</h1>
-            <p class="text-sm text-text-muted mt-1">School detail — subscription and payment history.</p>
+            <p class="text-sm text-text-muted mt-1">School detail &mdash; subscription and payment history.</p>
         </div>
     </div>
 
@@ -138,7 +138,7 @@
                     <div class="flex items-start gap-2">
                         <dt class="w-28 text-text-muted shrink-0">Cycle</dt>
                         <dd class="text-text-secondary">
-                            {{ $plan->cycle_start?->format('d M Y') ?? '—' }} → {{ $plan->cycle_end?->format('d M Y') ?? '—' }}
+                            {{ $plan->cycle_start?->format('d M Y') ?? '&mdash;' }} → {{ $plan->cycle_end?->format('d M Y') ?? '&mdash;' }}
                         </dd>
                     </div>
                     <div class="flex items-start gap-2">
@@ -203,7 +203,7 @@
                 @endif
                     <label class="block text-sm font-medium text-text-dark mb-1.5">Notes <span class="text-text-muted font-normal">(optional)</span></label>
                     <textarea name="notes" rows="2" maxlength="1000"
-                              placeholder="Any additional notes…"
+                              placeholder="Any additional notes&hellip;"
                               class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-none">{{ old('notes') }}</textarea>
                 </div>
             </form>
@@ -252,20 +252,20 @@
                                     GHS {{ number_format((float) $payment->amount, 2) }}
                                 </td>
                                 <td class="px-5 py-4 text-text-secondary">
-                                    {{ $payment->cycle_start->format('d M Y') }} – {{ $payment->cycle_end->format('d M Y') }}
+                                    {{ $payment->cycle_start->format('d M Y') }} &ndash; {{ $payment->cycle_end->format('d M Y') }}
                                 </td>
                                 <td class="px-5 py-4">
                                     @if ($payment->payment_reference)
                                         <span class="font-mono text-xs text-text-primary">{{ $payment->payment_reference }}</span>
                                     @else
-                                        <span class="text-text-muted">—</span>
+                                        <span class="text-text-muted">&mdash;</span>
                                     @endif
                                     @if ($payment->notes)
                                         <div class="text-xs text-text-muted mt-0.5 line-clamp-1" title="{{ $payment->notes }}">{{ $payment->notes }}</div>
                                     @endif
                                 </td>
                                 <td class="px-5 py-4 text-text-secondary">
-                                    {{ $payment->recordedBy?->name ?? '—' }}
+                                    {{ $payment->recordedBy?->name ?? '&mdash;' }}
                                 </td>
                                 <td class="px-5 py-4">
                                     <a href="{{ route('super-admin.tenants.invoices.download', [$tenant, $payment]) }}"

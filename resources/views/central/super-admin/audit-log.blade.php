@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Impersonation Audit Log — Skolet Super Admin</title>
+    <title>Impersonation Audit Log &mdash; Skolet Super Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
     <div class="mb-8 flex items-start justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-darkest">Impersonation Audit Log</h1>
-            <p class="text-sm text-text-muted mt-1">Every Super Admin support session — who accessed which school, when, and for how long.</p>
+            <p class="text-sm text-text-muted mt-1">Every Super Admin support session &mdash; who accessed which school, when, and for how long.</p>
         </div>
         @php
             $exportQuery = http_build_query(array_filter(request()->only(['date_from', 'date_to', 'search'])));
@@ -96,7 +96,7 @@
                         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search school…"
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search school&hellip;"
                                class="w-full pl-9 pr-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                     </div>
                 </div>
@@ -121,7 +121,7 @@
         <div class="px-6 py-4 border-b border-border flex items-center justify-between">
             <div>
                 <h2 class="font-semibold text-text-darkest">Sessions</h2>
-                <p class="text-xs text-text-muted mt-0.5">{{ $logs->total() }} total · {{ $logs->count() }} on this page</p>
+                <p class="text-xs text-text-muted mt-0.5">{{ $logs->total() }} total &middot; {{ $logs->count() }} on this page</p>
             </div>
             <span class="text-xs text-text-muted">Page {{ $logs->currentPage() }} of {{ $logs->lastPage() }}</span>
         </div>
@@ -180,13 +180,13 @@
 
                             {{-- Super Admin --}}
                             <td class="px-5 py-4">
-                                <div class="font-medium text-text-primary">{{ $log->superAdmin?->name ?? '—' }}</div>
+                                <div class="font-medium text-text-primary">{{ $log->superAdmin?->name ?? '&mdash;' }}</div>
                                 <div class="text-xs text-text-muted mt-0.5">{{ $log->superAdmin?->email ?? '' }}</div>
                             </td>
 
                             {{-- School --}}
                             <td class="px-5 py-4">
-                                <div class="font-medium text-text-primary">{{ $log->tenant?->name ?? '—' }}</div>
+                                <div class="font-medium text-text-primary">{{ $log->tenant?->name ?? '&mdash;' }}</div>
                             </td>
 
                             {{-- Duration --}}
@@ -257,7 +257,7 @@
                                     </div>
                                     <div>
                                         <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-0.5">Session ID</dt>
-                                        <dd class="text-text-muted font-mono text-xs truncate" title="{{ $log->id }}">{{ substr($log->id, 0, 8) }}…</dd>
+                                        <dd class="text-text-muted font-mono text-xs truncate" title="{{ $log->id }}">{{ substr($log->id, 0, 8) }}&hellip;</dd>
                                     </div>
                                 </dl>
                             </td>
@@ -272,7 +272,7 @@
             @if ($logs->hasPages())
                 <div class="px-6 py-4 border-t border-border flex items-center justify-between gap-4">
                     <p class="text-xs text-text-muted">
-                        Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }} sessions
+                        Showing {{ $logs->firstItem() }}&ndash;{{ $logs->lastItem() }} of {{ $logs->total() }} sessions
                     </p>
                     <div class="flex items-center gap-1">
                         @if ($logs->onFirstPage())
@@ -303,7 +303,7 @@
     </div>
 
     <p class="mt-6 text-xs text-text-muted">
-        Sessions are recorded automatically on every impersonation start and stop. A <span class="font-medium text-warning">Timed out</span> status means the Super Admin's browser session expired before they clicked Exit — the school's data was not accessible beyond the 1-hour window.
+        Sessions are recorded automatically on every impersonation start and stop. A <span class="font-medium text-warning">Timed out</span> status means the Super Admin's browser session expired before they clicked Exit &mdash; the school's data was not accessible beyond the 1-hour window.
     </p>
 
 </main>

@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” Custom Domain')
+@section('title', 'Settings &mdash; Custom Domain')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -118,7 +118,7 @@
                             :disabled="submitting"
                             class="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                         <span x-show="!submitting">Add Domain</span>
-                        <span x-show="submitting">Addingâ€¦</span>
+                        <span x-show="submitting">Adding&hellip;</span>
                     </button>
                     <button type="button" @click="showForm = false"
                             class="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
@@ -243,7 +243,7 @@
                 <div class="w-7 h-7 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
                 <div>
                     <p class="text-sm font-medium text-text-primary">Verify and go live</p>
-                    <p class="text-xs text-text-muted mt-0.5">After DNS propagates (up to 48 hours), click "Verify DNS". An SSL certificate is issued automatically â€” no extra steps needed.</p>
+                    <p class="text-xs text-text-muted mt-0.5">After DNS propagates (up to 48 hours), click "Verify DNS". An SSL certificate is issued automatically &mdash; no extra steps needed.</p>
                 </div>
             </div>
         </div>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Dashboard') — {{ config('app.name') }}</title>
+    <title>@yield('title', 'Dashboard') &mdash; {{ config('app.name') }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -84,7 +84,7 @@
         {{-- Main content --}}
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
-            {{-- Super Admin impersonation banner — non-dismissible, always visible while active --}}
+            {{-- Super Admin impersonation banner &mdash; non-dismissible, always visible while active --}}
             @if(session('impersonating'))
             <div class="shrink-0 bg-warning-light border-b-2 border-warning/50 px-6 py-3 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-2.5 text-sm font-medium text-warning min-w-0">
@@ -92,7 +92,7 @@
                         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                     </svg>
                     <span class="truncate">
-                        You are viewing as <strong>{{ tenant('name') }}</strong> (Super Admin support session) — any changes are real and attributed to the school admin account.
+                        You are viewing as <strong>{{ tenant('name') }}</strong> (Super Admin support session) &mdash; any changes are real and attributed to the school admin account.
                     </span>
                 </div>
                 <form method="POST" action="{{ request()->getSchemeAndHttpHost() }}/impersonate/exit">
@@ -105,7 +105,7 @@
             </div>
             @endif
 
-            {{-- Critical platform broadcast banner — non-dismissible, shown on every page --}}
+            {{-- Critical platform broadcast banner &mdash; non-dismissible, shown on every page --}}
             @if(!empty($criticalBroadcast))
             <div class="shrink-0 bg-error-light border-b-2 border-error/40 px-6 py-3 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-2.5 text-sm font-medium text-error min-w-0">
@@ -121,7 +121,7 @@
             </div>
             @endif
 
-            {{-- Info/Warning platform broadcast — dismissible, shown on dashboard only --}}
+            {{-- Info/Warning platform broadcast &mdash; dismissible, shown on dashboard only --}}
             @if(!empty($activeBroadcast) && request()->routeIs('tenant.dashboard'))
             <div class="shrink-0 {{ $activeBroadcast['severity'] === 'warning' ? 'bg-warning-light border-b-2 border-warning/40' : 'bg-accent-muted border-b border-accent/20' }} px-6 py-3 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-2.5 text-sm font-medium {{ $activeBroadcast['severity'] === 'warning' ? 'text-warning' : 'text-accent' }} min-w-0">
@@ -332,7 +332,7 @@
         </div>
     </div>
 
-    {{-- Global toast — driven by session flash (success / error) --}}
+    {{-- Global toast &mdash; driven by session flash (success / error) --}}
     @if(session('success') || session('error'))
     <div x-data="{
             show: true,

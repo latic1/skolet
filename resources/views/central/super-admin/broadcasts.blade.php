@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Platform Broadcasts — Skolet Super Admin</title>
+    <title>Platform Broadcasts &mdash; Skolet Super Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
     <div class="mb-8 flex items-start justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-darkest">Platform Broadcasts</h1>
-            <p class="text-sm text-text-muted mt-1">Send messages to all school admins — maintenance notices, feature announcements, or urgent alerts.</p>
+            <p class="text-sm text-text-muted mt-1">Send messages to all school admins &mdash; maintenance notices, feature announcements, or urgent alerts.</p>
         </div>
     </div>
 
@@ -93,7 +93,7 @@
                     <div>
                         <label class="block text-sm font-medium text-text-dark mb-1.5">Message</label>
                         <textarea name="message" rows="5" required maxlength="5000"
-                                  placeholder="Describe the notice, update, or alert…"
+                                  placeholder="Describe the notice, update, or alert&hellip;"
                                   class="w-full px-3 py-2 bg-surface border {{ $errors->has('message') ? 'border-error' : 'border-border' }} rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y">{{ old('message') }}</textarea>
                         @error('message')
                             <p class="mt-1 text-xs text-error">{{ $message }}</p>
@@ -105,9 +105,9 @@
                         <label class="block text-sm font-medium text-text-dark mb-1.5">Severity</label>
                         <select name="severity" x-model="severity"
                                 class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                            <option value="info" {{ old('severity', 'info') === 'info' ? 'selected' : '' }}>ℹ Info — dismissible dashboard card</option>
-                            <option value="warning" {{ old('severity') === 'warning' ? 'selected' : '' }}>⚠ Warning — dismissible dashboard card</option>
-                            <option value="critical" {{ old('severity') === 'critical' ? 'selected' : '' }}>🚨 Critical — non-dismissible top banner</option>
+                            <option value="info" {{ old('severity', 'info') === 'info' ? 'selected' : '' }}>ℹ Info &mdash; dismissible dashboard card</option>
+                            <option value="warning" {{ old('severity') === 'warning' ? 'selected' : '' }}>⚠ Warning &mdash; dismissible dashboard card</option>
+                            <option value="critical" {{ old('severity') === 'critical' ? 'selected' : '' }}>🚨 Critical &mdash; non-dismissible top banner</option>
                         </select>
                         <div class="mt-2 text-xs rounded-lg px-3 py-2 leading-relaxed"
                              :class="severity === 'critical' ? 'bg-error-light text-error' : (severity === 'warning' ? 'bg-warning-light text-warning' : 'bg-accent-muted text-accent')">
@@ -145,7 +145,7 @@
                     <button type="submit" :disabled="submitting"
                             class="w-full px-4 py-2.5 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                         <span x-show="!submitting">Send Broadcast</span>
-                        <span x-show="submitting" style="display:none">Sending…</span>
+                        <span x-show="submitting" style="display:none">Sending&hellip;</span>
                     </button>
                 </form>
             </div>
@@ -214,7 +214,7 @@
                                         @elseif($broadcast->send_at)
                                             {{ $broadcast->send_at->format('d M Y H:i') }}
                                         @else
-                                            <span class="text-text-muted">—</span>
+                                            <span class="text-text-muted">&mdash;</span>
                                         @endif
                                     </td>
                                     <td class="px-5 py-4">
@@ -222,7 +222,7 @@
                                             <span class="text-text-primary font-medium">{{ $broadcast->notifications()->count() }}</span>
                                             <span class="text-xs text-text-muted"> schools</span>
                                         @else
-                                            <span class="text-text-muted text-xs">—</span>
+                                            <span class="text-text-muted text-xs">&mdash;</span>
                                         @endif
                                     </td>
                                 </tr>

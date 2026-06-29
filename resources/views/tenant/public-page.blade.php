@@ -13,7 +13,7 @@
         $metaTitle     = $schoolName;
         $metaDesc      = $description
             ?? ($address
-                ? $schoolName . ' — located at ' . $address . '. Find our latest news, announcements, and contact information.'
+                ? $schoolName . ' &mdash; located at ' . $address . '. Find our latest news, announcements, and contact information.'
                 : 'Welcome to ' . $schoolName . '. Find our latest announcements and get in touch with us.');
     @endphp
 
@@ -170,7 +170,7 @@
                             <div class="px-6 py-4">
                                 <p class="text-sm text-text-primary leading-relaxed whitespace-pre-line">{{ Str::limit($announcement->body, 300) }}</p>
                                 @if(strlen($announcement->body) > 300)
-                                    <p class="mt-2 text-xs text-text-muted italic">… Login to the school portal to read the full announcement.</p>
+                                    <p class="mt-2 text-xs text-text-muted italic">&hellip; Login to the school portal to read the full announcement.</p>
                                 @endif
                             </div>
                         </article>

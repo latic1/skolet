@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” Audit Log')
+@section('title', 'Settings &mdash; Audit Log')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -160,7 +160,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <span class="text-xs text-text-muted">â€”</span>
+                                <span class="text-xs text-text-muted">&mdash;</span>
                             @endif
                         </td>
                     </tr>

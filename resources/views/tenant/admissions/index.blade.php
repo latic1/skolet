@@ -134,7 +134,7 @@
                             @endcan
                             @else
                             <span class="text-xs text-text-muted">
-                                {{ $app->reviewed_at?->format('d M Y') ?? '—' }}
+                                {{ $app->reviewed_at?->format('d M Y') ?? '&mdash;' }}
                             </span>
                             @endif
                         </td>
@@ -274,7 +274,7 @@
                             @csrf
                             <button type="submit"
                                     class="w-full px-4 py-2.5 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors">
-                                Accept — Create Student Record
+                                Accept &mdash; Create Student Record
                             </button>
                         </form>
 
@@ -293,7 +293,7 @@
                                     <div>
                                         <label class="block text-xs font-medium text-text-secondary mb-1.5">Rejection Reason <span class="text-error">*</span></label>
                                         <textarea name="rejection_reason" required rows="3"
-                                                  placeholder="Explain why this application is being rejected…"
+                                                  placeholder="Explain why this application is being rejected&hellip;"
                                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-error focus:border-error resize-none transition-colors"></textarea>
                                         @error('rejection_reason')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                                     </div>

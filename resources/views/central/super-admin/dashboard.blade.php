@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Super Admin Dashboard — Skolet</title>
+    <title>Super Admin Dashboard &mdash; Skolet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -139,7 +139,7 @@
                 <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <input type="text" x-model="search" placeholder="Search schools…"
+                <input type="text" x-model="search" placeholder="Search schools&hellip;"
                        class="pl-9 pr-3 py-2 text-sm bg-surface-secondary border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors w-56">
             </div>
         </div>
@@ -232,7 +232,7 @@
                                     {{ $plan->cycle_end->format('d M Y') }}
                                 </span>
                             @else
-                                <span class="text-text-muted">—</span>
+                                <span class="text-text-muted">&mdash;</span>
                             @endif
                         </td>
 
@@ -261,7 +261,7 @@
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-1 flex-wrap">
 
-                                {{-- Impersonate — start a Super Admin support session as this school's admin --}}
+                                {{-- Impersonate &mdash; start a Super Admin support session as this school's admin --}}
                                 <form method="POST" action="{{ route('super-admin.tenants.impersonate', $tenant) }}">
                                     @csrf
                                     <button type="submit"
@@ -353,7 +353,7 @@
                                x-model="rateModal.rate"
                                class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
                                placeholder="5.00" required>
-                        <p class="text-xs text-text-muted mt-1">Amount due = rate × current student count</p>
+                        <p class="text-xs text-text-muted mt-1">Amount due = rate &times; current student count</p>
                     </div>
                     <div class="flex gap-3 justify-end">
                         <button type="button" @click="rateModal.open = false"
@@ -408,11 +408,11 @@
                             Notes <span class="text-text-muted font-normal">(optional)</span>
                         </label>
                         <textarea name="notes" rows="2" maxlength="1000"
-                                  placeholder="Any additional notes…"
+                                  placeholder="Any additional notes&hellip;"
                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-none"></textarea>
                     </div>
                     <p class="text-xs text-text-muted mb-4">
-                        Amount: <strong x-text="paidModal.amount ? 'GHS ' + Number(paidModal.amount).toFixed(2) : '—'"></strong> ·
+                        Amount: <strong x-text="paidModal.amount ? 'GHS ' + Number(paidModal.amount).toFixed(2) : '&mdash;'"></strong> &middot;
                         Status will be set to <strong>paid</strong>.
                     </p>
                     <div class="flex gap-3 justify-end">
@@ -466,24 +466,24 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="bg-surface border border-border rounded-xl p-4">
                 <p class="text-xs font-medium text-text-muted uppercase tracking-wide">Total Schools</p>
-                <p class="text-2xl font-bold text-text-darkest mt-1">{{ $kpi['total_schools'] ?? '—' }}</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ $kpi['total_schools'] ?? '&mdash;' }}</p>
             </div>
             <div class="bg-surface border border-border rounded-xl p-4">
                 <p class="text-xs font-medium text-text-muted uppercase tracking-wide">Total Students</p>
-                <p class="text-2xl font-bold text-text-darkest mt-1">{{ isset($kpi['total_students']) ? number_format((int) $kpi['total_students']) : '—' }}</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ isset($kpi['total_students']) ? number_format((int) $kpi['total_students']) : '&mdash;' }}</p>
             </div>
             <div class="bg-surface border border-border rounded-xl p-4">
                 <p class="text-xs font-medium text-text-muted uppercase tracking-wide">MRR (Est.)</p>
-                <p class="text-2xl font-bold text-text-darkest mt-1">{{ isset($kpi['mrr']) ? 'GHS ' . number_format((float) $kpi['mrr'], 2) : '—' }}</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ isset($kpi['mrr']) ? 'GHS ' . number_format((float) $kpi['mrr'], 2) : '&mdash;' }}</p>
                 <p class="text-xs text-text-muted mt-0.5">Current month payments</p>
             </div>
             <div class="bg-surface border border-border rounded-xl p-4">
                 <p class="text-xs font-medium text-text-muted uppercase tracking-wide">Avg Students / School</p>
-                <p class="text-2xl font-bold text-text-darkest mt-1">{{ $kpi['avg_per_school'] ?? '—' }}</p>
+                <p class="text-2xl font-bold text-text-darkest mt-1">{{ $kpi['avg_per_school'] ?? '&mdash;' }}</p>
             </div>
         </div>
 
-        {{-- 4 Charts in 2×2 grid --}}
+        {{-- 4 Charts in 2&times;2 grid --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div class="bg-surface border border-border rounded-xl p-5">
                 <h3 class="text-sm font-semibold text-text-darkest mb-4">New Schools / Month</h3>

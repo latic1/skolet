@@ -17,7 +17,7 @@
         <textarea name="description" x-model="form.description" rows="3" required
                   class="w-full px-3 py-2 bg-surface border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 transition-colors resize-y
                          {{ $errors->has('description') ? 'border-error focus:ring-error focus:border-error' : 'border-border focus:ring-accent focus:border-accent' }}"
-                  placeholder="Describe the task, requirements, and any resources…">{{ old('description') }}</textarea>
+                  placeholder="Describe the task, requirements, and any resources&hellip;">{{ old('description') }}</textarea>
         @error('description')
             <p class="mt-1 text-xs text-error">{{ $message }}</p>
         @enderror
@@ -55,7 +55,7 @@
 
     {{-- Section (conditional) --}}
     <div x-show="hasSections">
-        <label class="block text-sm font-medium text-text-dark mb-1.5">Section <span class="text-xs text-text-muted">(optional — leave blank for all sections)</span></label>
+        <label class="block text-sm font-medium text-text-dark mb-1.5">Section <span class="text-xs text-text-muted">(optional &mdash; leave blank for all sections)</span></label>
         <select name="section_id" x-model="form.section_id"
                 class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
             <option value="">All sections</option>

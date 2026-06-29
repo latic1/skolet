@@ -98,7 +98,7 @@
                     <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Class</label>
                     <select name="reg_class_id" x-model="regClassId" @change="regSectionId = ''"
                             class="px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent">
-                        <option value="">Select class…</option>
+                        <option value="">Select class&hellip;</option>
                         @foreach($classes as $cls)
                         <option value="{{ $cls->id }}" {{ $selectedClassId === $cls->id ? 'selected' : '' }}>{{ $cls->name }}</option>
                         @endforeach
@@ -120,7 +120,7 @@
                     <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Subject</label>
                     <select name="reg_subject_id"
                             class="px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent">
-                        <option value="">Select subject…</option>
+                        <option value="">Select subject&hellip;</option>
                         @foreach($subjects as $sub)
                         <option value="{{ $sub->id }}" {{ $selectedSubjectId === $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
                         @endforeach
@@ -172,7 +172,7 @@
                         <div class="flex flex-col gap-1.5">
                             <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Notes</label>
                             <textarea name="notes" rows="5" maxlength="2000"
-                                      placeholder="Class notes, homework assigned, observations…"
+                                      placeholder="Class notes, homework assigned, observations&hellip;"
                                       class="px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent resize-none @error('notes') border-error @enderror">{{ old('notes', $existingEntry?->notes) }}</textarea>
                             @error('notes') <span class="text-xs text-error">{{ $message }}</span> @enderror
                         </div>
@@ -215,7 +215,7 @@
                                     <td class="px-5 py-3 whitespace-nowrap text-text-secondary">{{ $entry->date->format('d M Y') }}</td>
                                     <td class="px-5 py-3 font-medium text-text-primary">{{ $entry->topic_covered }}</td>
                                     <td class="px-5 py-3 text-text-secondary max-w-xs hidden lg:table-cell">
-                                        <p class="truncate">{{ $entry->notes ?? '—' }}</p>
+                                        <p class="truncate">{{ $entry->notes ?? '&mdash;' }}</p>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -327,7 +327,7 @@
                             {{ $plan->subject->name }}
                         </p>
                         <p class="text-xs text-text-muted mt-0.5">
-                            {{ $plan->schoolClass->name }}@if($plan->section) — {{ $plan->section->name }}@endif
+                            {{ $plan->schoolClass->name }}@if($plan->section) &mdash; {{ $plan->section->name }}@endif
                         </p>
                         @if($canManage)
                         <p class="text-xs text-accent mt-0.5">{{ $plan->teacher->full_name }}</p>
@@ -420,7 +420,7 @@
                         <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Subject <span class="text-error">*</span></label>
                         <select name="subject_id" required
                                 class="px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent">
-                            <option value="">Select…</option>
+                            <option value="">Select&hellip;</option>
                             @foreach($subjects as $sub)
                             <option value="{{ $sub->id }}">{{ $sub->name }}</option>
                             @endforeach
@@ -434,7 +434,7 @@
                         <select name="class_id" x-model="planClassId" required
                                 @change="planSectionId = ''"
                                 class="px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent">
-                            <option value="">Select…</option>
+                            <option value="">Select&hellip;</option>
                             @foreach($classes as $cls)
                             <option value="{{ $cls->id }}">{{ $cls->name }}</option>
                             @endforeach
@@ -455,14 +455,14 @@
                 <div class="flex flex-col gap-1.5">
                     <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Objectives</label>
                     <textarea name="objectives" rows="3" maxlength="2000"
-                              placeholder="What students should know or be able to do by end of week…"
+                              placeholder="What students should know or be able to do by end of week&hellip;"
                               class="px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
                 </div>
 
                 <div class="flex flex-col gap-1.5">
                     <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Content / Teaching Plan <span class="text-error">*</span></label>
                     <textarea name="content" rows="4" maxlength="5000" required
-                              placeholder="Topics, activities, resources, assessments planned for the week…"
+                              placeholder="Topics, activities, resources, assessments planned for the week&hellip;"
                               class="px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
                 </div>
 
@@ -488,7 +488,7 @@
         return {
             tab: initialTab,
 
-            // Register tab — cascading class → section
+            // Register tab &mdash; cascading class → section
             regClassId:    selectedClassId,
             regSectionId:  selectedSectionId,
 
@@ -497,7 +497,7 @@
                 return cls ? cls.sections : [];
             },
 
-            // Lesson Plans tab — modal state
+            // Lesson Plans tab &mdash; modal state
             createModal:   false,
             planWeekStart: currentWeekStart,
             planClassId:   '',

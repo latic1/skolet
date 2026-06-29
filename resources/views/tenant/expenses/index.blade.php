@@ -146,7 +146,7 @@
                             {{ format_money($expense->amount, $currencySymbol) }}
                         </td>
                         <td class="px-6 py-4 text-sm text-text-secondary hidden md:table-cell">
-                            {{ $expense->recordedBy?->name ?? '—' }}
+                            {{ $expense->recordedBy?->name ?? '&mdash;' }}
                         </td>
                         <td class="px-6 py-4 hidden sm:table-cell">
                             @if($expense->receipt_path)
@@ -159,7 +159,7 @@
                                 View
                             </a>
                             @else
-                            <span class="text-xs text-text-muted">—</span>
+                            <span class="text-xs text-text-muted">&mdash;</span>
                             @endif
                         </td>
                         <td class="px-6 py-4">
@@ -263,7 +263,7 @@
                             <button type="submit" :disabled="submitting"
                                     class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60">
                                 <span x-show="!submitting">Log Expense</span>
-                                <span x-show="submitting">Saving…</span>
+                                <span x-show="submitting">Saving&hellip;</span>
                             </button>
                         </div>
                     </form>
@@ -285,7 +285,7 @@
                             <button type="submit" :disabled="submitting"
                                     class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60">
                                 <span x-show="!submitting">Save Changes</span>
-                                <span x-show="submitting">Saving…</span>
+                                <span x-show="submitting">Saving&hellip;</span>
                             </button>
                         </div>
                     </form>
@@ -336,7 +336,7 @@
                         <button type="submit" :disabled="categorySubmitting"
                                 class="px-4 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60">
                             <span x-show="!categorySubmitting">Add Category</span>
-                            <span x-show="categorySubmitting">Saving…</span>
+                            <span x-show="categorySubmitting">Saving&hellip;</span>
                         </button>
                     </div>
                 </form>

@@ -1,6 +1,6 @@
 @extends('layouts.central')
 
-@section('title', 'Log in to Your School — Skolet')
+@section('title', 'Log in to Your School &mdash; Skolet')
 @section('description', 'Enter your school\'s subdomain to access your Skolet dashboard.')
 
 @section('content')

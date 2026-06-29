@@ -28,7 +28,7 @@
                 </div>
                 <div>
                     <p class="text-sm font-semibold text-accent">Finish setting up your school</p>
-                    <p class="text-xs text-text-muted mt-0.5">Complete the quick setup wizard to unlock all features — takes under 3 minutes.</p>
+                    <p class="text-xs text-text-muted mt-0.5">Complete the quick setup wizard to unlock all features &mdash; takes under 3 minutes.</p>
                 </div>
             </div>
             <a href="{{ request()->getSchemeAndHttpHost() }}/onboarding/{{ $schoolProfile?->onboarding_step ?? 1 }}"
@@ -452,7 +452,7 @@
 
     {{-- ================================================================
          STUDENT / PARENT VIEW
-         Only view permissions — no charts, no sensitive data
+         Only view permissions &mdash; no charts, no sensitive data
     ================================================================ --}}
     @else
 

@@ -122,7 +122,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                         class="px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                     <span x-show="!submitting">Save Profile</span>
-                    <span x-show="submitting">Saving…</span>
+                    <span x-show="submitting">Saving&hellip;</span>
                 </button>
             </div>
         </form>
@@ -197,7 +197,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                         class="px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                     <span x-show="!submitting">Change Password</span>
-                    <span x-show="submitting">Saving…</span>
+                    <span x-show="submitting">Saving&hellip;</span>
                 </button>
             </div>
         </form>
@@ -238,7 +238,7 @@
         {{-- Newly created token (one-time display) --}}
         <template x-if="showNewToken">
             <div class="mx-6 mt-4 bg-success-lightest border border-success text-success-foreground text-sm px-4 py-3 rounded-xl">
-                <p class="font-semibold mb-2">Token "<span x-text="newTokenName"></span>" created — copy it now, it won't be shown again.</p>
+                <p class="font-semibold mb-2">Token "<span x-text="newTokenName"></span>" created &mdash; copy it now, it won't be shown again.</p>
                 <div class="flex items-center gap-2 flex-wrap">
                     <code class="flex-1 break-all bg-surface px-3 py-2 rounded-lg text-xs text-text-primary border border-border font-mono" x-text="newToken"></code>
                     <button @click="copyToken()"
@@ -362,7 +362,7 @@
                                     :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                     class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                                 <span x-show="!submitting">Generate</span>
-                                <span x-show="submitting">Generating…</span>
+                                <span x-show="submitting">Generating&hellip;</span>
                             </button>
                         </div>
                     </form>

@@ -79,7 +79,7 @@
                             <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Leave Type</label>
                             <select name="leave_type" required
                                     class="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent @error('leave_type') border-error @enderror">
-                                <option value="">Select type…</option>
+                                <option value="">Select type&hellip;</option>
                                 @foreach($leaveTypes as $val => $label)
                                 <option value="{{ $val }}" {{ old('leave_type') === $val ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
@@ -105,7 +105,7 @@
                         <div class="flex flex-col gap-1.5">
                             <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Reason</label>
                             <textarea name="reason" rows="4" required maxlength="1000"
-                                      placeholder="Briefly describe the reason for your leave…"
+                                      placeholder="Briefly describe the reason for your leave&hellip;"
                                       class="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent resize-none @error('reason') border-error @enderror">{{ old('reason') }}</textarea>
                             @error('reason') <span class="text-xs text-error">{{ $message }}</span> @enderror
                         </div>
@@ -154,7 +154,7 @@
                                     <td class="px-6 py-3.5 text-text-secondary whitespace-nowrap">
                                         {{ $req->start_date->format('d M Y') }}
                                         @if(!$req->start_date->equalTo($req->end_date))
-                                        <span class="text-text-muted mx-1">–</span>{{ $req->end_date->format('d M Y') }}
+                                        <span class="text-text-muted mx-1">&ndash;</span>{{ $req->end_date->format('d M Y') }}
                                         @endif
                                     </td>
                                     <td class="px-6 py-3.5 text-text-secondary hidden md:table-cell">{{ $req->leave_days }}d</td>
@@ -233,7 +233,7 @@
                             <td class="px-6 py-3.5 text-text-secondary whitespace-nowrap">
                                 {{ $req->start_date->format('d M Y') }}
                                 @if(!$req->start_date->equalTo($req->end_date))
-                                <span class="text-text-muted mx-1">–</span>{{ $req->end_date->format('d M Y') }}
+                                <span class="text-text-muted mx-1">&ndash;</span>{{ $req->end_date->format('d M Y') }}
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 text-text-secondary hidden md:table-cell">{{ $req->leave_days }}d</td>
@@ -275,7 +275,7 @@
                                             rows="2"
                                             required
                                             maxlength="500"
-                                            placeholder="Reason for rejection…"
+                                            placeholder="Reason for rejection&hellip;"
                                             class="w-full px-3 py-2 rounded-lg border border-error bg-surface text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-error resize-none"
                                         ></textarea>
                                         <div class="flex gap-2 mt-1 justify-end">
@@ -332,7 +332,7 @@
                             <td class="px-6 py-3.5 text-text-secondary whitespace-nowrap">
                                 {{ $req->start_date->format('d M Y') }}
                                 @if(!$req->start_date->equalTo($req->end_date))
-                                <span class="text-text-muted mx-1">–</span>{{ $req->end_date->format('d M Y') }}
+                                <span class="text-text-muted mx-1">&ndash;</span>{{ $req->end_date->format('d M Y') }}
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 text-text-secondary hidden md:table-cell">{{ $req->leave_days }}d</td>
@@ -349,7 +349,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 text-text-secondary hidden lg:table-cell">
-                                {{ $req->approvedBy?->name ?? '—' }}
+                                {{ $req->approvedBy?->name ?? '&mdash;' }}
                                 @if($req->approved_at)
                                 <span class="block text-xs text-text-muted">{{ $req->approved_at->format('d M Y') }}</span>
                                 @endif

@@ -205,7 +205,7 @@
                         </h2>
                         <p class="text-xs text-text-muted mt-0.5">
                             {{ $attendanceReport['date_from']->format('d M Y') }} &mdash; {{ $attendanceReport['date_to']->format('d M Y') }}
-                            Â· {{ count($attendanceReport['rows']) }} student(s)
+                            &middot; {{ count($attendanceReport['rows']) }} student(s)
                         </p>
                     </div>
 

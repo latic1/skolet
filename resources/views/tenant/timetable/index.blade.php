@@ -111,7 +111,7 @@
             <div class="flex items-center justify-between px-6 py-4 border-b border-border">
                 <div>
                     <h3 class="text-sm font-semibold text-text-primary">
-                        {{ $selectedClass?->name }}{{ $selectedSection ? ' — ' . $selectedSection->name : '' }}
+                        {{ $selectedClass?->name }}{{ $selectedSection ? ' &mdash; ' . $selectedSection->name : '' }}
                     </h3>
                     <p class="text-xs text-text-muted mt-0.5">
                         @if($canEdit) Click any cell to assign a subject and teacher. @else Read-only view. @endif
@@ -122,7 +122,7 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
-                        Mon – Fri · 8 Periods
+                        Mon &ndash; Fri &middot; 8 Periods
                     </span>
                 </div>
             </div>
@@ -186,7 +186,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                         </svg>
                                         @else
-                                        <span class="text-xs text-text-muted">—</span>
+                                        <span class="text-xs text-text-muted">&mdash;</span>
                                         @endif
                                     </div>
                                 </template>
@@ -262,7 +262,7 @@
                     <h3 class="text-base font-semibold text-text-primary"
                         x-text="$store.timetableModal.title"></h3>
                     <p class="text-xs text-text-muted mt-0.5">
-                        {{ $selectedClass?->name }}{{ $selectedSection ? ' — ' . $selectedSection->name : '' }}
+                        {{ $selectedClass?->name }}{{ $selectedSection ? ' &mdash; ' . $selectedSection->name : '' }}
                     </p>
                 </div>
                 <button @click="$store.timetableModal.close()"
@@ -296,7 +296,7 @@
                 <label class="block text-sm font-medium text-text-dark mb-1.5">Subject</label>
                 <select x-model="$store.timetableModal.form.subject_id"
                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                    <option value="">Select subject…</option>
+                    <option value="">Select subject&hellip;</option>
                     @foreach($subjects as $subject)
                     <option value="{{ $subject->id }}">{{ $subject->name }}</option>
                     @endforeach
@@ -308,7 +308,7 @@
                 <label class="block text-sm font-medium text-text-dark mb-1.5">Teacher</label>
                 <select x-model="$store.timetableModal.form.teacher_id"
                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                    <option value="">Select teacher…</option>
+                    <option value="">Select teacher&hellip;</option>
                     @foreach($staff as $member)
                     <option value="{{ $member->id }}">{{ $member->full_name }}</option>
                     @endforeach
@@ -327,7 +327,7 @@
                         :disabled="$store.timetableModal.saving"
                         class="px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                     <span x-show="!$store.timetableModal.saving">Save</span>
-                    <span x-show="$store.timetableModal.saving" x-cloak>Saving…</span>
+                    <span x-show="$store.timetableModal.saving" x-cloak>Saving&hellip;</span>
                 </button>
             </div>
         </div>
@@ -343,7 +343,7 @@
     const _timetableClassId = '{{ $classId }}';
     const _timetableSectionId = '{{ $sectionId }}';
 
-    // Alpine store — shared between grid and modal
+    // Alpine store &mdash; shared between grid and modal
     document.addEventListener('alpine:init', () => {
         Alpine.store('timetableModal', {
             show: false,
@@ -359,7 +359,7 @@
             open(day, period, entry, gridRef) {
                 this.day       = day;
                 this.period    = period;
-                this.title     = `${day} · Period ${period}`;
+                this.title     = `${day} &middot; Period ${period}`;
                 this.conflict  = '';
                 this.error     = '';
                 this.form.subject_id = entry ? entry.subject_id : '';
@@ -411,7 +411,7 @@
                         }
 
                         if (data.conflict) {
-                            // Save succeeded but teacher has a conflict — stay open and warn
+                            // Save succeeded but teacher has a conflict &mdash; stay open and warn
                             this.conflict = data.conflict;
                             if (this._gridRef) {
                                 this._gridRef.setBanner('conflict', data.conflict);

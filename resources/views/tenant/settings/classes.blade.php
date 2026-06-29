@@ -190,7 +190,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Add Class</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>
@@ -226,7 +226,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Save Changes</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>
@@ -253,7 +253,7 @@
 
             <div class="flex items-center justify-between mb-1">
                 <h3 class="text-base font-semibold text-text-primary">
-                    Sections — <span x-text="currentClass?.name"></span>
+                    Sections &mdash; <span x-text="currentClass?.name"></span>
                 </h3>
                 <button @click="closeSectionsModal()" class="p-1.5 rounded-md text-text-muted hover:bg-surface-secondary transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +303,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                         class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors whitespace-nowrap">
                     <span x-show="!submitting">Add Section</span>
-                    <span x-show="submitting">Saving…</span>
+                    <span x-show="submitting">Saving&hellip;</span>
                 </button>
                 </div>
             </form>

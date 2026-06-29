@@ -122,7 +122,7 @@
                     :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                     class="px-6 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                 <span x-show="!submitting">Add Staff Member</span>
-                <span x-show="submitting">Saving…</span>
+                <span x-show="submitting">Saving&hellip;</span>
             </button>
         </div>
 

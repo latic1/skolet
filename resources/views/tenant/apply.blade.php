@@ -7,7 +7,7 @@
         $schoolName = $profile?->school_name ?? tenant('name') ?? config('app.name');
         $logoUrl    = $profile?->logo_path ? request()->getSchemeAndHttpHost() . '/school-logo' : null;
     @endphp
-    <title>Apply — {{ $schoolName }}</title>
+    <title>Apply &mdash; {{ $schoolName }}</title>
     <meta name="description" content="Submit an online admission application to {{ $schoolName }}.">
     <meta name="robots" content="index, follow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -120,7 +120,7 @@
                         @if($classes->isNotEmpty())
                         <select name="class_applying_for" required
                                 class="w-full px-3 py-2 bg-surface border @error('class_applying_for') border-error @else border-border @enderror rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                            <option value="">Select a class…</option>
+                            <option value="">Select a class&hellip;</option>
                             @foreach($classes as $cls)
                             <option value="{{ $cls->name }}" @selected(old('class_applying_for') === $cls->name)>{{ $cls->name }}</option>
                             @endforeach
@@ -192,7 +192,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                         class="px-6 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                     <span x-show="!submitting">Submit Application</span>
-                    <span x-show="submitting">Submitting…</span>
+                    <span x-show="submitting">Submitting&hellip;</span>
                 </button>
             </div>
 

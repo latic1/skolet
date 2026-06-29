@@ -147,21 +147,21 @@
                         </td>
 
                         {{-- Term --}}
-                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $exam->term?->name ?? '—' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $exam->term?->name ?? '&mdash;' }}</td>
 
                         {{-- Academic Year --}}
                         <td class="px-6 py-4 text-sm text-text-secondary hidden md:table-cell">
-                            {{ $exam->term?->academicYear?->name ?? '—' }}
+                            {{ $exam->term?->academicYear?->name ?? '&mdash;' }}
                         </td>
 
                         {{-- Date Range --}}
                         <td class="px-6 py-4 text-sm text-text-secondary hidden lg:table-cell">
                             @if($exam->start_date && $exam->end_date)
-                                {{ $exam->start_date->format('d M Y') }} – {{ $exam->end_date->format('d M Y') }}
+                                {{ $exam->start_date->format('d M Y') }} &ndash; {{ $exam->end_date->format('d M Y') }}
                             @elseif($exam->start_date)
                                 From {{ $exam->start_date->format('d M Y') }}
                             @else
-                                —
+                                &mdash;
                             @endif
                         </td>
 
@@ -274,7 +274,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Create Exam</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>
@@ -295,7 +295,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Save Changes</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>

@@ -124,7 +124,7 @@
                 <label class="block text-sm font-medium text-text-dark mb-1.5">Admission Number</label>
                 <input type="text" value="Auto-generated on save" disabled
                        class="w-full px-3 py-2 bg-surface-secondary border border-border rounded-md text-sm text-text-muted cursor-not-allowed">
-                <p class="mt-1 text-xs text-text-muted">Format: {{ now()->year }}/0001, {{ now()->year }}/0002, …</p>
+                <p class="mt-1 text-xs text-text-muted">Format: {{ now()->year }}/0001, {{ now()->year }}/0002, &hellip;</p>
             </div>
         </div>
 
@@ -178,7 +178,7 @@
                     :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                     class="px-6 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                 <span x-show="!submitting">Add Student</span>
-                <span x-show="submitting">Saving…</span>
+                <span x-show="submitting">Saving&hellip;</span>
             </button>
         </div>
 

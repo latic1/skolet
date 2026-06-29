@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” Roles & Permissions')
+@section('title', 'Settings &mdash; Roles & Permissions')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -302,7 +302,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting" x-text="mode === 'add' ? 'Create Role' : 'Save Changes'"></span>
-                        <span x-show="submitting">Savingâ€¦</span>
+                        <span x-show="submitting">Saving&hellip;</span>
                     </button>
                 </div>
             </form>

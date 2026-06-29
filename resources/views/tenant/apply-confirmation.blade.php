@@ -7,7 +7,7 @@
         $schoolName = $profile?->school_name ?? tenant('name') ?? config('app.name');
         $logoUrl    = $profile?->logo_path ? request()->getSchemeAndHttpHost() . '/school-logo' : null;
     @endphp
-    <title>Application Received — {{ $schoolName }}</title>
+    <title>Application Received &mdash; {{ $schoolName }}</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

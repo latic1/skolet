@@ -1,6 +1,6 @@
 ﻿@extends('layouts.tenant')
 
-@section('title', 'Settings â€” Notifications')
+@section('title', 'Settings &mdash; Notifications')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -93,7 +93,7 @@
             <button type="submit" :disabled="submitting"
                     class="inline-flex items-center gap-2 px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 <span x-show="!submitting">Save Preferences</span>
-                <span x-show="submitting">Savingâ€¦</span>
+                <span x-show="submitting">Saving&hellip;</span>
             </button>
         </div>
     </form>
