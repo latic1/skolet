@@ -43,7 +43,7 @@ final class ReportController extends Controller
     {
         $classes       = SchoolClass::with('sections')->orderBy('order')->get();
         $terms         = Term::with('academicYear')->latest()->get();
-        $academicYears = AcademicYear::orderByDesc('start_date')->get();
+        $academicYears = AcademicYear::with('terms')->orderByDesc('start_date')->get();
         $activeTab     = $request->query('tab', 'attendance');
 
         $attendanceReport  = null;

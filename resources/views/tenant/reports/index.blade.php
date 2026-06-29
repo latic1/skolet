@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Reports')
 @section('page-title', 'Reports')
@@ -39,19 +39,19 @@
         ? ($terms->firstWhere('id', $selectedTermId)?->academicYear?->id ?? '')
         : '';
 @endphp
-<div x-data="reportsPage(
-    {{ Js::from($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'sections' => $c->sections->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values()])->values()) }},
-    '{{ $selectedClassId }}',
-    '{{ $selectedSection }}',
-    '{{ $activeTab }}',
+<div x-data='reportsPage(
+    {{ Js::from($classes->map(fn($c) => ["id" => $c->id, "name" => $c->name, "sections" => $c->sections->map(fn($s) => ["id" => $s->id, "name" => $s->name])->values()])->values()) }},
+    {{ Js::from($selectedClassId) }},
+    {{ Js::from($selectedSection) }},
+    {{ Js::from($activeTab) }},
     {{ Js::from($examsForJs) }},
     {{ Js::from($chartData) }},
     {{ Js::from($financialChartData) }},
     {{ Js::from($academicYearsForJs) }},
-    '{{ $selectedFinancialYearId }}',
-    '{{ $selectedFinancialTermId }}',
-    '{{ $selectedTermYearId }}'
-)">
+    {{ Js::from($selectedFinancialYearId) }},
+    {{ Js::from($selectedFinancialTermId) }},
+    {{ Js::from($selectedTermYearId) }}
+)'>
 
     {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
@@ -198,7 +198,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-border">
                     <div>
                         <h2 class="text-base font-semibold text-text-primary">
-                            {{ $attendanceReport['class_label'] }}
+                            {{ $attendanceReport['class']->name }}
                             @if($attendanceReport['section'])
                                 &mdash; {{ $attendanceReport['section']->name }}
                             @endif
@@ -594,7 +594,7 @@
             {{-- Card header --}}
             <div class="px-6 py-4 border-b border-border">
                 <h3 class="text-base font-semibold text-text-primary">
-                    Attendance Alerts &mdash; {{ $absenteesReport['class_label'] }}{{ $absenteesReport['section'] ? ' / ' . $absenteesReport['section']->name : '' }}
+                    Attendance Alerts &mdash; {{ $absenteesReport['class']->name }}{{ $absenteesReport['section'] ? ' / ' . $absenteesReport['section']->name : '' }}
                 </h3>
                 <p class="text-xs text-text-muted mt-0.5">
                     {{ $absenteesReport['term']->name }} &middot;
@@ -630,8 +630,8 @@
                                    class="text-sm font-medium text-text-primary hover:text-accent transition-colors">
                                     {{ $row['student']->full_name }}
                                 </a>
-                                @if($row['student']->admission_number)
-                                <p class="text-xs text-text-muted">{{ $row['student']->admission_number }}</p>
+                                @if($row['student']->admission_no)
+                                <p class="text-xs text-text-muted">{{ $row['student']->admission_no }}</p>
                                 @endif
                             </td>
                             <td class="px-4 py-4 text-sm font-semibold text-error text-center">{{ $row['absent'] }}</td>

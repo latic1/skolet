@@ -1,14 +1,14 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Fees')
 @section('page-title', 'Fees')
 
 @section('content')
 @php $host = request()->getSchemeAndHttpHost(); @endphp
-<div class="flex flex-col gap-6" x-data="feesAdminPage(
+<div class="flex flex-col gap-6" x-data='feesAdminPage(
     {{ Js::from($classes) }},
     {{ Js::from($terms) }}
-)" x-init="initTab('{{ $activeTab }}')">
+)' x-init="initTab('{{ $activeTab }}')">
 
     {{-- Flash messages --}}
     @if(session('success'))
@@ -452,11 +452,11 @@
     {{-- ====================================================================
          TAB 2 &mdash; FEE STRUCTURE
          ==================================================================== --}}
-    <div x-show="activeTab === 'structure'" x-cloak x-data="feeStructureTab(
+    <div x-show="activeTab === 'structure'" x-cloak x-data='feeStructureTab(
         {{ Js::from($classes) }},
-        {{ Js::from($academicYears->map(fn($y) => ['id' => $y->id, 'name' => $y->name, 'terms' => $y->terms->map(fn($t) => ['id' => $t->id, 'name' => $t->name])->values()])->values()) }},
+        {{ Js::from($academicYears->map(fn($y) => ["id" => $y->id, "name" => $y->name, "terms" => $y->terms->map(fn($t) => ["id" => $t->id, "name" => $t->name])->values()])->values()) }},
         {{ Js::from($currentYear?->id) }}
-    )" x-init="init()">
+    )' x-init="init()">
 
         <div class="flex flex-col gap-6">
 

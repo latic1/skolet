@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Assignments')
 @section('page-title', 'Assignments')
@@ -256,13 +256,13 @@
 
 {{-- ============================= TEACHER / ADMIN VIEW ============================= --}}
 @elseif (! $isParent)
-    <div x-data="assignmentsPage(
+    <div x-data='assignmentsPage(
         {{ Js::from($classes->values()) }},
         {{ Js::from($subjects->values()) }},
         {{ Js::from($sections->values()) }},
         {{ Js::from($staff->values()) }},
         {{ Js::from($canManageAll) }}
-    )">
+    )'>
 
         {{-- Page header --}}
         <div class="flex items-center justify-between mb-6">

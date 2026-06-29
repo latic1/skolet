@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Announcements')
 @section('page-title', 'Announcements')
@@ -10,18 +10,18 @@
     $annFormError = ($errors->has('title') || $errors->has('body')) && old('_ann_mode');
 @endphp
 <div class="flex flex-col gap-6"
-     x-data="announcementsPage(
+     x-data='announcementsPage(
          {{ Js::from($announcements->map(fn($a) => [
-             'id'            => $a->id,
-             'title'         => $a->title,
-             'body'          => $a->body,
-             'is_public'     => $a->is_public,
-             'audience_type' => $a->audience_type ?? 'all',
-             'audience_ids'  => $a->audience_ids ?? [],
+             "id"            => $a->id,
+             "title"         => $a->title,
+             "body"          => $a->body,
+             "is_public"     => $a->is_public,
+             "audience_type" => $a->audience_type ?? "all",
+             "audience_ids"  => $a->audience_ids ?? [],
          ])) }},
-         {{ Js::from($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name])) }},
+         {{ Js::from($classes->map(fn($c) => ["id" => $c->id, "name" => $c->name])) }},
          {{ Js::from($roles) }}
-     )">
+     )'>
 
     {{-- Flash messages --}}
     @if(session('success'))
