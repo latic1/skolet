@@ -28,12 +28,16 @@
         'income'   => $financialReport ? collect($financialReport['monthly_trend'])->pluck('income')->values()->toArray() : [],
         'expenses' => $financialReport ? collect($financialReport['monthly_trend'])->pluck('expenses')->values()->toArray() : [],
     ];
-    // Pass academic years with their terms for the financial filter cascade
+    // Pass academic years with their terms for filter cascades
     $academicYearsForJs = $academicYears->map(fn($y) => [
         'id'    => $y->id,
         'name'  => $y->name,
         'terms' => $y->terms->map(fn($t) => ['id' => $t->id, 'name' => $t->name])->values(),
     ])->values()->toArray();
+    // Derive the year of the currently selected term (used to pre-select year in fee/alerts filters)
+    $selectedTermYearId = $selectedTermId
+        ? ($terms->firstWhere('id', $selectedTermId)?->academicYear?->id ?? '')
+        : '';
 @endphp
 <div x-data="reportsPage(
     {{ Js::from($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'sections' => $c->sections->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values()])->values()) }},
@@ -45,7 +49,8 @@
     {{ Js::from($financialChartData) }},
     {{ Js::from($academicYearsForJs) }},
     '{{ $selectedFinancialYearId }}',
-    '{{ $selectedFinancialTermId }}'
+    '{{ $selectedFinancialTermId }}',
+    '{{ $selectedTermYearId }}'
 )">
 
     {{-- Page header --}}
@@ -318,24 +323,26 @@
             <form method="GET" action="{{ $host }}/reports" class="flex flex-wrap items-end gap-4">
                 <input type="hidden" name="tab" value="fees">
 
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term</label>
-                    <select
-                        name="term_id"
-                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
-                    >
-                        <option value="">Select termâ€¦</option>
-                        @foreach($terms as $term)
-                            <option value="{{ $term->id }}" {{ $selectedTermId === $term->id ? 'selected' : '' }}>
-                                {{ $term->name }}
-                                @if($term->academicYear)
-                                    ({{ $term->academicYear->name }})
-                                @endif
-                                @if($term->is_current)
-                                    â€” Current
-                                @endif
-                            </option>
-                        @endforeach
+                <div class=”flex-1 min-w-[180px]”>
+                    <label class=”block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide”>Academic Year</label>
+                    <select x-model=”feeYearId” @change=”feeTermId = ''”
+                            class=”w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent”>
+                        <option value=””>Select year&hellip;</option>
+                        <template x-for=”y in academicYearsData” :key=”y.id”>
+                            <option :value=”y.id” :selected=”y.id === feeYearId” x-text=”y.name”></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class=”flex-1 min-w-[180px]”>
+                    <label class=”block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide”>Term</label>
+                    <select name=”term_id” x-model=”feeTermId”
+                            class=”w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent”
+                            :disabled=”!feeYearId”>
+                        <option value=””>Select term&hellip;</option>
+                        <template x-for=”t in feeTermsForYear” :key=”t.id”>
+                            <option :value=”t.id” :selected=”t.id === feeTermId” x-text=”t.name”></option>
+                        </template>
                     </select>
                 </div>
 
@@ -508,17 +515,28 @@
                     </select>
                 </div>
 
-                {{-- Term --}}
+                {{-- Year (alerts) --}}
+                <div class="flex-1 min-w-40">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Academic Year</label>
+                    <select x-model="alertYearId" @change="alertTermId = ''"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">Select year&hellip;</option>
+                        <template x-for="y in academicYearsData" :key="y.id">
+                            <option :value="y.id" :selected="y.id === alertYearId" x-text="y.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                {{-- Term (alerts) --}}
                 <div class="flex-1 min-w-40">
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term</label>
-                    <select name="term_id"
-                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select termâ€¦</option>
-                        @foreach($terms as $t)
-                        <option value="{{ $t->id }}" {{ $selectedTermId === $t->id ? 'selected' : '' }}>
-                            {{ $t->name }}{{ $t->academicYear ? ' (' . $t->academicYear->name . ')' : '' }}
-                        </option>
-                        @endforeach
+                    <select name="term_id" x-model="alertTermId"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+                            :disabled="!alertYearId">
+                        <option value="">Select term&hellip;</option>
+                        <template x-for="t in alertTermsForYear" :key="t.id">
+                            <option :value="t.id" :selected="t.id === alertTermId" x-text="t.name"></option>
+                        </template>
                     </select>
                 </div>
 
@@ -1056,7 +1074,7 @@
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
-Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab, examsData, chartData, financialChartData, academicYearsData, selectedFinancialYearId, selectedFinancialTermId) => ({
+Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeTab, examsData, chartData, financialChartData, academicYearsData, selectedFinancialYearId, selectedFinancialTermId, selectedTermYearId) => ({
     activeTab,
     classId: selectedClassId || '',
     sectionId: selectedSectionId || '',
@@ -1064,8 +1082,20 @@ Alpine.data('reportsPage', (classes, selectedClassId, selectedSectionId, activeT
     academicExamId: '{{ $selectedExamId }}',
     financialYearId: selectedFinancialYearId || '',
     financialTermId: selectedFinancialTermId || '',
+    feeYearId: selectedTermYearId || '',
+    feeTermId: '{{ $selectedTermId }}',
+    alertYearId: selectedTermYearId || '',
+    alertTermId: '{{ $selectedTermId }}',
     get financialTermsForYear() {
         const y = academicYearsData.find(y => y.id === this.financialYearId);
+        return y ? y.terms : [];
+    },
+    get feeTermsForYear() {
+        const y = academicYearsData.find(y => y.id === this.feeYearId);
+        return y ? y.terms : [];
+    },
+    get alertTermsForYear() {
+        const y = academicYearsData.find(y => y.id === this.alertYearId);
         return y ? y.terms : [];
     },
 
