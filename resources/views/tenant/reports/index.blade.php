@@ -1,4 +1,4 @@
-﻿@extends('layouts.tenant')
+@extends('layouts.tenant')
 
 @section('title', 'Reports')
 @section('page-title', 'Reports')
@@ -143,7 +143,7 @@
                         @change="onClassChange()"
                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
                     >
-                        <option value="">Select classâ€¦</option>
+                        <option value="">Select class&hellip;</option>
                         @foreach($classes as $class)
                             <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
                         @endforeach
@@ -200,11 +200,11 @@
                         <h2 class="text-base font-semibold text-text-primary">
                             {{ $attendanceReport['class_label'] }}
                             @if($attendanceReport['section'])
-                                â€” {{ $attendanceReport['section']->name }}
+                                &mdash; {{ $attendanceReport['section']->name }}
                             @endif
                         </h2>
                         <p class="text-xs text-text-muted mt-0.5">
-                            {{ $attendanceReport['date_from']->format('d M Y') }} â€” {{ $attendanceReport['date_to']->format('d M Y') }}
+                            {{ $attendanceReport['date_from']->format('d M Y') }} &mdash; {{ $attendanceReport['date_to']->format('d M Y') }}
                             Â· {{ count($attendanceReport['rows']) }} student(s)
                         </p>
                     </div>
@@ -362,7 +362,7 @@
                         <h2 class="text-base font-semibold text-text-primary">
                             {{ $feeReport['term']->name }}
                             @if($feeReport['term']->academicYear)
-                                â€” {{ $feeReport['term']->academicYear->name }}
+                                &mdash; {{ $feeReport['term']->academicYear->name }}
                             @endif
                         </h2>
                         <p class="text-xs text-text-muted mt-0.5">{{ count($feeReport['rows']) }} fee structure(s)</p>
@@ -496,7 +496,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Class</label>
                     <select name="class_id" x-model="classId" @change="onClassChange()"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select classâ€¦</option>
+                        <option value="">Select class&hellip;</option>
                         @foreach($classes as $class)
                         <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
                         @endforeach
@@ -594,13 +594,13 @@
             {{-- Card header --}}
             <div class="px-6 py-4 border-b border-border">
                 <h3 class="text-base font-semibold text-text-primary">
-                    Attendance Alerts â€” {{ $absenteesReport['class_label'] }}{{ $absenteesReport['section'] ? ' / ' . $absenteesReport['section']->name : '' }}
+                    Attendance Alerts &mdash; {{ $absenteesReport['class_label'] }}{{ $absenteesReport['section'] ? ' / ' . $absenteesReport['section']->name : '' }}
                 </h3>
                 <p class="text-xs text-text-muted mt-0.5">
                     {{ $absenteesReport['term']->name }} &middot;
                     Students below {{ $absenteesReport['threshold'] }}% attendance
                     @if(count($absenteesReport['rows']) === 0)
-                        &middot; <span class="text-success-foreground">No alerts â€” all students meet the threshold</span>
+                        &middot; <span class=”text-success-foreground”>No alerts &mdash; all students meet the threshold</span>
                     @endif
                 </p>
             </div>
@@ -722,7 +722,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Exam</label>
                     <select name="exam_id" x-model="academicExamId"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">â€” Select exam â€”</option>
+                        <option value=””>&mdash; Select exam &mdash;</option>
                         <template x-for="e in filteredExams" :key="e.id">
                             <option :value="e.id" :selected="e.id === academicExamId" x-text="e.name"></option>
                         </template>
@@ -734,7 +734,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Class</label>
                     <select name="class_id" x-model="classId" @change="onClassChange()"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select classâ€¦</option>
+                        <option value="">Select class&hellip;</option>
                         @foreach($classes as $class)
                         <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
                         @endforeach
@@ -903,7 +903,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Academic Year</label>
                     <select name="financial_year_id" x-model="financialYearId" @change="financialTermId = ''"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select yearâ€¦</option>
+                        <option value="">Select year&hellip;</option>
                         <template x-for="y in academicYearsData" :key="y.id">
                             <option :value="y.id" :selected="y.id === financialYearId" x-text="y.name"></option>
                         </template>
@@ -958,12 +958,12 @@
                 Period:
                 <span class="font-medium text-text-primary">
                     @if($financialReport['term'])
-                        {{ $financialReport['term']->name }} â€” {{ $financialReport['academic_year']->name }}
+                        {{ $financialReport['term']->name }} &mdash; {{ $financialReport['academic_year']->name }}
                     @else
                         {{ $financialReport['academic_year']->name }} (Full Year)
                     @endif
                 </span>
-                Â· {{ $financialReport['date_from']->format('d M Y') }} â€“ {{ $financialReport['date_to']->format('d M Y') }}
+                &middot; {{ $financialReport['date_from']->format('d M Y') }} &mdash; {{ $financialReport['date_to']->format('d M Y') }}
             </p>
             <a href="{{ $host }}/reports/financial/pdf?financial_year_id={{ $selectedFinancialYearId }}&financial_term_id={{ $selectedFinancialTermId }}"
                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-surface border border-border rounded-md hover:bg-surface-secondary transition-colors text-text-primary">

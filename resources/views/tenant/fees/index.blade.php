@@ -977,7 +977,7 @@ function feeStructureTab(classes, allYears, currentYearId) {
                         id:               @json(old('_fee_id', '')),
                         billing_cycle:    @json(old('billing_cycle', 'term')),
                         term_id:          @json(old('term_id', '')),
-                        academic_year_id: @json(old('academic_year_id', currentYearId || '')),
+                        academic_year_id: @json(old('academic_year_id', $currentYear?->id ?? '')),
                         fee_item:         @json(old('fee_item', '')),
                         amount:           @json(old('amount', '')),
                         is_mandatory:     @json(old('is_mandatory', '1')) == '1',
