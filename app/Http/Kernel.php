@@ -47,9 +47,32 @@ class Kernel extends HttpKernel
     ];
 
     /**
-     * The application's middleware aliases.
+     * The priority-sorted list of middleware.
      *
-     * Aliases may be used instead of class names to conveniently assign middleware to routes and groups.
+     * Forces ResumeImpersonation before AuthenticatesRequests (auth) so that
+     * Auth::onceUsingId() is called before auth checks Auth::check(). Without
+     * this, Laravel's priority sorter hoists `auth` above ResumeImpersonation
+     * on protected routes, creating a /dashboard ↔ /login redirect loop when
+     * impersonating: auth redirects to /login because no user is logged in yet,
+     * and guest redirects back to /dashboard because ResumeImpersonation did
+     * log the user in before the guest check ran.
+     */
+    protected $middlewarePriority = [
+        \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \App\Http\Middleware\ResumeImpersonation::class,
+        \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+        \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
+        \Illuminate\Contracts\Session\Middleware\AuthenticatesSessions::class,
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        \Illuminate\Auth\Middleware\Authorize::class,
+    ];
+
+    /**
+     * The application's middleware aliases.
      *
      * @var array<string, class-string|string>
      */
