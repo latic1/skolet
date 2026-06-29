@@ -1103,6 +1103,7 @@ const financialChartData = _d.financialChartData;
 const academicYearsData = _d.academicYearsForJs;
 return ({
     activeTab: _d.activeTab,
+    academicYearsData: _d.academicYearsForJs,
     classId: _d.selectedClassId || '',
     sectionId: _d.selectedSection || '',
     academicYearId: _d.selectedTermYearId || '',
