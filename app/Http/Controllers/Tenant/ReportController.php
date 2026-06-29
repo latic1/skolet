@@ -381,9 +381,11 @@ final class ReportController extends Controller
 
         $classes = SchoolClass::whereIn('id', $specificClassIds)->get()->keyBy('id');
 
-        $totalStudentCount  = Student::where('status', 'active')->count();
+        $activeScope = fn ($q) => $q->where('status', 'active')->orWhereNull('status');
+
+        $totalStudentCount  = Student::where($activeScope)->count();
         $classStudentCounts = Student::whereIn('class_id', $specificClassIds)
-            ->where('status', 'active')
+            ->where($activeScope)
             ->selectRaw('class_id, COUNT(*) as count')
             ->groupBy('class_id')
             ->pluck('count', 'class_id');

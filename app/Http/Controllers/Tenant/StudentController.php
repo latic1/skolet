@@ -96,6 +96,7 @@ final class StudentController extends Controller
     {
         try {
             $data = $request->validated();
+            $data['status']       = $data['status'] ?? 'active';
             $data['admission_no'] = $this->admissionNumberService->generate();
 
             $student = Student::create($data);

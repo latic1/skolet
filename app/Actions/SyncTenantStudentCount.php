@@ -18,7 +18,7 @@ final class SyncTenantStudentCount
 
         $count = DB::table('students')
             ->whereNull('deleted_at')
-            ->where('status', 'active')
+            ->where(fn ($q) => $q->where('status', 'active')->orWhereNull('status'))
             ->count();
 
         $plan = SubscriptionPlan::on('central')
