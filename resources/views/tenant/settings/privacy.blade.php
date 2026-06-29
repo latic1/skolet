@@ -1,51 +1,13 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
-@section('title', 'Settings — Data & Privacy')
+@section('title', 'Settings â€” Data & Privacy')
 @section('page-title', 'Settings')
 
 @section('content')
 @php $host = request()->getSchemeAndHttpHost(); @endphp
 <div class="flex flex-col gap-6" x-data="{ submitting: false }">
 
-    {{-- Settings Sub-Nav --}}
-    <div class="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
-        <a href="{{ $host }}/settings/academic-year"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Academic Calendar
-        </a>
-        <a href="{{ $host }}/settings/roles"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Roles &amp; Permissions
-        </a>
-        <a href="{{ $host }}/settings/profile"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            School Profile
-        </a>
-        <a href="{{ $host }}/settings/domain"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Custom Domain
-        </a>
-        <a href="{{ $host }}/settings/notifications"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Notifications
-        </a>
-        <a href="{{ $host }}/settings/audit-log"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Audit Log
-        </a>
-        <a href="{{ $host }}/settings/privacy"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-accent text-accent">
-            Data &amp; Privacy
-        </a>
-        <a href="{{ $host }}/settings/billing"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Billing
-        </a>
-        <a href="{{ $host }}/settings/webhooks"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Webhooks
-        </a>
-    </div>
+    @include('partials.settings-tabs')
 
     {{-- Flash messages --}}
     @if(session('success'))
@@ -117,7 +79,7 @@
         <h3 class="text-base font-semibold text-text-primary mb-1">Export All School Data</h3>
         <p class="text-sm text-text-muted mb-5">
             Download a full export of your school's data as a ZIP of CSV files. The export includes students, staff, attendance, exam results, fees, and all other records.
-            A download link will be emailed to you — exports are ready within a few minutes.
+            A download link will be emailed to you â€” exports are ready within a few minutes.
         </p>
         <form method="POST" action="{{ $host }}/settings/privacy/export"
               @submit="submitting = true">
@@ -128,7 +90,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span x-text="submitting ? 'Requesting…' : 'Request Full Export'"></span>
+                <span x-text="submitting ? 'Requestingâ€¦' : 'Request Full Export'"></span>
             </button>
         </form>
     </div>

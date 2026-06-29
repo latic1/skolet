@@ -421,8 +421,8 @@ Route::domain('{subdomain}.' . $appHost)
             });
 
             Route::middleware('permission:settings.manage')->group(function () {
-                // Settings index → redirect to academic year
-                Route::get('/settings', fn () => redirect(request()->getSchemeAndHttpHost() . '/settings/academic-year'))->name('settings');
+                // Settings index → redirect to School Profile (first settings tab)
+                Route::get('/settings', fn () => redirect(request()->getSchemeAndHttpHost() . '/settings/profile'))->name('settings');
 
                 // Academic Year
                 Route::get('/settings/academic-year', [AcademicYearController::class, 'index'])->name('settings.academic-year');

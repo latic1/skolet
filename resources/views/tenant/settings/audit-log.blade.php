@@ -1,51 +1,13 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
-@section('title', 'Settings — Audit Log')
+@section('title', 'Settings â€” Audit Log')
 @section('page-title', 'Settings')
 
 @section('content')
 @php $host = request()->getSchemeAndHttpHost(); @endphp
 <div class="flex flex-col gap-6">
 
-    {{-- Settings Sub-Nav --}}
-    <div class="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
-        <a href="{{ $host }}/settings/academic-year"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Academic Calendar
-        </a>
-        <a href="{{ $host }}/settings/roles"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Roles &amp; Permissions
-        </a>
-        <a href="{{ $host }}/settings/profile"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            School Profile
-        </a>
-        <a href="{{ $host }}/settings/domain"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Custom Domain
-        </a>
-        <a href="{{ $host }}/settings/notifications"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Notifications
-        </a>
-        <a href="{{ $host }}/settings/audit-log"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-accent text-accent">
-            Audit Log
-        </a>
-        <a href="{{ $host }}/settings/privacy"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Data &amp; Privacy
-        </a>
-        <a href="{{ $host }}/settings/billing"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Billing
-        </a>
-        <a href="{{ $host }}/settings/webhooks"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Webhooks
-        </a>
-    </div>
+    @include('partials.settings-tabs')
 
     {{-- Filter Card --}}
     <div class="bg-surface border border-border rounded-2xl shadow-card p-5">
@@ -198,7 +160,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <span class="text-xs text-text-muted">—</span>
+                                <span class="text-xs text-text-muted">â€”</span>
                             @endif
                         </td>
                     </tr>

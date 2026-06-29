@@ -1,6 +1,6 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
-@section('title', 'Settings — Webhooks')
+@section('title', 'Settings â€” Webhooks')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -8,45 +8,7 @@
 
 <div class="flex flex-col gap-6" x-data="webhooksPage()">
 
-    {{-- Settings Sub-Nav --}}
-    <div class="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
-        <a href="{{ $host }}/settings/academic-year"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Academic Calendar
-        </a>
-        <a href="{{ $host }}/settings/roles"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Roles &amp; Permissions
-        </a>
-        <a href="{{ $host }}/settings/profile"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            School Profile
-        </a>
-        <a href="{{ $host }}/settings/domain"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Custom Domain
-        </a>
-        <a href="{{ $host }}/settings/notifications"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Notifications
-        </a>
-        <a href="{{ $host }}/settings/audit-log"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Audit Log
-        </a>
-        <a href="{{ $host }}/settings/privacy"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Data &amp; Privacy
-        </a>
-        <a href="{{ $host }}/settings/billing"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Billing
-        </a>
-        <a href="{{ $host }}/settings/webhooks"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-accent text-accent">
-            Webhooks
-        </a>
-    </div>
+    @include('partials.settings-tabs')
 
     {{-- Flash --}}
     @if(session('success'))
@@ -258,20 +220,20 @@
                     </label>
                     <div class="flex flex-col gap-2">
                         @foreach ([
-                            'student_enrolled'   => 'Student Enrolled — when a new student is added',
-                            'payment_received'   => 'Payment Received — when a fee payment is recorded',
-                            'attendance_marked'  => 'Attendance Marked — when a class attendance session is saved',
-                            'exam_published'     => 'Exam Published — when exam results are made visible to students',
-                            'announcement_posted'=> 'Announcement Posted — when a new announcement is created',
+                            'student_enrolled'   => 'Student Enrolled â€” when a new student is added',
+                            'payment_received'   => 'Payment Received â€” when a fee payment is recorded',
+                            'attendance_marked'  => 'Attendance Marked â€” when a class attendance session is saved',
+                            'exam_published'     => 'Exam Published â€” when exam results are made visible to students',
+                            'announcement_posted'=> 'Announcement Posted â€” when a new announcement is created',
                         ] as $value => $label)
                         <label class="flex items-start gap-3 cursor-pointer group">
                             <input type="checkbox" name="events[]" value="{{ $value }}"
                                    class="mt-0.5 h-4 w-4 rounded border-border text-accent focus:ring-accent">
                             <div>
                                 <p class="text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
-                                    {{ Str::before($label, ' —') }}
+                                    {{ Str::before($label, ' â€”') }}
                                 </p>
-                                <p class="text-xs text-text-muted">{{ Str::after($label, '— ') }}</p>
+                                <p class="text-xs text-text-muted">{{ Str::after($label, 'â€” ') }}</p>
                             </div>
                         </label>
                         @endforeach

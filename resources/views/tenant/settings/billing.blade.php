@@ -1,6 +1,6 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
-@section('title', 'Settings — Billing')
+@section('title', 'Settings â€” Billing')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -8,45 +8,7 @@
 
 <div class="flex flex-col gap-6">
 
-    {{-- Settings Sub-Nav --}}
-    <div class="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
-        <a href="{{ $host }}/settings/academic-year"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Academic Calendar
-        </a>
-        <a href="{{ $host }}/settings/roles"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Roles &amp; Permissions
-        </a>
-        <a href="{{ $host }}/settings/profile"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            School Profile
-        </a>
-        <a href="{{ $host }}/settings/domain"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Custom Domain
-        </a>
-        <a href="{{ $host }}/settings/notifications"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Notifications
-        </a>
-        <a href="{{ $host }}/settings/audit-log"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Audit Log
-        </a>
-        <a href="{{ $host }}/settings/privacy"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Data &amp; Privacy
-        </a>
-        <a href="{{ $host }}/settings/billing"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-accent text-accent">
-            Billing
-        </a>
-        <a href="{{ $host }}/settings/webhooks"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Webhooks
-        </a>
-    </div>
+    @include('partials.settings-tabs')
 
     {{-- Subscription Status --}}
     <div class="bg-surface border border-border rounded-2xl shadow-card p-6">
@@ -74,10 +36,10 @@
                 <div class="bg-surface-secondary rounded-xl p-4">
                     <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Cycle Period</p>
                     <p class="text-sm font-medium text-text-primary">
-                        {{ $plan->cycle_start?->format('d M Y') ?? '—' }}
+                        {{ $plan->cycle_start?->format('d M Y') ?? 'â€”' }}
                     </p>
                     <p class="text-xs text-text-muted">
-                        to {{ $plan->cycle_end?->format('d M Y') ?? '—' }}
+                        to {{ $plan->cycle_end?->format('d M Y') ?? 'â€”' }}
                     </p>
                 </div>
                 <div class="bg-surface-secondary rounded-xl p-4">
@@ -138,13 +100,13 @@
                                 GHS {{ number_format((float) $payment->amount, 2) }}
                             </td>
                             <td class="px-5 py-4 text-text-secondary">
-                                {{ $payment->cycle_start->format('d M Y') }} – {{ $payment->cycle_end->format('d M Y') }}
+                                {{ $payment->cycle_start->format('d M Y') }} â€“ {{ $payment->cycle_end->format('d M Y') }}
                             </td>
                             <td class="px-5 py-4">
                                 @if ($payment->payment_reference)
                                     <span class="font-mono text-xs text-text-primary">{{ $payment->payment_reference }}</span>
                                 @else
-                                    <span class="text-text-muted">—</span>
+                                    <span class="text-text-muted">â€”</span>
                                 @endif
                             </td>
                             <td class="px-5 py-4">

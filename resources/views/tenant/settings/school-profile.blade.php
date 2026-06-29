@@ -1,6 +1,6 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
-@section('title', 'Settings — School Profile')
+@section('title', 'Settings â€” School Profile')
 @section('page-title', 'Settings')
 
 @section('content')
@@ -8,45 +8,7 @@
 <div class="flex flex-col gap-6"
      x-data="{ previewUrl: {{ json_encode($logoUrl ?? '') }}, submitting: false }">
 
-    {{-- Settings Sub-Nav --}}
-    <div class="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
-        <a href="{{ $host }}/settings/academic-year"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Academic Calendar
-        </a>
-        <a href="{{ $host }}/settings/roles"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Roles &amp; Permissions
-        </a>
-        <a href="{{ $host }}/settings/profile"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-accent text-accent">
-            School Profile
-        </a>
-        <a href="{{ $host }}/settings/domain"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Custom Domain
-        </a>
-        <a href="{{ $host }}/settings/notifications"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Notifications
-        </a>
-        <a href="{{ $host }}/settings/audit-log"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Audit Log
-        </a>
-        <a href="{{ $host }}/settings/privacy"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Data &amp; Privacy
-        </a>
-        <a href="{{ $host }}/settings/billing"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Billing
-        </a>
-        <a href="{{ $host }}/settings/webhooks"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Webhooks
-        </a>
-    </div>
+    @include('partials.settings-tabs')
 
     {{-- Flash messages --}}
     @if(session('success'))
@@ -106,7 +68,7 @@
                         </label>
                         <input id="logo" type="file" name="logo" accept="image/*" class="hidden"
                                @change="previewUrl = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : previewUrl">
-                        <p class="text-xs text-text-muted">PNG, JPG, SVG up to 2 MB. Square, min 128 × 128 px recommended.</p>
+                        <p class="text-xs text-text-muted">PNG, JPG, SVG up to 2 MB. Square, min 128 Ã— 128 px recommended.</p>
                     </div>
                 </div>
                 @error('logo')
@@ -253,9 +215,9 @@
 
                     {{-- Token reference --}}
                     <div class="text-xs text-text-muted space-y-1">
-                        <p><span class="font-mono text-text-dark">{YEAR}</span> — 4-digit year (e.g. {{ now()->year }})</p>
-                        <p><span class="font-mono text-text-dark">{YY}</span> — 2-digit year (e.g. {{ now()->format('y') }})</p>
-                        <p><span class="font-mono text-text-dark">{SEQ:4}</span> — sequence padded to N digits (e.g. 0001, 0042)</p>
+                        <p><span class="font-mono text-text-dark">{YEAR}</span> â€” 4-digit year (e.g. {{ now()->year }})</p>
+                        <p><span class="font-mono text-text-dark">{YY}</span> â€” 2-digit year (e.g. {{ now()->format('y') }})</p>
+                        <p><span class="font-mono text-text-dark">{SEQ:4}</span> â€” sequence padded to N digits (e.g. 0001, 0042)</p>
                     </div>
                 </div>
             </div>
@@ -268,26 +230,26 @@
                     <select name="currency_code" id="currency_code"
                             x-data="{
                                 options: {
-                                    'GHS': '₵',
-                                    'NGN': '₦',
+                                    'GHS': 'â‚µ',
+                                    'NGN': 'â‚¦',
                                     'KES': 'KSh',
                                     'USD': '$',
-                                    'EUR': '€',
+                                    'EUR': 'â‚¬',
                                 },
                                 selected: '{{ old('currency_code', $profile?->currency_code ?? 'GHS') }}',
-                                get symbol() { return this.options[this.selected] ?? '₵'; }
+                                get symbol() { return this.options[this.selected] ?? 'â‚µ'; }
                             }"
                             x-model="selected"
                             @change="$el.form.querySelector('#currency_symbol').value = symbol"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                        <option value="GHS" @selected(old('currency_code', $profile?->currency_code ?? 'GHS') === 'GHS')>GHS — Ghanaian Cedi (₵)</option>
-                        <option value="NGN" @selected(old('currency_code', $profile?->currency_code) === 'NGN')>NGN — Nigerian Naira (₦)</option>
-                        <option value="KES" @selected(old('currency_code', $profile?->currency_code) === 'KES')>KES — Kenyan Shilling (KSh)</option>
-                        <option value="USD" @selected(old('currency_code', $profile?->currency_code) === 'USD')>USD — US Dollar ($)</option>
-                        <option value="EUR" @selected(old('currency_code', $profile?->currency_code) === 'EUR')>EUR — Euro (€)</option>
+                        <option value="GHS" @selected(old('currency_code', $profile?->currency_code ?? 'GHS') === 'GHS')>GHS â€” Ghanaian Cedi (â‚µ)</option>
+                        <option value="NGN" @selected(old('currency_code', $profile?->currency_code) === 'NGN')>NGN â€” Nigerian Naira (â‚¦)</option>
+                        <option value="KES" @selected(old('currency_code', $profile?->currency_code) === 'KES')>KES â€” Kenyan Shilling (KSh)</option>
+                        <option value="USD" @selected(old('currency_code', $profile?->currency_code) === 'USD')>USD â€” US Dollar ($)</option>
+                        <option value="EUR" @selected(old('currency_code', $profile?->currency_code) === 'EUR')>EUR â€” Euro (â‚¬)</option>
                     </select>
                     <input type="hidden" name="currency_symbol" id="currency_symbol"
-                           value="{{ old('currency_symbol', $profile?->currency_symbol ?? '₵') }}">
+                           value="{{ old('currency_symbol', $profile?->currency_symbol ?? 'â‚µ') }}">
                 </div>
             </div>
 
@@ -315,7 +277,7 @@
                         :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                         class="px-5 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                     <span x-show="!submitting">Save Profile</span>
-                    <span x-show="submitting">Saving…</span>
+                    <span x-show="submitting">Savingâ€¦</span>
                 </button>
             </div>
         </form>
@@ -327,7 +289,7 @@
             <h3 class="text-base font-semibold text-text-primary">Index Number Sequence</h3>
             <p class="text-xs text-text-muted mt-0.5">
                 Current counter: <span class="font-semibold text-text-primary">{{ $profile?->admission_counter ?? 0 }}</span>
-                — the next student will get sequence <span class="font-semibold text-text-primary">{{ ($profile?->admission_counter ?? 0) + 1 }}</span>.
+                â€” the next student will get sequence <span class="font-semibold text-text-primary">{{ ($profile?->admission_counter ?? 0) + 1 }}</span>.
             </p>
         </div>
         <div class="px-6 py-4">

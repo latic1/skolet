@@ -1,7 +1,7 @@
 @extends('layouts.tenant')
 
 @section('title', 'Classes & Sections')
-@section('page-title', 'Classes & Sections')
+@section('page-title', 'Academics')
 
 @section('content')
 @php
@@ -19,6 +19,8 @@
 @endphp
 <div class="flex flex-col gap-6"
      x-data="classesPage({{ json_encode($classesJson) }}, {{ json_encode($classOpen) }}, {{ json_encode((bool) $classFormError) }}, {{ json_encode(['mode' => old('_class_mode', 'add'), 'id' => old('_class_id', ''), 'name' => old('name', ''), 'order' => old('order', '')]) }})">
+
+    @include('partials.academics-tabs')
 
     {{-- Flash messages --}}
     @if(session('success'))

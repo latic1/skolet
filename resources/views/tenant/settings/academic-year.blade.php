@@ -1,7 +1,7 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
-@section('title', 'Settings — Academic Calendar')
-@section('page-title', 'Settings')
+@section('title', 'Settings â€” Academic Calendar')
+@section('page-title', 'Academics')
 
 @section('content')
 @php
@@ -29,45 +29,7 @@
 
 <div class="flex flex-col gap-6" x-data="academicYearPage({{ $yearsJson }}, {{ json_encode($yearOpen) }})" x-init="init()">
 
-    {{-- Settings Sub-Nav --}}
-    <div class="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
-        <a href="{{ $host }}/settings/academic-year"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-accent text-accent">
-            Academic Calendar
-        </a>
-        <a href="{{ $host }}/settings/roles"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Roles &amp; Permissions
-        </a>
-        <a href="{{ $host }}/settings/profile"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            School Profile
-        </a>
-        <a href="{{ $host }}/settings/domain"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Custom Domain
-        </a>
-        <a href="{{ $host }}/settings/notifications"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Notifications
-        </a>
-        <a href="{{ $host }}/settings/audit-log"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Audit Log
-        </a>
-        <a href="{{ $host }}/settings/privacy"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Data &amp; Privacy
-        </a>
-        <a href="{{ $host }}/settings/billing"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Billing
-        </a>
-        <a href="{{ $host }}/settings/webhooks"
-           class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap border-transparent text-text-secondary hover:text-text-primary">
-            Webhooks
-        </a>
-    </div>
+    @include('partials.academics-tabs')
 
     {{-- Flash messages --}}
     @if(session('success'))
@@ -93,7 +55,7 @@
     <div class="bg-surface border border-border rounded-2xl shadow-card p-6">
         <div class="mb-4">
             <h3 class="text-base font-semibold text-text-primary">Academic Period System</h3>
-            <p class="text-xs text-text-muted mt-0.5">Determines how terms are structured across the school year. Set once before creating academic years — cannot be changed after terms exist.</p>
+            <p class="text-xs text-text-muted mt-0.5">Determines how terms are structured across the school year. Set once before creating academic years â€” cannot be changed after terms exist.</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <form method="POST" action="{{ $host }}/settings/academic-year/period-system">
@@ -104,7 +66,7 @@
                         ? 'border-accent bg-accent'
                         : 'border-border bg-surface hover:border-accent hover:bg-accent-muted' }}">
                     <p class="font-semibold text-sm mb-1 {{ $currentPeriodSystem === '3_term' ? 'text-white' : 'text-text-primary' }}">3-Term System</p>
-                    <p class="text-xs {{ $currentPeriodSystem === '3_term' ? 'text-white/80' : 'text-text-muted' }}">Term 1 · Term 2 · Term 3</p>
+                    <p class="text-xs {{ $currentPeriodSystem === '3_term' ? 'text-white/80' : 'text-text-muted' }}">Term 1 Â· Term 2 Â· Term 3</p>
                     @if($currentPeriodSystem === '3_term')
                     <span class="inline-flex items-center gap-1 mt-2 text-xs text-white/80">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -121,7 +83,7 @@
                         ? 'border-accent bg-accent'
                         : 'border-border bg-surface hover:border-accent hover:bg-accent-muted' }}">
                     <p class="font-semibold text-sm mb-1 {{ $currentPeriodSystem === '2_semester' ? 'text-white' : 'text-text-primary' }}">2-Semester System</p>
-                    <p class="text-xs {{ $currentPeriodSystem === '2_semester' ? 'text-white/80' : 'text-text-muted' }}">Semester 1 · Semester 2</p>
+                    <p class="text-xs {{ $currentPeriodSystem === '2_semester' ? 'text-white/80' : 'text-text-muted' }}">Semester 1 Â· Semester 2</p>
                     @if($currentPeriodSystem === '2_semester')
                     <span class="inline-flex items-center gap-1 mt-2 text-xs text-white/80">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -156,7 +118,7 @@
     <div class="px-6 py-4 border-b border-border flex items-center justify-between gap-4 flex-wrap">
         <div>
             <h3 class="text-base font-semibold text-text-primary">Grading Scale</h3>
-            <p class="text-xs text-text-muted mt-0.5">Define how numeric marks are converted to grade letters and remarks on report cards. Must cover 0–100 with no gaps or overlaps.</p>
+            <p class="text-xs text-text-muted mt-0.5">Define how numeric marks are converted to grade letters and remarks on report cards. Must cover 0â€“100 with no gaps or overlaps.</p>
         </div>
     </div>
 
@@ -239,11 +201,11 @@
             <template x-for="(band, index) in [...bands].sort((a,b) => b.min - a.min)" :key="index">
                 <div class="flex-1 rounded-sm"
                      :style="`background: ${['#10b981','#61a8ff','#ff8904','#ef4444','#a78bfa','#f59e0b'][index % 6]}; opacity: 0.7`"
-                     :title="band.grade + ': ' + band.min + '–' + band.max">
+                     :title="band.grade + ': ' + band.min + 'â€“' + band.max">
                 </div>
             </template>
         </div>
-        <p class="text-xs text-text-muted -mt-2">Preview — grade bands from highest (left) to lowest (right)</p>
+        <p class="text-xs text-text-muted -mt-2">Preview â€” grade bands from highest (left) to lowest (right)</p>
 
         <div class="flex items-center gap-3 pt-2">
             <button type="button" @click="addBand()"
@@ -257,7 +219,7 @@
                     :disabled="submitting"
                     class="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 <span x-show="!submitting">Save Grading Scale</span>
-                <span x-show="submitting">Saving…</span>
+                <span x-show="submitting">Savingâ€¦</span>
             </button>
         </div>
     </form>
@@ -325,7 +287,7 @@
                     <div>
                         <p class="text-sm font-semibold text-text-primary" x-text="selectedYear.name"></p>
                         <p class="text-xs text-text-muted mt-0.5"
-                           x-text="selectedYear.start_date + ' → ' + selectedYear.end_date"></p>
+                           x-text="selectedYear.start_date + ' â†’ ' + selectedYear.end_date"></p>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <template x-if="selectedYear.is_current">
@@ -401,7 +363,7 @@
                                             <p class="text-sm font-medium text-text-primary" x-text="term.name"></p>
                                             <p class="text-xs text-text-muted mt-0.5"
                                                x-text="(term.start_date && term.end_date)
-                                                    ? term.start_date + ' → ' + term.end_date
+                                                    ? term.start_date + ' â†’ ' + term.end_date
                                                     : 'No dates set'">
                                             </p>
                                         </div>
@@ -455,7 +417,7 @@
                                                         :class="termSubmitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                                                         class="px-3 py-1.5 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                                                     <span x-show="!termSubmitting">Save Dates</span>
-                                                    <span x-show="termSubmitting">Saving…</span>
+                                                    <span x-show="termSubmitting">Savingâ€¦</span>
                                                 </button>
                                                 <button type="button" @click="cancelEditTerm()"
                                                         class="px-3 py-1.5 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
@@ -496,16 +458,16 @@
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-text-primary">
-                    {{ $currentYear->name }} · {{ $currentPeriodSystem === '3_term' ? '3-Term System' : '2-Semester System' }}
+                    {{ $currentYear->name }} Â· {{ $currentPeriodSystem === '3_term' ? '3-Term System' : '2-Semester System' }}
                 </p>
                 <p class="text-xs text-text-muted mt-0.5">
                     @if($currentTerm)
                         Current Term: <span class="font-medium text-text-primary">{{ $currentTerm->name }}</span>
                         @if($currentTerm->start_date && $currentTerm->end_date)
-                            · {{ $currentTerm->start_date->format('M j') }} – {{ $currentTerm->end_date->format('M j, Y') }}
+                            Â· {{ $currentTerm->start_date->format('M j') }} â€“ {{ $currentTerm->end_date->format('M j, Y') }}
                         @endif
                     @else
-                        No term is currently active — click "Set Active" on a term above
+                        No term is currently active â€” click "Set Active" on a term above
                     @endif
                 </p>
             </div>
@@ -589,7 +551,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Add Year</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Savingâ€¦</span>
                     </button>
                 </div>
             </form>
@@ -635,7 +597,7 @@
                             :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
                         <span x-show="!submitting">Save Changes</span>
-                        <span x-show="submitting">Saving…</span>
+                        <span x-show="submitting">Savingâ€¦</span>
                     </button>
                 </div>
             </form>

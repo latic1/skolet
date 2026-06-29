@@ -1,7 +1,7 @@
 @extends('layouts.tenant')
 
 @section('title', 'Subjects')
-@section('page-title', 'Subjects')
+@section('page-title', 'Academics')
 
 @section('content')
 @php
@@ -32,6 +32,8 @@
         this.submitting = false;
     }
 }">
+
+    @include('partials.academics-tabs')
 
     {{-- Main Card --}}
     <div class="bg-surface border border-border rounded-2xl shadow-card">
