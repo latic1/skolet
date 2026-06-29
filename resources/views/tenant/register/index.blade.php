@@ -253,7 +253,7 @@
                     </a>
                     <div class="text-center">
                         <p class="text-sm font-semibold text-text-primary">
-                            {{ $weekStart->format('d M') }} – {{ $weekStart->copy()->endOfWeek(Carbon::FRIDAY)->format('d M Y') }}
+                            {{ $weekStart->format('d M') }} &ndash; {{ $weekStart->copy()->endOfWeek(\Carbon\Carbon::FRIDAY)->format('d M Y') }}
                         </p>
                         <div class="flex gap-2 mt-1 justify-center">
                             @foreach($weekDates as $day)
@@ -267,7 +267,7 @@
                        class="p-2 rounded-lg border border-border text-text-secondary hover:bg-muted/30 transition-colors">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
-                    <a href="{{ $base . '/register?' . http_build_query(['tab' => 'plans', 'week_start' => now()->startOfWeek(Carbon::MONDAY)->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
+                    <a href="{{ $base . '/register?' . http_build_query(['tab' => 'plans', 'week_start' => now()->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString(), 'plan_teacher_id' => $planTeacherId]) }}"
                        class="px-3 py-1 text-xs font-medium rounded-lg border border-border text-text-secondary hover:bg-muted/30 transition-colors">
                         This week
                     </a>
