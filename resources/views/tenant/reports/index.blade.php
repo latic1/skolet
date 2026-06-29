@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Reports')
 @section('page-title', 'Reports')
@@ -138,7 +138,7 @@
                         @change="onClassChange()"
                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
                     >
-                        <option value="">Select class…</option>
+                        <option value="">Select classâ€¦</option>
                         @foreach($classes as $class)
                             <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
                         @endforeach
@@ -193,14 +193,14 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-border">
                     <div>
                         <h2 class="text-base font-semibold text-text-primary">
-                            {{ $attendanceReport['class']->name }}
+                            {{ $attendanceReport['class_label'] }}
                             @if($attendanceReport['section'])
-                                — {{ $attendanceReport['section']->name }}
+                                â€” {{ $attendanceReport['section']->name }}
                             @endif
                         </h2>
                         <p class="text-xs text-text-muted mt-0.5">
-                            {{ $attendanceReport['date_from']->format('d M Y') }} — {{ $attendanceReport['date_to']->format('d M Y') }}
-                            · {{ count($attendanceReport['rows']) }} student(s)
+                            {{ $attendanceReport['date_from']->format('d M Y') }} â€” {{ $attendanceReport['date_to']->format('d M Y') }}
+                            Â· {{ count($attendanceReport['rows']) }} student(s)
                         </p>
                     </div>
 
@@ -324,7 +324,7 @@
                         name="term_id"
                         class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
                     >
-                        <option value="">Select term…</option>
+                        <option value="">Select termâ€¦</option>
                         @foreach($terms as $term)
                             <option value="{{ $term->id }}" {{ $selectedTermId === $term->id ? 'selected' : '' }}>
                                 {{ $term->name }}
@@ -332,7 +332,7 @@
                                     ({{ $term->academicYear->name }})
                                 @endif
                                 @if($term->is_current)
-                                    — Current
+                                    â€” Current
                                 @endif
                             </option>
                         @endforeach
@@ -355,7 +355,7 @@
                         <h2 class="text-base font-semibold text-text-primary">
                             {{ $feeReport['term']->name }}
                             @if($feeReport['term']->academicYear)
-                                — {{ $feeReport['term']->academicYear->name }}
+                                â€” {{ $feeReport['term']->academicYear->name }}
                             @endif
                         </h2>
                         <p class="text-xs text-text-muted mt-0.5">{{ count($feeReport['rows']) }} fee structure(s)</p>
@@ -421,7 +421,7 @@
                             <tbody>
                                 @foreach($feeReport['rows'] as $row)
                                     <tr class="border-b border-border last:border-b-0 hover:bg-surface-secondary transition-colors">
-                                        <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ $row['class']->name }}</td>
+                                        <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ $row['class_label'] }}</td>
                                         <td class="px-6 py-4 text-sm text-text-primary">{{ $row['fee_structure']->fee_item }}</td>
                                         <td class="px-4 py-4 text-sm text-text-muted text-right hidden md:table-cell">{{ format_money((float)$row['fee_structure']->amount, $currencySymbol) }}</td>
                                         <td class="px-4 py-4 text-sm text-text-muted text-center hidden md:table-cell">{{ $row['student_count'] }}</td>
@@ -489,7 +489,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Class</label>
                     <select name="class_id" x-model="classId" @change="onClassChange()"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select class…</option>
+                        <option value="">Select classâ€¦</option>
                         @foreach($classes as $class)
                         <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
                         @endforeach
@@ -513,7 +513,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term</label>
                     <select name="term_id"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select term…</option>
+                        <option value="">Select termâ€¦</option>
                         @foreach($terms as $t)
                         <option value="{{ $t->id }}" {{ $selectedTermId === $t->id ? 'selected' : '' }}>
                             {{ $t->name }}{{ $t->academicYear ? ' (' . $t->academicYear->name . ')' : '' }}
@@ -576,13 +576,13 @@
             {{-- Card header --}}
             <div class="px-6 py-4 border-b border-border">
                 <h3 class="text-base font-semibold text-text-primary">
-                    Attendance Alerts — {{ $absenteesReport['class']->name }}{{ $absenteesReport['section'] ? ' / ' . $absenteesReport['section']->name : '' }}
+                    Attendance Alerts â€” {{ $absenteesReport['class_label'] }}{{ $absenteesReport['section'] ? ' / ' . $absenteesReport['section']->name : '' }}
                 </h3>
                 <p class="text-xs text-text-muted mt-0.5">
                     {{ $absenteesReport['term']->name }} &middot;
                     Students below {{ $absenteesReport['threshold'] }}% attendance
                     @if(count($absenteesReport['rows']) === 0)
-                        &middot; <span class="text-success-foreground">No alerts — all students meet the threshold</span>
+                        &middot; <span class="text-success-foreground">No alerts â€” all students meet the threshold</span>
                     @endif
                 </p>
             </div>
@@ -704,7 +704,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Exam</label>
                     <select name="exam_id" x-model="academicExamId"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">— Select exam —</option>
+                        <option value="">â€” Select exam â€”</option>
                         <template x-for="e in filteredExams" :key="e.id">
                             <option :value="e.id" :selected="e.id === academicExamId" x-text="e.name"></option>
                         </template>
@@ -716,7 +716,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Class</label>
                     <select name="class_id" x-model="classId" @change="onClassChange()"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select class…</option>
+                        <option value="">Select classâ€¦</option>
                         @foreach($classes as $class)
                         <option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
                         @endforeach
@@ -885,7 +885,7 @@
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Academic Year</label>
                     <select name="financial_year_id" x-model="financialYearId" @change="financialTermId = ''"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value="">Select year…</option>
+                        <option value="">Select yearâ€¦</option>
                         <template x-for="y in academicYearsData" :key="y.id">
                             <option :value="y.id" :selected="y.id === financialYearId" x-text="y.name"></option>
                         </template>
@@ -940,12 +940,12 @@
                 Period:
                 <span class="font-medium text-text-primary">
                     @if($financialReport['term'])
-                        {{ $financialReport['term']->name }} — {{ $financialReport['academic_year']->name }}
+                        {{ $financialReport['term']->name }} â€” {{ $financialReport['academic_year']->name }}
                     @else
                         {{ $financialReport['academic_year']->name }} (Full Year)
                     @endif
                 </span>
-                · {{ $financialReport['date_from']->format('d M Y') }} – {{ $financialReport['date_to']->format('d M Y') }}
+                Â· {{ $financialReport['date_from']->format('d M Y') }} â€“ {{ $financialReport['date_to']->format('d M Y') }}
             </p>
             <a href="{{ $host }}/reports/financial/pdf?financial_year_id={{ $selectedFinancialYearId }}&financial_term_id={{ $selectedFinancialTermId }}"
                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-surface border border-border rounded-md hover:bg-surface-secondary transition-colors text-text-primary">

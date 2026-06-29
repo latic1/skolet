@@ -345,9 +345,8 @@ final class ReportController extends Controller
     {
         $term = Term::with('academicYear')->findOrFail($termId);
 
-        $feeStructures = FeeStructure::with('schoolClass')
-            ->where('term_id', $termId)
-            ->orderBy('class_id')
+        $feeStructures = FeeStructure::where('term_id', $termId)
+            ->orderBy('target_class')
             ->orderBy('fee_item')
             ->get();
 
@@ -361,9 +360,14 @@ final class ReportController extends Controller
             ];
         }
 
-        $classIds = $feeStructures->pluck('class_id')->unique();
+        $specificClassIds = $feeStructures->pluck('target_class')
+            ->filter(fn ($v) => $v !== 'all')
+            ->unique();
 
-        $studentCounts = Student::whereIn('class_id', $classIds)
+        $classes = SchoolClass::whereIn('id', $specificClassIds)->get()->keyBy('id');
+
+        $totalStudentCount  = Student::where('status', 'active')->count();
+        $classStudentCounts = Student::whereIn('class_id', $specificClassIds)
             ->where('status', 'active')
             ->selectRaw('class_id, COUNT(*) as count')
             ->groupBy('class_id')
@@ -374,22 +378,28 @@ final class ReportController extends Controller
             ->groupBy('fee_structure_id')
             ->pluck('total', 'fee_structure_id');
 
-        $rows          = [];
+        $rows           = [];
         $totalExpected  = 0.0;
         $totalCollected = 0.0;
 
         foreach ($feeStructures as $fs) {
-            $studentCount = (int) ($studentCounts->get($fs->class_id) ?? 0);
-            $collected    = (float) ($paymentTotals->get($fs->id) ?? 0);
-            $expected     = (float) $fs->amount * $studentCount;
-            $outstanding  = max(0.0, $expected - $collected);
+            $isAll = $fs->target_class === 'all';
+
+            $studentCount = $isAll
+                ? $totalStudentCount
+                : (int) ($classStudentCounts->get($fs->target_class) ?? 0);
+
+            $collected   = (float) ($paymentTotals->get($fs->id) ?? 0);
+            $expected    = (float) $fs->amount * $studentCount;
+            $outstanding = max(0.0, $expected - $collected);
 
             $totalExpected  += $expected;
             $totalCollected += $collected;
 
             $rows[] = [
                 'fee_structure' => $fs,
-                'class'         => $fs->schoolClass,
+                'class'         => $isAll ? null : $classes->get($fs->target_class),
+                'class_label'   => $isAll ? 'All Classes' : ($classes->get($fs->target_class)?->name ?? '—'),
                 'student_count' => $studentCount,
                 'expected'      => $expected,
                 'collected'     => $collected,
