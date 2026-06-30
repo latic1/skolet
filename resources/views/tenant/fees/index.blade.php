@@ -143,7 +143,7 @@ window.__feesPage = {
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-text-primary truncate">{{ $result->full_name }}</p>
-                                <p class="text-xs text-text-muted">{{ $result->admission_no }} &middot; {{ $result->schoolClass?->name ?? '&mdash;' }}</p>
+                                <p class="text-xs text-text-muted">{{ $result->admission_no }} &middot; {{ $result->schoolClass?->name ?? '—' }}</p>
                             </div>
                             <svg class="w-4 h-4 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -176,7 +176,7 @@ window.__feesPage = {
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-semibold text-text-primary">{{ $selectedStudent->full_name }}</p>
-                    <p class="text-xs text-text-muted">{{ $selectedStudent->admission_no }} &middot; {{ $selectedStudent->schoolClass?->name ?? '&mdash;' }}{{ $selectedStudent->section ? ' &middot; ' . $selectedStudent->section->name : '' }}</p>
+                    <p class="text-xs text-text-muted">{{ $selectedStudent->admission_no }} &middot; {{ $selectedStudent->schoolClass?->name ?? '—' }}{{ $selectedStudent->section ? ' &middot; ' . $selectedStudent->section->name : '' }}</p>
                 </div>
                 @php
                     $totalOwed  = collect($feeItems)->sum('effective_amount');
@@ -303,7 +303,7 @@ window.__feesPage = {
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-text-primary hidden md:table-cell">
-                                    {{ $fs->term?->name ?? '&mdash;' }}{{ $fs->term?->academicYear ? ' &middot; ' . $fs->term->academicYear->name : '' }}
+                                    {{ $fs->term?->name ?? '—' }}{{ $fs->term?->academicYear ? ' &middot; ' . $fs->term->academicYear->name : '' }}
                                 </td>
                                 <td class="px-6 py-4">
                                     @if($hasDiscount)
@@ -575,7 +575,7 @@ window.__feesPage = {
                                     @if($fee->target_class === 'all')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-secondary">All Classes</span>
                                     @else
-                                        {{ $classes->firstWhere('id', $fee->target_class)?->name ?? '&mdash;' }}
+                                        {{ $classes->firstWhere('id', $fee->target_class)?->name ?? '—' }}
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-sm text-text-primary hidden md:table-cell">
@@ -583,7 +583,7 @@ window.__feesPage = {
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent">Annual</span>
                                         <span class="text-xs text-text-muted ml-1">{{ $fee->academicYear?->name ?? '' }}</span>
                                     @else
-                                        {{ $fee->term?->name ?? '&mdash;' }}{{ $fee->term?->academicYear ? ' &middot; ' . $fee->term->academicYear->name : '' }}
+                                        {{ $fee->term?->name ?? '—' }}{{ $fee->term?->academicYear ? ' &middot; ' . $fee->term->academicYear->name : '' }}
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 hidden lg:table-cell">
@@ -594,7 +594,7 @@ window.__feesPage = {
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-sm text-text-muted hidden lg:table-cell">
-                                    {{ $fee->due_date ? $fee->due_date->format('M j, Y') : '&mdash;' }}
+                                    {{ $fee->due_date ? $fee->due_date->format('M j, Y') : '—' }}
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-end gap-2">
