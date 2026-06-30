@@ -128,24 +128,23 @@ final class StudentImport implements ToCollection, WithHeadingRow
 
         // ── Pass 2: import all rows in a single transaction ───────────────────
         DB::transaction(function () use ($rowsToInsert): void {
-            $year = now()->year;
+            $year   = now()->year;
+            $prefix = $year . '/';
+
+            // Read the current max sequence once before the loop.
+            // Querying inside the loop hits MySQL's REPEATABLE READ snapshot and
+            // returns the same value every iteration, producing duplicate numbers.
+            $last     = Student::where('admission_no', 'like', $prefix . '%')
+                ->orderByDesc('admission_no')
+                ->value('admission_no');
+            $sequence = $last ? ((int) substr($last, -4)) + 1 : 1;
+
             foreach ($rowsToInsert as $data) {
-                $data['admission_no'] = $this->generateAdmissionNumber($year);
+                $data['admission_no'] = $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
                 Student::create($data);
+                $sequence++;
                 $this->imported++;
             }
         });
-    }
-
-    private function generateAdmissionNumber(int $year): string
-    {
-        $prefix = $year . '/';
-        $last   = Student::where('admission_no', 'like', $prefix . '%')
-            ->orderByDesc('admission_no')
-            ->value('admission_no');
-
-        $sequence = $last ? ((int) substr($last, -4)) + 1 : 1;
-
-        return $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
     }
 }
