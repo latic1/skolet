@@ -116,7 +116,8 @@ table.fees .center { text-align: center; }
         ? ($term->name . ($academicYearName ? ' · ' . $academicYearName : ''))
         : 'All Terms';
 
-    $guardian = $student->guardian_name ?? null;
+    $guardian        = $student->guardian_name ?? null;
+    $totalInWords    = \App\Helpers\NumberToWords::convert($totalOwed);
 @endphp
 
 @for ($copy = 1; $copy <= 2; $copy++)
@@ -201,24 +202,19 @@ table.fees .center { text-align: center; }
     <table class="fees">
         <thead>
             <tr>
-                <th style="width:35%">Fee Item</th>
-                <th style="width:10%">Type</th>
-                <th class="right" style="width:14%">Amount</th>
-                <th class="right" style="width:14%">Paid</th>
-                <th class="right" style="width:14%">Balance</th>
-                <th class="center" style="width:13%">Status</th>
+                <th style="width:70%">Fee Item</th>
+                <th class="right" style="width:30%">Amount</th>
             </tr>
         </thead>
         <tbody>
             @php
-                $seenBundleIds = [];
                 $feeItemsGrouped = collect($feeItems)->groupBy(fn($i) => $i['fee_structure']->fee_bundle_id ?? '__standalone__');
             @endphp
             @foreach($feeItemsGrouped as $groupKey => $groupItems)
                 @if($groupKey !== '__standalone__')
                 @php $bundleName = $groupItems->first()['fee_structure']->bundle?->name ?? 'Bundle'; @endphp
                 <tr style="background:#eef2ff;">
-                    <td colspan="6" style="font-weight:bold;font-size:7.5pt;color:#2a3f6f;padding:1.2mm 3mm;letter-spacing:0.03em;">
+                    <td colspan="2" style="font-weight:bold;font-size:7.5pt;color:#2a3f6f;padding:1.2mm 3mm;letter-spacing:0.03em;">
                         {{ $bundleName }}
                     </td>
                 </tr>
@@ -226,49 +222,42 @@ table.fees .center { text-align: center; }
                 @foreach($groupItems as $item)
                 @php
                     $fs              = $item['fee_structure'];
-                    $status          = $item['status'];
-                    $badgeClass      = match($status) {
-                        'paid'    => 'badge-paid',
-                        'partial' => 'badge-partial',
-                        default   => $status === 'overdue' ? 'badge-overdue' : 'badge-unpaid',
-                    };
-                    $isAnnual        = ($fs->billing_cycle ?? 'term') === 'annual';
                     $effectiveAmount = $item['effective_amount'] ?? (float) $fs->amount;
                     $inBundle        = $groupKey !== '__standalone__';
                 @endphp
                 <tr>
                     <td style="{{ $inBundle ? 'padding-left:5mm;' : '' }}">{{ $fs->fee_item }}</td>
-                    <td>
-                        <span class="badge {{ $isAnnual ? 'badge-annual' : '' }}" style="{{ $isAnnual ? '' : 'background:#e8f4fd;color:#1e40af;' }}">
-                            {{ $isAnnual ? 'Annual' : 'Term' }}
-                        </span>
-                    </td>
                     <td class="right">{{ format_money($effectiveAmount, $currencySymbol) }}</td>
-                    <td class="right">{{ format_money($item['paid_amount'], $currencySymbol) }}</td>
-                    <td class="right" style="{{ $item['outstanding'] > 0 ? 'color:#991b1b;' : '' }}">{{ format_money($item['outstanding'], $currencySymbol) }}</td>
-                    <td class="center"><span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span></td>
                 </tr>
                 @endforeach
             @endforeach
 
             @if($arrearsTotal > 0)
             <tr class="arrears-row">
-                <td colspan="4" style="font-style:italic;">Arrears (previous terms)</td>
+                <td style="font-style:italic;">Arrears (previous terms)</td>
                 <td class="right">{{ format_money($arrearsTotal, $currencySymbol) }}</td>
-                <td></td>
             </tr>
             @endif
 
             <tr class="totals-row">
-                <td colspan="2">Total</td>
-                <td class="right">{{ format_money($totalOwed, $currencySymbol) }}</td>
-                <td class="right">{{ format_money($totalPaid, $currencySymbol) }}</td>
-                <td class="right" style="{{ $grandOutstanding > 0 ? 'color:#991b1b;' : 'color:#065f46;' }}">{{ format_money($grandOutstanding, $currencySymbol) }}</td>
+                <td>
+                    Total: {{ format_money($totalOwed, $currencySymbol) }}
+                    &nbsp;&nbsp;|&nbsp;&nbsp;
+                    Paid: <span style="color:#065f46;">{{ format_money($totalPaid, $currencySymbol) }}</span>
+                    &nbsp;&nbsp;|&nbsp;&nbsp;
+                    Balance: <span style="{{ $grandOutstanding > 0 ? 'color:#991b1b;' : 'color:#065f46;' }}">{{ format_money($grandOutstanding, $currencySymbol) }}</span>
+                </td>
                 <td></td>
             </tr>
         </tbody>
     </table>
     @endif
+
+    {{-- Amount in words --}}
+    <div style="margin-top:2mm;padding:1.5mm 3mm;border:0.5pt solid #ddd;border-radius:2px;font-size:7.5pt;">
+        <span style="color:#888;">Amount in Words:&nbsp;</span>
+        <span style="font-style:italic;font-weight:bold;color:#1a2d5a;">{{ $totalInWords }} Only</span>
+    </div>
 
     {{-- Signature / stamp area --}}
     <div class="sig-area">
