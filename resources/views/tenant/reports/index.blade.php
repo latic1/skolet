@@ -333,25 +333,25 @@ window.__reportsPage = {
             <form method="GET" action="{{ $host }}/reports" class="flex flex-wrap items-end gap-4">
                 <input type="hidden" name="tab" value="fees">
 
-                <div class=”flex-1 min-w-[180px]”>
-                    <label class=”block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide”>Academic Year</label>
-                    <select x-model=”feeYearId” @change=”feeTermId = ''”
-                            class=”w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent”>
-                        <option value=””>Select year&hellip;</option>
-                        <template x-for=”y in academicYearsData” :key=”y.id”>
-                            <option :value=”y.id” :selected=”y.id === feeYearId” x-text=”y.name”></option>
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Academic Year</label>
+                    <select x-model="feeYearId" @change="feeTermId = ''"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
+                        <option value="">Select year&hellip;</option>
+                        <template x-for="y in academicYearsData" :key="y.id">
+                            <option :value="y.id" :selected="y.id === feeYearId" x-text="y.name"></option>
                         </template>
                     </select>
                 </div>
 
-                <div class=”flex-1 min-w-[180px]”>
-                    <label class=”block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide”>Term</label>
-                    <select name=”term_id” x-model=”feeTermId”
-                            class=”w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent”
-                            :disabled=”!feeYearId”>
-                        <option value=””>Select term&hellip;</option>
-                        <template x-for=”t in feeTermsForYear” :key=”t.id”>
-                            <option :value=”t.id” :selected=”t.id === feeTermId” x-text=”t.name”></option>
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Term</label>
+                    <select name="term_id" x-model="feeTermId"
+                            class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+                            :disabled="!feeYearId">
+                        <option value="">Select term&hellip;</option>
+                        <template x-for="t in feeTermsForYear" :key="t.id">
+                            <option :value="t.id" :selected="t.id === feeTermId" x-text="t.name"></option>
                         </template>
                     </select>
                 </div>
@@ -610,7 +610,7 @@ window.__reportsPage = {
                     {{ $absenteesReport['term']->name }} &middot;
                     Students below {{ $absenteesReport['threshold'] }}% attendance
                     @if(count($absenteesReport['rows']) === 0)
-                        &middot; <span class=”text-success-foreground”>No alerts &mdash; all students meet the threshold</span>
+                        &middot; <span class="text-success-foreground">No alerts &mdash; all students meet the threshold</span>
                     @endif
                 </p>
             </div>
@@ -742,7 +742,7 @@ window.__reportsPage = {
                     <label class="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide">Exam</label>
                     <select name="exam_id" x-model="academicExamId"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent">
-                        <option value=””>&mdash; Select exam &mdash;</option>
+                        <option value="">&mdash; Select exam &mdash;</option>
                         <template x-for="e in filteredExams" :key="e.id">
                             <option :value="e.id" :selected="e.id === academicExamId" x-text="e.name"></option>
                         </template>

@@ -1,4 +1,4 @@
-﻿@php $currencySymbol = $profile?->currency_symbol ?? 'â‚µ'; @endphp
+﻿@php $currencySymbol = $profile?->currency_symbol ?? '₵'; @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>

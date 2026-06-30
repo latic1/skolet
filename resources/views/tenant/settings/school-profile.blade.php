@@ -230,26 +230,26 @@
                     <select name="currency_code" id="currency_code"
                             x-data="{
                                 options: {
-                                    'GHS': 'â‚µ',
-                                    'NGN': 'â‚¦',
+                                    'GHS': '₵',
+                                    'NGN': '₦',
                                     'KES': 'KSh',
                                     'USD': '$',
-                                    'EUR': 'â‚¬',
+                                    'EUR': '€',
                                 },
                                 selected: '{{ old('currency_code', $profile?->currency_code ?? 'GHS') }}',
-                                get symbol() { return this.options[this.selected] ?? 'â‚µ'; }
+                                get symbol() { return this.options[this.selected] ?? '₵'; }
                             }"
                             x-model="selected"
                             @change="$el.form.querySelector('#currency_symbol').value = symbol"
                             class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
-                        <option value="GHS" @selected(old('currency_code', $profile?->currency_code ?? 'GHS') === 'GHS')>GHS &mdash; Ghanaian Cedi (â‚µ)</option>
-                        <option value="NGN" @selected(old('currency_code', $profile?->currency_code) === 'NGN')>NGN &mdash; Nigerian Naira (â‚¦)</option>
+                        <option value="GHS" @selected(old('currency_code', $profile?->currency_code ?? 'GHS') === 'GHS')>GHS &mdash; Ghanaian Cedi (₵)</option>
+                        <option value="NGN" @selected(old('currency_code', $profile?->currency_code) === 'NGN')>NGN &mdash; Nigerian Naira (₦)</option>
                         <option value="KES" @selected(old('currency_code', $profile?->currency_code) === 'KES')>KES &mdash; Kenyan Shilling (KSh)</option>
                         <option value="USD" @selected(old('currency_code', $profile?->currency_code) === 'USD')>USD &mdash; US Dollar ($)</option>
-                        <option value="EUR" @selected(old('currency_code', $profile?->currency_code) === 'EUR')>EUR &mdash; Euro (â‚¬)</option>
+                        <option value="EUR" @selected(old('currency_code', $profile?->currency_code) === 'EUR')>EUR &mdash; Euro (€)</option>
                     </select>
                     <input type="hidden" name="currency_symbol" id="currency_symbol"
-                           value="{{ old('currency_symbol', $profile?->currency_symbol ?? 'â‚µ') }}">
+                           value="{{ old('currency_symbol', $profile?->currency_symbol ?? '₵') }}">
                 </div>
             </div>
 
