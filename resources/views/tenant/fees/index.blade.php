@@ -5,10 +5,17 @@
 
 @section('content')
 @php $host = request()->getSchemeAndHttpHost(); @endphp
-<div class="flex flex-col gap-6" x-data='feesAdminPage(
-    {{ Js::from($classes) }},
-    {{ Js::from($terms) }}
-)' x-init="initTab('{{ $activeTab }}')">
+<script>
+window.__feesPage = {
+    classes:       {!! Js::from($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()) !!},
+    terms:         {!! Js::from($terms->map(fn($t) => ['id' => $t->id, 'name' => $t->name, 'academic_year_id' => $t->academic_year_id, 'is_current' => $t->is_current, 'academic_year' => $t->academicYear ? ['id' => $t->academicYear->id, 'name' => $t->academicYear->name] : null])->values()) !!},
+    academicYears: {!! Js::from($academicYears->map(fn($y) => ['id' => $y->id, 'name' => $y->name, 'terms' => $y->terms->map(fn($t) => ['id' => $t->id, 'name' => $t->name])->values()])->values()) !!},
+    currentYearId: {!! Js::from($currentYear?->id) !!},
+    activeTab:     {!! Js::from($activeTab) !!},
+    filterTermId:  {!! Js::from($filterTermId ?? '') !!},
+};
+</script>
+<div class="flex flex-col gap-6" x-data="feesAdminPage()" x-init="initTab()">
 
     {{-- Flash messages --}}
     @if(session('success'))
@@ -452,11 +459,7 @@
     {{-- ====================================================================
          TAB 2 &mdash; FEE STRUCTURE
          ==================================================================== --}}
-    <div x-show="activeTab === 'structure'" x-cloak x-data='feeStructureTab(
-        {{ Js::from($classes) }},
-        {{ Js::from($academicYears->map(fn($y) => ["id" => $y->id, "name" => $y->name, "terms" => $y->terms->map(fn($t) => ["id" => $t->id, "name" => $t->name])->values()])->values()) }},
-        {{ Js::from($currentYear?->id) }}
-    )' x-init="init()">
+    <div x-show="activeTab === 'structure'" x-cloak x-data="feeStructureTab()" x-init="init()">
 
         <div class="flex flex-col gap-6">
 
@@ -898,13 +901,14 @@
 
 @push('scripts')
 <script>
-function feesAdminPage(classes, terms) {
+function feesAdminPage() {
+    const _d = window.__feesPage;
     return {
         activeTab: 'collection',
-        classes,
-        terms,
+        classes: _d.classes,
+        terms: _d.terms,
         collectionYearId: '',
-        collectionTermId: '{{ $filterTermId ?? '' }}',
+        collectionTermId: _d.filterTermId || '',
 
         get collectionYearsData() {
             const map = {};
@@ -932,8 +936,8 @@ function feesAdminPage(classes, terms) {
             }));
         },
 
-        initTab(tab) {
-            this.activeTab = tab === 'structure' ? 'structure' : 'collection';
+        initTab() {
+            this.activeTab = _d.activeTab === 'structure' ? 'structure' : 'collection';
             // Pre-select the year that matches the currently filtered term
             if (this.collectionTermId) {
                 const term = this.terms.find(t => t.id === this.collectionTermId);
@@ -945,17 +949,18 @@ function feesAdminPage(classes, terms) {
     };
 }
 
-function feeStructureTab(classes, allYears, currentYearId) {
+function feeStructureTab() {
+    const _d = window.__feesPage;
     return {
         showModal: false,
         submitting: false,
         mode: 'add',
-        classes,
-        allYears,
-        currentYearId,
+        classes: _d.classes,
+        allYears: _d.academicYears,
+        currentYearId: _d.currentYearId,
         form: {
             id: '', billing_cycle: 'term', target_classes: ['all'], target_class: 'all',
-            term_id: '', academic_year_id: currentYearId || '',
+            term_id: '', academic_year_id: _d.currentYearId || '',
             fee_item: '', amount: '', is_mandatory: true, due_date: '',
         },
 
@@ -997,14 +1002,14 @@ function feeStructureTab(classes, allYears, currentYearId) {
             this.mode = 'add';
             this.form = {
                 id: '', billing_cycle: 'term', target_classes: ['all'],
-                term_id: '', academic_year_id: this.currentYearId || '',
+                term_id: '', academic_year_id: _d.currentYearId || '',
                 fee_item: '', amount: '', is_mandatory: true, due_date: '',
             };
             this.showModal = true;
         },
         openEdit(data) {
             this.mode = 'edit';
-            this.form = { ...data, academic_year_id: data.academic_year_id || this.currentYearId || '' };
+            this.form = { ...data, academic_year_id: data.academic_year_id || _d.currentYearId || '' };
             this.showModal = true;
         },
         close() { this.showModal = false; this.submitting = false; },
