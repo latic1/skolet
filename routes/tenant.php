@@ -385,8 +385,8 @@ Route::domain('{subdomain}.' . $appHost)
             // Fees — index accessible to all auth users; controller dispatches by permission
             // (admin/accountant → tabbed admin view; student/parent → own fees view)
             Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
-            // Receipt download — literal path before {feeStructure} wildcard
-            Route::get('/fees/receipt/{feePayment}', [ReceiptController::class, 'download'])->name('fees.receipt.download');
+            // Receipt download — receipt_number string (or legacy payment UUID for backward compat)
+            Route::get('/fees/receipt/{receiptNumber}', [ReceiptController::class, 'download'])->name('fees.receipt.download');
             // Term bill PDF — gated by fees.view in the controller
             Route::get('/fees/bill/{student}', [FeeController::class, 'printBill'])->name('fees.bill');
             // Paystack callback — authenticated (student/parent returns from Paystack checkout)
@@ -396,12 +396,16 @@ Route::domain('{subdomain}.' . $appHost)
             Route::middleware('permission:fees.create')->group(function () {
                 Route::post('/fees', [FeeController::class, 'store'])->name('fees.store');
                 Route::post('/fees/pay', [FeeController::class, 'pay'])->name('fees.pay');
+                Route::post('/fees/bundles', [FeeController::class, 'storeBundle'])->name('fees.bundles.store');
+                Route::post('/fees/bundles/{bundle}/items', [FeeController::class, 'storeBundleItem'])->name('fees.bundles.items.store');
             });
             Route::middleware('permission:fees.edit')->group(function () {
                 Route::put('/fees/{feeStructure}', [FeeController::class, 'update'])->name('fees.update');
+                Route::put('/fees/bundles/{bundle}', [FeeController::class, 'updateBundle'])->name('fees.bundles.update');
             });
             Route::middleware('permission:fees.delete')->group(function () {
                 Route::delete('/fees/{feeStructure}', [FeeController::class, 'destroy'])->name('fees.destroy');
+                Route::delete('/fees/bundles/{bundle}', [FeeController::class, 'destroyBundle'])->name('fees.bundles.destroy');
             });
 
             Route::middleware('permission:admissions.view')->group(function () {

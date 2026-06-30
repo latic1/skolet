@@ -257,6 +257,29 @@ Schools can override this per-tenant later (Phase 2) — for MVP, every tenant u
 
 ---
 
+## Receipt Number Generation
+
+`receipt_number` (on `fee_payments`) is generated once per payment transaction by `ReceiptService`, never assembled inline in a controller or Livewire component.
+
+```php
+// app/Services/ReceiptService.php
+public function generateReceiptNumber(): string
+{
+    $prefix = SchoolProfile::first()->receipt_prefix
+        ?? Str::upper(Str::substr(preg_replace('/[^A-Za-z]/', '', SchoolProfile::first()->school_name), 0, 4));
+
+    $sequence = FeePayment::whereDate('paid_at', today())->distinct('receipt_number')->count() + 1;
+
+    return sprintf('%s%s.%s.%02d', $prefix, now()->format('y'), now()->format('m'), $sequence);
+}
+```
+
+This produces something like `RASN26.05.01` (prefix + 2-digit year + 2-digit month + daily sequence) — matching the reference receipt format. Every `fee_payments` row created within the same transaction (e.g. all components of a paid bundle) shares the same generated `receipt_number` — generate it once before the loop that creates the rows, never per-row.
+
+Amount-to-words conversion (for "Nine Hundred Eighty Cedis, Zero Pesewas" on receipts) uses a small dedicated helper or an approved package — never hand-rolled inline string concatenation in a Blade view.
+
+---
+
 ## Comments
 
 - No comments explaining what the code does — code must be self-explanatory

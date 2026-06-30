@@ -9,6 +9,7 @@ use App\Http\Requests\Tenant\RecordPaymentRequest;
 use App\Http\Requests\Tenant\StoreFeeStructureRequest;
 use App\Http\Requests\Tenant\UpdateFeeStructureRequest;
 use App\Models\Tenant\AcademicYear;
+use App\Models\Tenant\FeeBundle;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
 use App\Models\Tenant\SchoolClass;
@@ -18,6 +19,7 @@ use App\Models\Tenant\Term;
 use App\Jobs\SendWebhookPayload;
 use App\Services\FeeStatusService;
 use App\Services\PaystackService;
+use App\Services\ReceiptService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +34,7 @@ final class FeeController extends Controller
     public function __construct(
         private readonly FeeStatusService $feeStatusService,
         private readonly PaystackService $paystackService,
+        private readonly ReceiptService $receiptService,
     ) {}
 
     public function index(Request $request): View|\Illuminate\Http\RedirectResponse
@@ -50,7 +53,7 @@ final class FeeController extends Controller
     }
 
     // -------------------------------------------------------------------------
-    // Fee Structure CRUD (admin only — gated by fees.create / fees.edit / fees.delete at route level)
+    // Fee Structure CRUD (standalone items)
     // -------------------------------------------------------------------------
 
     public function store(StoreFeeStructureRequest $request): RedirectResponse
@@ -107,27 +110,143 @@ final class FeeController extends Controller
     }
 
     // -------------------------------------------------------------------------
-    // Cash payment recording (accountant/admin — gated by fees.create at route level)
+    // Fee Bundle CRUD
+    // -------------------------------------------------------------------------
+
+    public function storeBundle(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('fees.create'), 403);
+
+        $data = $request->validate([
+            'name'             => ['required', 'string', 'max:150'],
+            'target_class'     => ['required', 'string'],
+            'billing_cycle'    => ['required', 'string', 'in:term,annual'],
+            'term_id'          => ['required_if:billing_cycle,term', 'nullable', 'uuid', 'exists:terms,id'],
+            'academic_year_id' => ['nullable', 'uuid', 'exists:academic_years,id'],
+            'due_date'         => ['nullable', 'date'],
+        ]);
+
+        try {
+            FeeBundle::create($data);
+
+            return redirect(request()->getSchemeAndHttpHost() . '/fees?tab=structure')
+                ->with('success', 'Fee bundle created.');
+        } catch (\Throwable $e) {
+            Log::error('[FeeController::storeBundle] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not create bundle. Please try again.')->withInput();
+        }
+    }
+
+    public function updateBundle(Request $request, FeeBundle $bundle): RedirectResponse
+    {
+        abort_unless($request->user()->can('fees.edit'), 403);
+
+        $data = $request->validate([
+            'name'             => ['required', 'string', 'max:150'],
+            'target_class'     => ['required', 'string'],
+            'billing_cycle'    => ['required', 'string', 'in:term,annual'],
+            'term_id'          => ['required_if:billing_cycle,term', 'nullable', 'uuid', 'exists:terms,id'],
+            'academic_year_id' => ['nullable', 'uuid', 'exists:academic_years,id'],
+            'due_date'         => ['nullable', 'date'],
+        ]);
+
+        try {
+            $bundle->update($data);
+
+            return redirect(request()->getSchemeAndHttpHost() . '/fees?tab=structure')
+                ->with('success', 'Bundle updated.');
+        } catch (\Throwable $e) {
+            Log::error('[FeeController::updateBundle] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not update bundle. Please try again.')->withInput();
+        }
+    }
+
+    public function destroyBundle(FeeBundle $bundle): RedirectResponse
+    {
+        abort_unless(request()->user()->can('fees.delete'), 403);
+
+        try {
+            // Detach items from bundle before deleting (nullify fee_bundle_id)
+            FeeStructure::where('fee_bundle_id', $bundle->id)
+                ->update(['fee_bundle_id' => null]);
+
+            $bundle->delete();
+
+            return redirect(request()->getSchemeAndHttpHost() . '/fees?tab=structure')
+                ->with('success', 'Bundle deleted. Its fee items became standalone.');
+        } catch (\Throwable $e) {
+            Log::error('[FeeController::destroyBundle] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not delete bundle. Please try again.');
+        }
+    }
+
+    /**
+     * Add a fee item to a specific bundle.
+     */
+    public function storeBundleItem(Request $request, FeeBundle $bundle): RedirectResponse
+    {
+        abort_unless($request->user()->can('fees.create'), 403);
+
+        $data = $request->validate([
+            'fee_item'     => ['required', 'string', 'max:100'],
+            'amount'       => ['required', 'numeric', 'min:0'],
+            'is_mandatory' => ['boolean'],
+            'due_date'     => ['nullable', 'date'],
+        ]);
+
+        try {
+            FeeStructure::create(array_merge($data, [
+                'fee_bundle_id'    => $bundle->id,
+                'target_class'     => $bundle->target_class,
+                'billing_cycle'    => $bundle->billing_cycle,
+                'term_id'          => $bundle->term_id,
+                'academic_year_id' => $bundle->academic_year_id,
+            ]));
+
+            return redirect(request()->getSchemeAndHttpHost() . '/fees?tab=structure')
+                ->with('success', 'Fee item added to bundle.');
+        } catch (\Throwable $e) {
+            Log::error('[FeeController::storeBundleItem] ' . $e->getMessage());
+
+            return back()->with('error', 'Could not add item to bundle. Please try again.');
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Cash payment recording
     // -------------------------------------------------------------------------
 
     public function pay(RecordPaymentRequest $request): RedirectResponse
     {
-        $student      = Student::findOrFail($request->validated()['student_id']);
-        $feeStructure = FeeStructure::findOrFail($request->validated()['fee_structure_id']);
-        $amount       = (float) $request->validated()['amount'];
-
-        $feeItems     = $this->feeStatusService->getStudentFeeItems($student, $feeStructure->term_id);
-        $matchingItem = collect($feeItems)->firstWhere('fee_structure.id', $feeStructure->id);
-        $outstanding  = $matchingItem ? $matchingItem['outstanding'] : (float) $feeStructure->amount;
-
-        if ($amount > $outstanding && $outstanding > 0) {
-            $amount = $outstanding;
-        }
-
-        $result = $this->feeStatusService->recordCashPayment($student, $feeStructure, $amount);
-
+        $validated = $request->validated();
+        $student   = Student::findOrFail($validated['student_id']);
+        $amount    = (float) $validated['amount'];
         $host      = request()->getSchemeAndHttpHost();
-        $returnUrl = $host . '/fees?student_id=' . $student->id . '&term_id=' . $feeStructure->term_id;
+
+        if (! empty($validated['fee_bundle_id'])) {
+            // Bundle payment
+            $bundle = FeeBundle::with('items')->findOrFail($validated['fee_bundle_id']);
+            $result = $this->receiptService->recordBundlePayment($student, $bundle, $amount, 'cash');
+
+            $returnUrl = $host . '/fees?student_id=' . $student->id . '&tab=collection';
+        } else {
+            // Standalone payment
+            $feeStructure = FeeStructure::findOrFail($validated['fee_structure_id']);
+
+            // Cap at outstanding balance
+            $feeItems    = $this->feeStatusService->getStudentFeeItems($student, $feeStructure->term_id);
+            $matchingItem = collect($feeItems)->firstWhere('fee_structure.id', $feeStructure->id);
+            $outstanding  = $matchingItem ? $matchingItem['outstanding'] : (float) $feeStructure->amount;
+            if ($amount > $outstanding && $outstanding > 0) {
+                $amount = $outstanding;
+            }
+
+            $result    = $this->receiptService->recordStandalonePayment($student, $feeStructure, $amount, 'cash');
+            $returnUrl = $host . '/fees?student_id=' . $student->id . '&term_id=' . $feeStructure->term_id . '&tab=collection';
+        }
 
         if ($result['success']) {
             SendWebhookPayload::dispatch(tenant('id'), 'payment_received', [
@@ -137,54 +256,78 @@ final class FeeController extends Controller
                 'data'      => [
                     'student_id'     => $student->id,
                     'student_name'   => $student->full_name,
-                    'amount'         => $amount,
+                    'amount'         => $result['total_allocated'],
+                    'receipt_number' => $result['receipt_number'],
                     'payment_method' => 'cash',
-                    'fee_structure'  => $feeStructure->name ?? null,
                 ],
             ]);
 
-            return redirect($returnUrl)->with('success', 'Payment of ' . number_format($amount, 2) . ' recorded for ' . $student->full_name . '.');
+            return redirect($returnUrl)->with('success',
+                'Payment of ' . number_format($result['total_allocated'], 2) . ' recorded for ' . $student->full_name . '.'
+                . ' Receipt: ' . $result['receipt_number']
+            );
         }
 
-        return redirect($returnUrl)->with('error', $result['error']);
+        return redirect($returnUrl ?? ($host . '/fees?tab=collection'))->with('error', $result['error']);
     }
 
     // -------------------------------------------------------------------------
-    // Paystack online payment — initiate checkout
+    // Paystack online payment
     // -------------------------------------------------------------------------
 
     public function paystackCheckout(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'student_id'       => ['required', 'uuid', 'exists:students,id'],
-            'fee_structure_id' => ['required', 'uuid', 'exists:fee_structures,id'],
+            'fee_structure_id' => ['required_without:fee_bundle_id', 'nullable', 'uuid', 'exists:fee_structures,id'],
+            'fee_bundle_id'    => ['required_without:fee_structure_id', 'nullable', 'uuid', 'exists:fee_bundles,id'],
         ]);
 
-        $student      = Student::with('user')->findOrFail($validated['student_id']);
-        $feeStructure = FeeStructure::findOrFail($validated['fee_structure_id']);
+        $student = Student::with('user')->findOrFail($validated['student_id']);
+        $email   = $student->user?->email ?? Auth::user()->email;
 
-        $feeItems     = $this->feeStatusService->getStudentFeeItems($student, $feeStructure->term_id);
-        $matchingItem = collect($feeItems)->firstWhere('fee_structure.id', $feeStructure->id);
-        $outstanding  = $matchingItem ? $matchingItem['outstanding'] : (float) $feeStructure->amount;
+        if (! empty($validated['fee_bundle_id'])) {
+            $bundle   = FeeBundle::with('items')->findOrFail($validated['fee_bundle_id']);
+            $feeItems = $this->feeStatusService->getStudentFeeItems($student, $bundle->term_id);
 
-        if ($outstanding <= 0) {
-            return back()->with('info', 'This fee item is already fully paid.');
-        }
+            $outstanding = (float) collect($feeItems)
+                ->filter(fn ($i) => $i['fee_structure']->fee_bundle_id === $bundle->id)
+                ->sum('outstanding');
 
-        $email = $student->user?->email ?? Auth::user()->email;
+            if ($outstanding <= 0) {
+                return back()->with('info', 'This bundle is already fully paid.');
+            }
 
-        $callbackUrl = request()->getSchemeAndHttpHost() . '/paystack/callback';
+            $metadata = [
+                'student_id'    => $student->id,
+                'fee_bundle_id' => $bundle->id,
+                'student_name'  => $student->full_name,
+                'bundle_name'   => $bundle->name,
+            ];
+        } else {
+            $feeStructure = FeeStructure::findOrFail($validated['fee_structure_id']);
+            $feeItems     = $this->feeStatusService->getStudentFeeItems($student, $feeStructure->term_id);
+            $matchingItem = collect($feeItems)->firstWhere('fee_structure.id', $feeStructure->id);
+            $outstanding  = $matchingItem ? $matchingItem['outstanding'] : (float) $feeStructure->amount;
 
-        $result = $this->paystackService->initializeTransaction(
-            email: $email,
-            amount: $outstanding,
-            callbackUrl: $callbackUrl,
-            metadata: [
+            if ($outstanding <= 0) {
+                return back()->with('info', 'This fee item is already fully paid.');
+            }
+
+            $metadata = [
                 'student_id'       => $student->id,
                 'fee_structure_id' => $feeStructure->id,
                 'student_name'     => $student->full_name,
                 'fee_item'         => $feeStructure->fee_item,
-            ]
+            ];
+        }
+
+        $callbackUrl = request()->getSchemeAndHttpHost() . '/paystack/callback';
+        $result      = $this->paystackService->initializeTransaction(
+            email: $email,
+            amount: $outstanding,
+            callbackUrl: $callbackUrl,
+            metadata: $metadata
         );
 
         if (! $result['success']) {
@@ -193,10 +336,6 @@ final class FeeController extends Controller
 
         return redirect()->away($result['authorization_url']);
     }
-
-    // -------------------------------------------------------------------------
-    // Paystack online payment — callback after redirect from Paystack checkout
-    // -------------------------------------------------------------------------
 
     public function paystackCallback(Request $request): RedirectResponse
     {
@@ -219,37 +358,48 @@ final class FeeController extends Controller
 
         $metadata       = $verification['metadata'];
         $studentId      = $metadata['student_id'] ?? null;
+        $feeBundleId    = $metadata['fee_bundle_id'] ?? null;
         $feeStructureId = $metadata['fee_structure_id'] ?? null;
 
-        if (! $studentId || ! $feeStructureId) {
+        if (! $studentId || (! $feeBundleId && ! $feeStructureId)) {
             return redirect($host . '/fees')->with('error', 'Payment metadata missing — contact support with reference: ' . $reference);
         }
 
-        $student      = Student::find($studentId);
-        $feeStructure = FeeStructure::find($feeStructureId);
-
-        if (! $student || ! $feeStructure) {
-            return redirect($host . '/fees')->with('error', 'Student or fee item not found for this payment.');
+        $student = Student::find($studentId);
+        if (! $student) {
+            return redirect($host . '/fees')->with('error', 'Student not found for this payment.');
         }
 
         try {
-            FeePayment::create([
-                'student_id'       => $student->id,
-                'fee_structure_id' => $feeStructure->id,
-                'amount'           => $verification['amount'],
-                'payment_method'   => 'paystack',
-                'paystack_ref'     => $reference,
-                'recorded_by'      => null,
-                'paid_at'          => now(),
-            ]);
+            if ($feeBundleId) {
+                $bundle = FeeBundle::with('items')->find($feeBundleId);
+                if (! $bundle) {
+                    return redirect($host . '/fees')->with('error', 'Fee bundle not found for this payment.');
+                }
+                $result = $this->receiptService->recordBundlePayment(
+                    $student, $bundle, $verification['amount'], 'paystack', $reference
+                );
+            } else {
+                $feeStructure = FeeStructure::find($feeStructureId);
+                if (! $feeStructure) {
+                    return redirect($host . '/fees')->with('error', 'Fee item not found for this payment.');
+                }
+                $result = $this->receiptService->recordStandalonePayment(
+                    $student, $feeStructure, $verification['amount'], 'paystack', $reference
+                );
+            }
         } catch (\Throwable $e) {
             Log::error('[FeeController::paystackCallback] ' . $e->getMessage());
 
             return redirect($host . '/fees')->with('error', 'Could not record payment. Contact support with reference: ' . $reference);
         }
 
+        if (! $result['success']) {
+            return redirect($host . '/fees')->with('error', $result['error']);
+        }
+
         return redirect($host . '/fees')
-            ->with('success', 'Payment of ' . number_format($verification['amount'], 2) . ' recorded for ' . $student->full_name . '.');
+            ->with('success', 'Payment of ' . number_format($result['total_allocated'], 2) . ' recorded for ' . $student->full_name . '.');
     }
 
     // -------------------------------------------------------------------------
@@ -260,11 +410,10 @@ final class FeeController extends Controller
     {
         abort_unless($request->user()->can('fees.view'), 403);
 
-        $termId      = $request->input('term_id');
-        $term        = $termId ? Term::with('academicYear')->find($termId) : null;
-        $feeItems    = $this->feeStatusService->getStudentFeeItems($student, $termId);
+        $termId   = $request->input('term_id');
+        $term     = $termId ? Term::with('academicYear')->find($termId) : null;
+        $feeItems = $this->feeStatusService->getStudentFeeItems($student, $termId);
 
-        // Arrears: outstanding from per-term fees of previous terms in the same academic year
         $arrearsTotal = 0.0;
         if ($term?->academic_year_id) {
             $prevStructures = FeeStructure::where(function ($q) use ($student): void {
@@ -290,6 +439,13 @@ final class FeeController extends Controller
 
         $student->loadMissing(['schoolClass', 'section']);
 
+        $latestPayment  = FeePayment::with('recordedBy')
+            ->where('student_id', $student->id)
+            ->whereNotNull('recorded_by')
+            ->latest('paid_at')
+            ->first();
+        $accountOfficer = $latestPayment?->recordedBy?->name;
+
         $schoolProfile = SchoolProfile::first();
         $logoBase64    = null;
         if ($schoolProfile?->logo_path) {
@@ -308,15 +464,14 @@ final class FeeController extends Controller
                     $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
                 }
             } catch (\Throwable) {
-                // Not critical — bill generates without logo
+                // Not critical
             }
         }
 
-        $data = compact('student', 'term', 'feeItems', 'arrearsTotal', 'schoolProfile', 'logoBase64');
-
-        $pdf         = Pdf::loadView('tenant.fees.term-bill-pdf', $data)->setPaper('a4', 'portrait');
-        $safeName    = preg_replace('/[^A-Za-z0-9_\-]/', '_', $student->full_name);
-        $safeTerm    = $term ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $term->name) : 'all';
+        $data     = compact('student', 'term', 'feeItems', 'arrearsTotal', 'schoolProfile', 'logoBase64', 'accountOfficer');
+        $pdf      = Pdf::loadView('tenant.fees.term-bill-pdf', $data)->setPaper('a4', 'portrait');
+        $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $student->full_name);
+        $safeTerm = $term ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $term->name) : 'all';
 
         return $pdf->stream("bill-{$safeName}-{$safeTerm}.pdf");
     }
@@ -330,17 +485,36 @@ final class FeeController extends Controller
         $academicYears   = AcademicYear::with('terms')->orderByDesc('start_date')->get();
         $structureYearId = $request->input('structure_year_id', '');
 
-        $feeStructures = FeeStructure::with(['term.academicYear', 'academicYear'])
-            ->when($structureYearId, function ($q) use ($structureYearId) {
-                $q->where(function ($inner) use ($structureYearId) {
+        $yearFilter = function ($q) use ($structureYearId): void {
+            if ($structureYearId) {
+                $q->where(function ($inner) use ($structureYearId): void {
                     $inner->where('academic_year_id', $structureYearId)
-                        ->orWhereHas('term', function ($q2) use ($structureYearId) {
+                        ->orWhereHas('term', function ($q2) use ($structureYearId): void {
+                            $q2->where('academic_year_id', $structureYearId);
+                        });
+                });
+            }
+        };
+
+        // Standalone fee structures (not in any bundle)
+        $feeStructures = FeeStructure::with(['term.academicYear', 'academicYear'])
+            ->whereNull('fee_bundle_id')
+            ->when($structureYearId, $yearFilter)
+            ->orderBy('billing_cycle')
+            ->orderBy('fee_item')
+            ->get();
+
+        // Fee bundles with their items
+        $feeBundles = FeeBundle::with(['items', 'term.academicYear', 'academicYear'])
+            ->when($structureYearId, function ($q) use ($structureYearId): void {
+                $q->where(function ($inner) use ($structureYearId): void {
+                    $inner->where('academic_year_id', $structureYearId)
+                        ->orWhereHas('term', function ($q2) use ($structureYearId): void {
                             $q2->where('academic_year_id', $structureYearId);
                         });
                 });
             })
-            ->orderBy('billing_cycle')
-            ->orderBy('fee_item')
+            ->orderByDesc('created_at')
             ->get();
 
         $classes = SchoolClass::orderBy('order')->get();
@@ -371,7 +545,7 @@ final class FeeController extends Controller
             }
         } elseif ($searchQuery !== '') {
             $searchResults = Student::with('schoolClass')
-                ->where(function ($q) use ($searchQuery) {
+                ->where(function ($q) use ($searchQuery): void {
                     $q->where('full_name', 'like', '%' . $searchQuery . '%')
                       ->orWhere('admission_no', 'like', '%' . $searchQuery . '%');
                 })
@@ -388,7 +562,7 @@ final class FeeController extends Controller
             ->get();
 
         return view('tenant.fees.index', compact(
-            'feeStructures', 'classes', 'terms',
+            'feeStructures', 'feeBundles', 'classes', 'terms',
             'searchQuery', 'searchResults', 'selectedStudent', 'feeItems',
             'filterTermId', 'activeTab', 'currentYear', 'currentYearTerms', 'currentTerm',
             'academicYears', 'structureYearId', 'recentPayments'

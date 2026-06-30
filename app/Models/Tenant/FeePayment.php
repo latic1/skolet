@@ -15,6 +15,7 @@ final class FeePayment extends Model
     use HasUuids, LogsActivity;
 
     protected $fillable = [
+        'receipt_number',
         'student_id',
         'fee_structure_id',
         'amount',

@@ -13,6 +13,7 @@ window.__feesPage = {
     currentYearId: {!! Js::from($currentYear?->id) !!},
     activeTab:     {!! Js::from($activeTab) !!},
     filterTermId:  {!! Js::from($filterTermId ?? '') !!},
+    bundles:       {!! Js::from($feeBundles->map(fn($b) => ['id' => $b->id, 'name' => $b->name, 'target_class' => $b->target_class, 'billing_cycle' => $b->billing_cycle, 'term_id' => $b->term_id ?? '', 'academic_year_id' => $b->academic_year_id ?? '', 'due_date' => $b->due_date?->format('Y-m-d') ?? ''])->values()) !!},
 };
 </script>
 <div class="flex flex-col gap-6" x-data="feesAdminPage()" x-init="initTab()">
@@ -233,19 +234,152 @@ window.__feesPage = {
                 </div>
             </div>
 
-            {{-- Fee items table --}}
-            <div class="bg-surface border border-border rounded-2xl shadow-card" x-data="paymentModal()">
+            {{-- Fee items — grouped by bundle then standalone --}}
+            @php
+                $feeItemsByGroup = collect($feeItems)->groupBy(
+                    fn($i) => $i['fee_structure']->fee_bundle_id ?? '__standalone__'
+                );
+                $bundleGroups    = $feeItemsByGroup->filter(fn($g, $k) => $k !== '__standalone__');
+                $standaloneItems = $feeItemsByGroup->get('__standalone__', collect());
+            @endphp
+
+            <div x-data="paymentModal()">
+
+            {{-- BUNDLE GROUPS --}}
+            @foreach($bundleGroups as $bundleId => $bundleItems)
+            @php
+                $bundleFs    = $bundleItems->first()['fee_structure']->bundle;
+                $bundleTotal = $bundleItems->sum('effective_amount');
+                $bundlePaid  = $bundleItems->sum('paid_amount');
+                $bundleOut   = $bundleItems->sum('outstanding');
+                $bundleStatus = match(true) {
+                    $bundlePaid >= $bundleTotal => 'paid',
+                    $bundlePaid > 0             => 'partial',
+                    default                     => $bundleItems->contains(fn($i) => $i['status'] === 'overdue') ? 'overdue' : 'unpaid',
+                };
+                $bundleBadge = match($bundleStatus) {
+                    'paid'    => 'bg-success-lightest text-success-foreground',
+                    'partial' => 'bg-warning-light text-warning',
+                    default   => 'bg-error-light text-error',
+                };
+                // Collect unique receipt numbers for this bundle
+                $bundleReceipts = collect();
+                foreach ($bundleItems as $bi) {
+                    foreach ($bi['payments'] as $pmt) {
+                        $rKey = $pmt->receipt_number ?? $pmt->id;
+                        if (!$bundleReceipts->has($rKey)) {
+                            $bundleReceipts->put($rKey, ['key' => $rKey, 'amount' => 0, 'paid_at' => $pmt->paid_at]);
+                        }
+                        $entry = $bundleReceipts->get($rKey);
+                        $entry['amount'] += (float) $pmt->amount;
+                        $bundleReceipts->put($rKey, $entry);
+                    }
+                }
+            @endphp
+            <div class="bg-surface border border-border rounded-2xl shadow-card mb-4">
+                <div class="px-6 py-4 border-b border-border flex items-center gap-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold text-text-primary">{{ $bundleFs?->name ?? 'Fee Bundle' }}</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $bundleBadge }}">
+                                {{ ucfirst($bundleStatus) }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-text-muted mt-0.5">
+                            Bundle · {{ $bundleItems->count() }} {{ Str::plural('item', $bundleItems->count()) }} ·
+                            <span class="font-medium">{{ format_money($bundleOut, $currencySymbol) }} outstanding</span>
+                            of {{ format_money($bundleTotal, $currencySymbol) }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        {{-- Bundle receipts --}}
+                        @foreach($bundleReceipts as $receipt)
+                        <a href="{{ $host }}/fees/receipt/{{ $receipt['key'] }}"
+                           class="inline-flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-surface-secondary whitespace-nowrap">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Receipt ({{ format_money($receipt['amount'], $currencySymbol) }})
+                        </a>
+                        @endforeach
+                        @can('fees.create')
+                        @if($bundleOut > 0)
+                        <button @click="open({
+                                    fee_bundle_id: '{{ $bundleId }}',
+                                    fee_structure_id: '',
+                                    fee_item: '{{ addslashes($bundleFs?->name ?? 'Fee Bundle') }}',
+                                    outstanding: {{ $bundleOut }},
+                                    student_id: '{{ $selectedStudent->id }}',
+                                    student_name: '{{ addslashes($selectedStudent->full_name) }}'
+                                })"
+                                class="text-xs font-medium text-accent hover:text-accent-dark transition-colors px-3 py-1.5 rounded-md border border-accent hover:bg-accent-muted whitespace-nowrap">
+                            Pay Bundle
+                        </button>
+                        @endif
+                        @endcan
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full" style="min-width: 560px">
+                        <tbody>
+                            @foreach($bundleItems as $item)
+                            @php
+                                $fs          = $item['fee_structure'];
+                                $status      = $item['status'];
+                                $outstanding = $item['outstanding'];
+                                $isOverdue   = $status === 'overdue';
+                                $badgeClass  = match($status) {
+                                    'paid'    => 'bg-success-lightest text-success-foreground',
+                                    'partial' => 'bg-warning-light text-warning',
+                                    default   => 'bg-error-light text-error',
+                                };
+                            @endphp
+                            <tr class="border-b border-border last:border-b-0 hover:bg-surface-secondary transition-colors {{ $isOverdue ? 'bg-error-light/20' : '' }}">
+                                <td class="px-6 py-3">
+                                    <p class="text-sm text-text-primary">{{ $fs->fee_item }}</p>
+                                    @if($fs->due_date)
+                                    <p class="text-xs {{ $isOverdue ? 'text-error' : 'text-text-muted' }} mt-0.5">Due {{ $fs->due_date->format('M j, Y') }}{{ $isOverdue ? ' · Overdue' : '' }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-3 text-sm text-text-primary text-right">{{ format_money((float) $item['effective_amount'], $currencySymbol) }}</td>
+                                <td class="px-6 py-3 text-sm text-success-foreground text-right">{{ format_money((float) $item['paid_amount'], $currencySymbol) }}</td>
+                                <td class="px-6 py-3 text-sm font-medium text-right {{ $outstanding > 0 ? 'text-error' : 'text-text-muted' }}">{{ format_money((float) $outstanding, $currencySymbol) }}</td>
+                                <td class="px-6 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endforeach
+
+            {{-- STANDALONE ITEMS --}}
+            @if($standaloneItems->isNotEmpty() || $bundleGroups->isEmpty())
+            <div class="bg-surface border border-border rounded-2xl shadow-card">
+                @if($bundleGroups->isNotEmpty())
+                <div class="px-6 py-3 border-b border-border">
+                    <h3 class="text-sm font-semibold text-text-primary">Standalone Fees</h3>
+                </div>
+                @else
                 <div class="px-6 py-4 border-b border-border">
                     <h3 class="text-base font-semibold text-text-primary">Fee Items</h3>
                     @if($filterTermId)
                     @php $filteredTerm = $terms->firstWhere('id', $filterTermId); @endphp
                     <p class="text-xs text-text-muted mt-0.5">
-                        Filtered by {{ $filteredTerm?->name }}{{ $filteredTerm?->academicYear ? ' &middot; ' . $filteredTerm->academicYear->name : '' }}
+                        Filtered by {{ $filteredTerm?->name }}{{ $filteredTerm?->academicYear ? ' · ' . $filteredTerm->academicYear->name : '' }}
                     </p>
                     @endif
                 </div>
+                @endif
 
-                @if(empty($feeItems))
+                @if($standaloneItems->isEmpty())
+                <div class="flex flex-col items-center justify-center py-10 px-6 text-center">
+                    <p class="text-sm font-medium text-text-primary mb-1">No standalone fee items found</p>
+                    <p class="text-xs text-text-muted">All fees for this student are assigned to bundles</p>
+                </div>
+                @elseif(empty($feeItems))
                 <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
                     <p class="text-sm font-medium text-text-primary mb-1">No fee items found</p>
                     <p class="text-xs text-text-muted">No fee structures are defined for this student's class{{ $filterTermId ? ' with the selected filters' : '' }}</p>
@@ -265,7 +399,7 @@ window.__feesPage = {
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($feeItems as $item)
+                            @foreach($standaloneItems as $item)
                             @php
                                 $fs              = $item['fee_structure'];
                                 $status          = $item['status'];
@@ -279,7 +413,7 @@ window.__feesPage = {
                                 $badgeClass      = match($status) {
                                     'paid'    => 'bg-success-lightest text-success-foreground',
                                     'partial' => 'bg-warning-light text-warning',
-                                    default   => 'bg-error-light text-error', // unpaid + overdue
+                                    default   => 'bg-error-light text-error',
                                 };
                                 $rowClass = $isOverdue ? 'border-l-2 border-error bg-error-light/30' : '';
                             @endphp
@@ -295,15 +429,14 @@ window.__feesPage = {
                                             <p class="text-sm font-medium text-text-primary">{{ $fs->fee_item }}</p>
                                             @if($fs->due_date)
                                             <p class="text-xs {{ $isOverdue ? 'text-error font-medium' : 'text-text-muted' }} mt-0.5">
-                                                Due {{ $fs->due_date->format('M j, Y') }}
-                                                @if($isOverdue) &middot; Overdue @endif
+                                                Due {{ $fs->due_date->format('M j, Y') }}@if($isOverdue) · Overdue @endif
                                             </p>
                                             @endif
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-text-primary hidden md:table-cell">
-                                    {{ $fs->term?->name ?? '—' }}{{ $fs->term?->academicYear ? ' &middot; ' . $fs->term->academicYear->name : '' }}
+                                    {{ $fs->term?->name ?? '—' }}{{ $fs->term?->academicYear ? ' · ' . $fs->term->academicYear->name : '' }}
                                 </td>
                                 <td class="px-6 py-4">
                                     @if($hasDiscount)
@@ -330,6 +463,7 @@ window.__feesPage = {
                                         @can('fees.create')
                                         @if($outstanding > 0)
                                         <button @click="open({
+                                                    fee_bundle_id: '',
                                                     fee_structure_id: '{{ $fs->id }}',
                                                     fee_item: '{{ addslashes($fs->fee_item) }}',
                                                     outstanding: {{ $outstanding }},
@@ -342,9 +476,8 @@ window.__feesPage = {
                                         @endif
                                         @endcan
                                         @foreach($payments as $pmt)
-                                        <a href="{{ $host }}/fees/receipt/{{ $pmt->id }}"
-                                           class="inline-flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-surface-secondary whitespace-nowrap"
-                                           title="Download receipt for {{ $pmt->payment_method === 'paystack' ? 'Paystack' : 'cash' }} payment of {{ format_money((float)$pmt->amount, $currencySymbol) }} on {{ $pmt->paid_at?->format('M j') }}">
+                                        <a href="{{ $host }}/fees/receipt/{{ $pmt->receipt_number ?? $pmt->id }}"
+                                           class="inline-flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-surface-secondary whitespace-nowrap">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                             </svg>
@@ -359,85 +492,87 @@ window.__feesPage = {
                     </table>
                 </div>
                 @endif
+            </div>
+            @endif
 
-                {{-- Record Payment Modal --}}
-                <div x-show="showModal"
+            {{-- Record Cash Payment Modal (shared for bundle + standalone) --}}
+            <div x-show="showModal"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                 style="display: none;">
+
+                <div class="absolute inset-0 bg-overlay/40" @click="close()"></div>
+
+                <div class="relative w-full max-w-md bg-surface rounded-2xl shadow-xl border border-border p-6"
                      x-transition:enter="transition ease-out duration-150"
-                     x-transition:enter-start="opacity-0"
-                     x-transition:enter-end="opacity-100"
-                     x-transition:leave="transition ease-in duration-100"
-                     x-transition:leave-start="opacity-100"
-                     x-transition:leave-end="opacity-0"
-                     class="fixed inset-0 z-50 flex items-center justify-center p-4"
-                     style="display: none;">
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100">
 
-                    <div class="absolute inset-0 bg-overlay/40" @click="close()"></div>
+                    <div class="flex items-center justify-between mb-5">
+                        <h3 class="text-base font-semibold text-text-primary">Record Cash Payment</h3>
+                        <button @click="close()" class="p-1.5 rounded-md text-text-muted hover:bg-surface-secondary transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
 
-                    <div class="relative w-full max-w-md bg-surface rounded-2xl shadow-xl border border-border p-6"
-                         x-transition:enter="transition ease-out duration-150"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100">
+                    <div class="bg-surface-secondary rounded-xl px-4 py-3 mb-5 flex flex-col gap-1">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-text-muted">Student</span>
+                            <span class="font-medium text-text-primary" x-text="form.student_name"></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-text-muted" x-text="form.fee_bundle_id ? 'Bundle' : 'Fee Item'"></span>
+                            <span class="font-medium text-text-primary" x-text="form.fee_item"></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-text-muted">Outstanding</span>
+                            <span class="font-semibold text-error" x-text="Number(form.outstanding).toFixed(2)"></span>
+                        </div>
+                    </div>
 
-                        <div class="flex items-center justify-between mb-5">
-                            <h3 class="text-base font-semibold text-text-primary">Record Cash Payment</h3>
-                            <button @click="close()" class="p-1.5 rounded-md text-text-muted hover:bg-surface-secondary transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
+                    <form method="POST" action="{{ $host }}/fees/pay" @submit="submitting = true">
+                        @csrf
+                        <input type="hidden" name="student_id" :value="form.student_id">
+                        <input type="hidden" name="fee_structure_id" :value="form.fee_structure_id">
+                        <input type="hidden" name="fee_bundle_id" :value="form.fee_bundle_id">
+
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">
+                                Amount Paid <span class="text-error">*</span>
+                            </label>
+                            <input type="number" name="amount" x-model="form.amount"
+                                   :max="form.outstanding" min="0.01" step="0.01"
+                                   placeholder="0.00"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                                   required>
+                            <p class="mt-1 text-xs text-text-muted">Max: <span x-text="Number(form.outstanding).toFixed(2)"></span></p>
+                        </div>
+
+                        <div class="flex justify-end gap-3">
+                            <button type="button" @click="close()"
+                                    class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    :disabled="submitting"
+                                    :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
+                                    class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                                <span x-show="!submitting">Record Cash Payment</span>
+                                <span x-show="submitting">Saving&hellip;</span>
                             </button>
                         </div>
-
-                        {{-- Context info --}}
-                        <div class="bg-surface-secondary rounded-xl px-4 py-3 mb-5 flex flex-col gap-1">
-                            <div class="flex items-center justify-between text-xs">
-                                <span class="text-text-muted">Student</span>
-                                <span class="font-medium text-text-primary" x-text="form.student_name"></span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs">
-                                <span class="text-text-muted">Fee Item</span>
-                                <span class="font-medium text-text-primary" x-text="form.fee_item"></span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs">
-                                <span class="text-text-muted">Outstanding</span>
-                                <span class="font-semibold text-error" x-text="Number(form.outstanding).toFixed(2)"></span>
-                            </div>
-                        </div>
-
-                        <form method="POST" action="{{ $host }}/fees/pay"
-                              @submit="submitting = true">
-                            @csrf
-                            <input type="hidden" name="student_id" :value="form.student_id">
-                            <input type="hidden" name="fee_structure_id" :value="form.fee_structure_id">
-
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-text-dark mb-1.5">
-                                    Amount Paid <span class="text-error">*</span>
-                                </label>
-                                <input type="number" name="amount" x-model="form.amount"
-                                       :max="form.outstanding" min="0.01" step="0.01"
-                                       placeholder="0.00"
-                                       class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-                                       required>
-                                <p class="mt-1 text-xs text-text-muted">Max: <span x-text="Number(form.outstanding).toFixed(2)"></span></p>
-                            </div>
-
-                            <div class="flex justify-end gap-3">
-                                <button type="button" @click="close()"
-                                        class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">
-                                    Cancel
-                                </button>
-                                <button type="submit"
-                                        :disabled="submitting"
-                                        :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'"
-                                        class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
-                                    <span x-show="!submitting">Record Cash Payment</span>
-                                    <span x-show="submitting">Saving&hellip;</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                    </form>
                 </div>
             </div>
+
+            </div>{{-- /x-data paymentModal --}}
             @elseif(!$searchQuery)
             {{-- Recent payments --}}
             <div class="bg-surface border border-border rounded-2xl shadow-card">
@@ -509,7 +644,7 @@ window.__feesPage = {
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-base font-semibold text-text-primary">Fee Structure</h2>
-                    <p class="text-xs text-text-muted mt-0.5">{{ $feeStructures->count() }} fee {{ Str::plural('item', $feeStructures->count()) }}{{ $structureYearId ? ' for selected year' : ' across all years' }}</p>
+                    <p class="text-xs text-text-muted mt-0.5">{{ $feeBundles->count() }} {{ Str::plural('bundle', $feeBundles->count()) }} · {{ $feeStructures->count() }} standalone {{ Str::plural('item', $feeStructures->count()) }}{{ $structureYearId ? ' for selected year' : '' }}</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <form method="GET" action="{{ $host }}/fees" class="flex items-center gap-2">
@@ -523,18 +658,113 @@ window.__feesPage = {
                         </select>
                     </form>
                     @can('fees.create')
+                    <button @click="openAddBundle()"
+                            class="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-text-secondary text-sm font-medium rounded-md hover:bg-surface-secondary transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Bundle
+                    </button>
                     <button @click="openAdd()"
                             class="flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
-                        Configure New Fee
+                        New Fee Item
                     </button>
                     @endcan
                 </div>
             </div>
 
-            {{-- Fee Structure CRUD table --}}
+            {{-- ── Fee Bundles section ── --}}
+            @if($feeBundles->isNotEmpty())
+            <div class="flex flex-col gap-3">
+                <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide">Fee Bundles</h3>
+                @foreach($feeBundles as $bundle)
+                <div class="bg-surface border border-border rounded-2xl shadow-card">
+                    <div class="px-6 py-4 flex items-center gap-3">
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold text-text-primary">{{ $bundle->name }}</p>
+                            <p class="text-xs text-text-muted mt-0.5">
+                                {{ $bundle->billing_cycle === 'annual' ? 'Annual' : 'Per Term' }}
+                                @if($bundle->term)· {{ $bundle->term->name }}{{ $bundle->term->academicYear ? ' ' . $bundle->term->academicYear->name : '' }}@endif
+                                @if($bundle->target_class !== 'all') · {{ $classes->firstWhere('id', $bundle->target_class)?->name ?? $bundle->target_class }} @else · All Classes @endif
+                                · {{ $bundle->items->count() }} {{ Str::plural('item', $bundle->items->count()) }}
+                                · Total: {{ format_money((float) $bundle->items->sum('amount'), $currencySymbol) }}
+                                @if($bundle->due_date) · Due {{ $bundle->due_date->format('M j, Y') }} @endif
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            @can('fees.create')
+                            <button @click="openAddBundleItem({ id: '{{ $bundle->id }}', name: '{{ addslashes($bundle->name) }}' })"
+                                    class="text-xs font-medium text-accent hover:text-accent-dark px-2 py-1 rounded hover:bg-accent-muted transition-colors">
+                                Add Item
+                            </button>
+                            @endcan
+                            @can('fees.edit')
+                            <button @click="openEditBundle({
+                                        id: '{{ $bundle->id }}',
+                                        name: '{{ addslashes($bundle->name) }}',
+                                        target_class: '{{ $bundle->target_class }}',
+                                        billing_cycle: '{{ $bundle->billing_cycle }}',
+                                        term_id: '{{ $bundle->term_id ?? '' }}',
+                                        academic_year_id: '{{ $bundle->academic_year_id ?? '' }}',
+                                        due_date: '{{ $bundle->due_date?->format('Y-m-d') ?? '' }}'
+                                    })"
+                                    class="text-xs font-medium text-text-secondary hover:text-text-primary px-2 py-1 rounded hover:bg-surface-secondary transition-colors">
+                                Edit
+                            </button>
+                            @endcan
+                            @can('fees.delete')
+                            <form method="POST" action="{{ $host }}/fees/bundles/{{ $bundle->id }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Delete bundle \'{{ addslashes($bundle->name) }}\'? Its fee items will become standalone.')"
+                                        class="text-xs font-medium text-error hover:text-red-700 px-2 py-1 rounded hover:bg-error-light transition-colors">
+                                    Delete
+                                </button>
+                            </form>
+                            @endcan
+                        </div>
+                    </div>
+                    @if($bundle->items->isNotEmpty())
+                    <div class="border-t border-border overflow-x-auto">
+                        <table class="w-full" style="min-width: 500px">
+                            <tbody>
+                                @foreach($bundle->items as $item)
+                                <tr class="border-b border-border last:border-b-0 hover:bg-surface-secondary transition-colors">
+                                    <td class="px-6 py-2.5 text-sm text-text-primary pl-10">{{ $item->fee_item }}</td>
+                                    <td class="px-6 py-2.5 text-sm text-text-primary">{{ format_money((float) $item->amount, $currencySymbol) }}</td>
+                                    <td class="px-6 py-2.5 text-xs text-text-muted">{{ $item->due_date ? 'Due ' . $item->due_date->format('M j, Y') : '' }}</td>
+                                    <td class="px-6 py-2.5">
+                                        @can('fees.delete')
+                                        <form method="POST" action="{{ $host }}/fees/{{ $item->id }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    onclick="return confirm('Remove \'{{ addslashes($item->fee_item) }}\' from this bundle?')"
+                                                    class="text-xs text-error hover:text-red-700 px-1.5 py-0.5 rounded hover:bg-error-light transition-colors">
+                                                Remove
+                                            </button>
+                                        </form>
+                                        @endcan
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+            @endif
+
+            {{-- ── Standalone Fee Structure CRUD table ── --}}
+            @if($feeBundles->isNotEmpty())
+            <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide -mb-3">Standalone Fees</h3>
+            @endif
             <div class="bg-surface border border-border rounded-2xl shadow-card">
                 @if($feeStructures->isEmpty())
                 <div class="flex flex-col items-center justify-center py-16 px-6 text-center">
@@ -543,8 +773,8 @@ window.__feesPage = {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
                     </div>
-                    <p class="text-sm font-medium text-text-primary mb-1">No fee items yet</p>
-                    <p class="text-xs text-text-muted mb-4">Configure fee items per class and term to get started</p>
+                    <p class="text-sm font-medium text-text-primary mb-1">No standalone fee items yet</p>
+                    <p class="text-xs text-text-muted mb-4">Add individual fee items or group them into a bundle above</p>
                     @can('fees.create')
                     <button @click="openAdd()"
                             class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors">
@@ -633,6 +863,199 @@ window.__feesPage = {
                     </table>
                 </div>
                 @endif
+            </div>
+
+            {{-- Create / Edit Bundle Modal --}}
+            <div x-show="showBundleModal"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                 style="display: none;">
+                <div class="absolute inset-0 bg-overlay/40" @click="closeBundle()"></div>
+                <div class="relative w-full max-w-lg bg-surface rounded-2xl shadow-xl border border-border p-6"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100">
+                    <div class="flex items-center justify-between mb-5">
+                        <h3 class="text-base font-semibold text-text-primary" x-text="bundleMode === 'add' ? 'Create Fee Bundle' : 'Edit Bundle'"></h3>
+                        <button @click="closeBundle()" class="p-1.5 rounded-md text-text-muted hover:bg-surface-secondary transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    {{-- Add Bundle Form --}}
+                    <form x-show="bundleMode === 'add'" method="POST" action="{{ $host }}/fees/bundles" class="flex flex-col gap-4" @submit="submitting = true">
+                        @csrf
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Bundle Name <span class="text-error">*</span></label>
+                            <input type="text" name="name" x-model="bundleForm.name" placeholder="e.g. First Semester Fees"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Target Class <span class="text-error">*</span></label>
+                            <select name="target_class" x-model="bundleForm.target_class" required
+                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                <option value="all">All Classes</option>
+                                <template x-for="cls in classes" :key="cls.id">
+                                    <option :value="cls.id" :selected="bundleForm.target_class === cls.id" x-text="cls.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Billing Cycle <span class="text-error">*</span></label>
+                            <div class="flex gap-2">
+                                <button type="button" @click="bundleForm.billing_cycle = 'term'"
+                                        :class="bundleForm.billing_cycle === 'term' ? 'bg-accent text-accent-foreground border-accent' : 'bg-surface text-text-secondary border-border hover:bg-surface-secondary'"
+                                        class="flex-1 py-2 text-sm font-medium border rounded-md transition-colors">Per Term</button>
+                                <button type="button" @click="bundleForm.billing_cycle = 'annual'; bundleForm.term_id = ''"
+                                        :class="bundleForm.billing_cycle === 'annual' ? 'bg-accent text-accent-foreground border-accent' : 'bg-surface text-text-secondary border-border hover:bg-surface-secondary'"
+                                        class="flex-1 py-2 text-sm font-medium border rounded-md transition-colors">Annual</button>
+                            </div>
+                            <input type="hidden" name="billing_cycle" :value="bundleForm.billing_cycle">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Year</label>
+                                <select name="academic_year_id" x-model="bundleForm.academic_year_id" @change="bundleForm.term_id = ''"
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                    <option value="">Select year&hellip;</option>
+                                    <template x-for="y in allYears" :key="y.id">
+                                        <option :value="y.id" :selected="bundleForm.academic_year_id === y.id" x-text="y.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div x-show="bundleForm.billing_cycle === 'term'">
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Term</label>
+                                <select name="term_id" x-model="bundleForm.term_id" :disabled="!bundleForm.academic_year_id"
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <option value="">Select term&hellip;</option>
+                                    <template x-for="t in bundleTermsForYear" :key="t.id">
+                                        <option :value="t.id" :selected="bundleForm.term_id === t.id" x-text="t.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Due Date <span class="text-text-muted font-normal">(optional)</span></label>
+                            <input type="date" name="due_date" x-model="bundleForm.due_date"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                        </div>
+                        <div class="flex justify-end gap-3 mt-2">
+                            <button type="button" @click="closeBundle()" class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">Cancel</button>
+                            <button type="submit" :disabled="submitting" :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'" class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                                <span x-show="!submitting">Create Bundle</span>
+                                <span x-show="submitting">Saving&hellip;</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    {{-- Edit Bundle Form --}}
+                    <form x-show="bundleMode === 'edit'" method="POST" :action="`{{ $host }}/fees/bundles/${bundleForm.id}`" class="flex flex-col gap-4" @submit="submitting = true">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Bundle Name <span class="text-error">*</span></label>
+                            <input type="text" name="name" x-model="bundleForm.name"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Target Class</label>
+                            <select name="target_class" x-model="bundleForm.target_class"
+                                    class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                <option value="all">All Classes</option>
+                                <template x-for="cls in classes" :key="cls.id">
+                                    <option :value="cls.id" :selected="bundleForm.target_class === cls.id" x-text="cls.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Billing Cycle</label>
+                            <div class="flex gap-2">
+                                <button type="button" @click="bundleForm.billing_cycle = 'term'"
+                                        :class="bundleForm.billing_cycle === 'term' ? 'bg-accent text-accent-foreground border-accent' : 'bg-surface text-text-secondary border-border hover:bg-surface-secondary'"
+                                        class="flex-1 py-2 text-sm font-medium border rounded-md transition-colors">Per Term</button>
+                                <button type="button" @click="bundleForm.billing_cycle = 'annual'; bundleForm.term_id = ''"
+                                        :class="bundleForm.billing_cycle === 'annual' ? 'bg-accent text-accent-foreground border-accent' : 'bg-surface text-text-secondary border-border hover:bg-surface-secondary'"
+                                        class="flex-1 py-2 text-sm font-medium border rounded-md transition-colors">Annual</button>
+                            </div>
+                            <input type="hidden" name="billing_cycle" :value="bundleForm.billing_cycle">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Academic Year</label>
+                                <select name="academic_year_id" x-model="bundleForm.academic_year_id" @change="bundleForm.term_id = ''"
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                                    <option value="">Select year&hellip;</option>
+                                    <template x-for="y in allYears" :key="y.id">
+                                        <option :value="y.id" :selected="bundleForm.academic_year_id === y.id" x-text="y.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div x-show="bundleForm.billing_cycle === 'term'">
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Term</label>
+                                <select name="term_id" x-model="bundleForm.term_id" :disabled="!bundleForm.academic_year_id"
+                                        class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <option value="">Select term&hellip;</option>
+                                    <template x-for="t in bundleTermsForYear" :key="t.id">
+                                        <option :value="t.id" :selected="bundleForm.term_id === t.id" x-text="t.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Due Date</label>
+                            <input type="date" name="due_date" x-model="bundleForm.due_date"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                        </div>
+                        <div class="flex justify-end gap-3 mt-2">
+                            <button type="button" @click="closeBundle()" class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">Cancel</button>
+                            <button type="submit" :disabled="submitting" :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'" class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                                <span x-show="!submitting">Save Changes</span>
+                                <span x-show="submitting">Saving&hellip;</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    {{-- Add Bundle Item Form --}}
+                    <form x-show="bundleMode === 'addItem'" method="POST" :action="`{{ $host }}/fees/bundles/${bundleForm.id}/items`" class="flex flex-col gap-4" @submit="submitting = true">
+                        @csrf
+                        <p class="text-sm text-text-muted -mt-2">Adding fee item to: <strong x-text="bundleForm.name"></strong></p>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Fee Name <span class="text-error">*</span></label>
+                            <input type="text" name="fee_item" x-model="bundleForm.fee_item" placeholder="e.g. Tuition, PTA Dues"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-dark mb-1.5">Amount <span class="text-error">*</span></label>
+                            <input type="number" name="amount" x-model="bundleForm.amount" placeholder="0.00" step="0.01" min="0"
+                                   class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 items-start">
+                            <label class="flex items-center gap-3 cursor-pointer pt-6">
+                                <input type="hidden" name="is_mandatory" value="0">
+                                <input type="checkbox" name="is_mandatory" value="1" x-model="bundleForm.is_mandatory"
+                                       class="w-4 h-4 rounded border-border text-accent focus:ring-accent">
+                                <span class="text-sm text-text-secondary">Mandatory</span>
+                            </label>
+                            <div>
+                                <label class="block text-sm font-medium text-text-dark mb-1.5">Due Date</label>
+                                <input type="date" name="due_date" x-model="bundleForm.due_date"
+                                       class="w-full px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-2">
+                            <button type="button" @click="closeBundle()" class="px-4 py-2 bg-surface border border-border text-sm font-medium text-text-primary rounded-md hover:bg-surface-secondary transition-colors">Cancel</button>
+                            <button type="submit" :disabled="submitting" :class="submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent-dark'" class="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md transition-colors">
+                                <span x-show="!submitting">Add to Bundle</span>
+                                <span x-show="submitting">Saving&hellip;</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             {{-- Configure New Fee / Edit Fee Modal --}}
@@ -995,6 +1418,7 @@ function feesAdminPage() {
 function feeStructureTab() {
     const _d = window.__feesPage;
     return {
+        // Standalone fee modal
         showModal: false,
         submitting: false,
         mode: 'add',
@@ -1007,14 +1431,26 @@ function feeStructureTab() {
             fee_item: '', amount: '', is_mandatory: true, due_date: '',
         },
 
+        // Bundle modal
+        showBundleModal: false,
+        bundleMode: 'add', // 'add' | 'edit' | 'addItem'
+        bundleForm: {
+            id: '', name: '', target_class: 'all', billing_cycle: 'term',
+            term_id: '', academic_year_id: _d.currentYearId || '',
+            due_date: '', fee_item: '', amount: '', is_mandatory: true,
+        },
+
         get termsForSelectedYear() {
             const y = this.allYears.find(y => y.id === this.form.academic_year_id);
             return y ? y.terms : [];
         },
 
-        onYearChange() {
-            this.form.term_id = '';
+        get bundleTermsForYear() {
+            const y = this.allYears.find(y => y.id === this.bundleForm.academic_year_id);
+            return y ? y.terms : [];
         },
+
+        onYearChange() { this.form.term_id = ''; },
 
         init() {
             const feeMode = @json(old('_fee_mode'));
@@ -1056,6 +1492,27 @@ function feeStructureTab() {
             this.showModal = true;
         },
         close() { this.showModal = false; this.submitting = false; },
+
+        openAddBundle() {
+            this.bundleMode = 'add';
+            this.bundleForm = {
+                id: '', name: '', target_class: 'all', billing_cycle: 'term',
+                term_id: '', academic_year_id: _d.currentYearId || '',
+                due_date: '', fee_item: '', amount: '', is_mandatory: true,
+            };
+            this.showBundleModal = true;
+        },
+        openEditBundle(data) {
+            this.bundleMode = 'edit';
+            this.bundleForm = { ...data, fee_item: '', amount: '', is_mandatory: true };
+            this.showBundleModal = true;
+        },
+        openAddBundleItem(bundle) {
+            this.bundleMode = 'addItem';
+            this.bundleForm = { id: bundle.id, name: bundle.name, fee_item: '', amount: '', is_mandatory: true, due_date: '' };
+            this.showBundleModal = true;
+        },
+        closeBundle() { this.showBundleModal = false; this.submitting = false; },
     };
 }
 
@@ -1063,7 +1520,7 @@ function paymentModal() {
     return {
         showModal: false,
         submitting: false,
-        form: { student_id: '', fee_structure_id: '', fee_item: '', outstanding: 0, student_name: '', amount: '' },
+        form: { student_id: '', fee_structure_id: '', fee_bundle_id: '', fee_item: '', outstanding: 0, student_name: '', amount: '' },
         open(data) {
             this.form = { ...data, amount: data.outstanding };
             this.showModal = true;

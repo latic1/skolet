@@ -16,6 +16,7 @@ final class StoreFeeStructureRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'fee_bundle_id'      => ['nullable', 'uuid', 'exists:fee_bundles,id'],
             'billing_cycle'      => ['required', 'string', 'in:term,annual'],
             'fee_item'           => ['required', 'string', 'max:100'],
             'amount'             => ['required', 'numeric', 'min:0'],

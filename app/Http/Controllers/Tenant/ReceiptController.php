@@ -6,9 +6,9 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\FeePayment;
+use App\Models\Tenant\Student;
 use App\Services\ReceiptService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -19,35 +19,57 @@ final class ReceiptController extends Controller
     ) {}
 
     /**
-     * Download a fee payment receipt PDF.
+     * Download a receipt PDF by receipt_number (or legacy payment UUID).
      *
      * Access:
-     *   - Users with fees.view (admin / accountant) can download any receipt.
-     *   - Students / parents can only download receipts for their own student record.
+     *   - fees.view (admin/accountant) → any receipt
+     *   - Student/parent → only their own student's receipts
      */
-    public function download(Request $request, FeePayment $feePayment): BinaryFileResponse
+    public function download(Request $request, string $receiptNumber): BinaryFileResponse
     {
         $user = Auth::user();
 
+        // Resolve payments — by receipt_number first, UUID fallback for old receipts
+        $payments = FeePayment::where('receipt_number', $receiptNumber)
+            ->with('student')
+            ->get();
+
+        if ($payments->isEmpty()) {
+            // Backward compatibility: single payment accessed by its UUID
+            $single = FeePayment::with('student')->find($receiptNumber);
+            if ($single) {
+                $payments = collect([$single]);
+                // Use the stored receipt_number if present, otherwise keep using UUID as key
+                $receiptNumber = $single->receipt_number ?? $receiptNumber;
+            }
+        }
+
+        if ($payments->isEmpty()) {
+            abort(404, 'Receipt not found.');
+        }
+
         if (! $user->can('fees.view')) {
-            // Student / parent — may only download their own receipt
-            $student = $feePayment->student;
-            if (! $student || $student->user_id !== $user->id) {
+            // Student / parent: verify ownership
+            $studentIds  = $payments->pluck('student_id')->unique();
+            $ownedStudent = Student::where('user_id', $user->id)
+                ->whereIn('id', $studentIds)
+                ->exists();
+
+            if (! $ownedStudent) {
                 abort(403);
             }
         }
 
         try {
-            $absolutePath = $this->receiptService->generatePdf($feePayment);
+            $absolutePath = $this->receiptService->generatePdf($receiptNumber);
         } catch (\Throwable) {
             abort(500, 'Receipt could not be generated. Please try again.');
         }
 
-        $student    = $feePayment->student;
-        $feeItem    = $feePayment->feeStructure?->fee_item ?? 'receipt';
-        $safeName   = preg_replace('/[^a-z0-9]+/i', '-', $student?->full_name ?? 'student');
-        $safeFee    = preg_replace('/[^a-z0-9]+/i', '-', $feeItem);
-        $filename   = strtolower("receipt-{$safeName}-{$safeFee}.pdf");
+        $student   = $payments->first()->student;
+        $safeName  = preg_replace('/[^a-z0-9]+/i', '-', $student?->full_name ?? 'student');
+        $safeNum   = preg_replace('/[^a-z0-9]+/i', '-', strtolower($receiptNumber));
+        $filename  = "receipt-{$safeName}-{$safeNum}.pdf";
 
         return response()->file($absolutePath, [
             'Content-Type'        => 'application/pdf',

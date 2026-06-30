@@ -15,6 +15,8 @@ final class SchoolProfile extends Model
 
     protected $fillable = [
         'school_name',
+        'motto',
+        'receipt_prefix',
         'logo_path',
         'short_description',
         'address',
