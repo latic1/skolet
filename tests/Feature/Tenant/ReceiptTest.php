@@ -59,21 +59,22 @@ beforeEach(function (): void {
 
 test('receipt service builds correct data for a fee payment', function (): void {
     $service = app(ReceiptService::class);
-    $data    = $service->build($this->payment);
+    // Use the payment UUID as the receipt identifier (legacy fallback path)
+    $data = $service->buildReceipt($this->payment->id);
 
     expect($data)->toBeArray()
-        ->and($data['payment']->id)->toBe($this->payment->id)
-        ->and($data['payment']->student->id)->toBe($this->student->id)
-        ->and($data['receiptNo'])->not->toBeEmpty();
+        ->and($data['student']->id)->toBe($this->student->id)
+        ->and($data['receiptNumber'])->not->toBeEmpty()
+        ->and($data['feeLines'])->toBeInstanceOf(\Illuminate\Support\Collection::class)
+        ->and($data['totalAmount'])->toBe(450.0);
 });
 
-test('receipt number is derived from payment UUID', function (): void {
+test('receipt number is returned in build data', function (): void {
     $service = app(ReceiptService::class);
-    $data    = $service->build($this->payment);
+    $data    = $service->buildReceipt($this->payment->id);
 
-    // Receipt number is first 10 hex chars of UUID
-    expect(strlen($data['receiptNo']))->toBe(10)
-        ->and(ctype_xdigit($data['receiptNo']))->toBeTrue();
+    expect($data['receiptNumber'])->not->toBeEmpty()
+        ->and($data['paymentLabel'])->toBeIn(['Full Payment', 'Partial Payment']);
 });
 
 test('student can access their own fee payment receipt data', function (): void {
