@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Students')
 @section('page-title', 'Students')
@@ -182,11 +182,11 @@
                                 {{ $student->full_name }}
                             </a>
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->schoolClass?->name ?? '&mdash;' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->schoolClass?->name ?? '—' }}</td>
                         @if($anyClassHasSections)
-                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->section?->name ?? '&mdash;' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-primary">{{ $student->section?->name ?? '—' }}</td>
                         @endif
-                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $student->guardian_contact ?? '&mdash;' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $student->guardian_contact ?? '—' }}</td>
                         <td class="px-6 py-4">
                             @php
                                 $statusClass = match($student->status) {

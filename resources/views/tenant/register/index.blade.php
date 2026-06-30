@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Class Register & Lesson Plans')
 
@@ -215,7 +215,7 @@
                                     <td class="px-5 py-3 whitespace-nowrap text-text-secondary">{{ $entry->date->format('d M Y') }}</td>
                                     <td class="px-5 py-3 font-medium text-text-primary">{{ $entry->topic_covered }}</td>
                                     <td class="px-5 py-3 text-text-secondary max-w-xs hidden lg:table-cell">
-                                        <p class="truncate">{{ $entry->notes ?? '&mdash;' }}</p>
+                                        <p class="truncate">{{ $entry->notes ?? '—' }}</p>
                                     </td>
                                 </tr>
                                 @endforeach

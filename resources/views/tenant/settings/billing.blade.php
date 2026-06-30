@@ -36,10 +36,10 @@
                 <div class="bg-surface-secondary rounded-xl p-4">
                     <p class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Cycle Period</p>
                     <p class="text-sm font-medium text-text-primary">
-                        {{ $plan->cycle_start?->format('d M Y') ?? '&mdash;' }}
+                        {{ $plan->cycle_start?->format('d M Y') ?? '—' }}
                     </p>
                     <p class="text-xs text-text-muted">
-                        to {{ $plan->cycle_end?->format('d M Y') ?? '&mdash;' }}
+                        to {{ $plan->cycle_end?->format('d M Y') ?? '—' }}
                     </p>
                 </div>
                 <div class="bg-surface-secondary rounded-xl p-4">

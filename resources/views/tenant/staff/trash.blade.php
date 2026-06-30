@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Deleted Staff')
 @section('page-title', 'Staff')
@@ -61,7 +61,7 @@
                     @foreach($staff as $member)
                     <tr class="hover:bg-surface-secondary transition-colors">
                         <td class="px-4 py-3 font-medium text-text-primary">{{ $member->full_name }}</td>
-                        <td class="px-4 py-3 text-text-muted hidden md:table-cell">{{ $member->role_title ?? '&mdash;' }}</td>
+                        <td class="px-4 py-3 text-text-muted hidden md:table-cell">{{ $member->role_title ?? '—' }}</td>
                         <td class="px-4 py-3 text-text-muted text-xs">{{ $member->deleted_at?->diffForHumans() }}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">

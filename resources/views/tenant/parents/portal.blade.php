@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'My Children')
 @section('page-title', 'My Children')
@@ -223,14 +223,14 @@
                         <tbody class="divide-y divide-border">
                             @foreach($exam->studentResults as $result)
                             <tr>
-                                <td class="py-2 pr-4 text-text-primary">{{ $result->subject?->name ?? '&mdash;' }}</td>
+                                <td class="py-2 pr-4 text-text-primary">{{ $result->subject?->name ?? '—' }}</td>
                                 <td class="py-2 pr-4 text-right font-medium text-text-primary">{{ number_format($result->marks, 1) }}</td>
                                 <td class="py-2 text-right">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
                                                  {{ in_array($result->grade, ['A', 'A+', 'A-']) ? 'bg-success-lightest text-success-foreground' :
                                                     (in_array($result->grade, ['B', 'B+', 'B-']) ? 'bg-accent-muted text-accent' :
                                                     (in_array($result->grade, ['F', 'F-']) ? 'bg-error-light text-error' : 'bg-surface-secondary text-text-secondary')) }}">
-                                        {{ $result->grade ?? '&mdash;' }}
+                                        {{ $result->grade ?? '—' }}
                                     </span>
                                 </td>
                             </tr>

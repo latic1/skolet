@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Payroll')
 
@@ -125,18 +125,18 @@
                     @endphp
                     <tr class="hover:bg-surface-secondary transition-colors">
                         <td class="px-4 py-3 font-medium text-text-primary">{{ $staff->full_name }}</td>
-                        <td class="px-4 py-3 text-text-muted">{{ $staff->role_title ?? '&mdash;' }}</td>
+                        <td class="px-4 py-3 text-text-muted">{{ $staff->role_title ?? '—' }}</td>
                         <td class="px-4 py-3 text-right text-text-primary">
-                            {{ $s ? format_money($s->gross, $currencySymbol) : '&mdash;' }}
+                            {{ $s ? format_money($s->gross, $currencySymbol) : '—' }}
                         </td>
                         <td class="px-4 py-3 text-right text-success">
-                            {{ $s ? format_money($allowTotal, $currencySymbol) : '&mdash;' }}
+                            {{ $s ? format_money($allowTotal, $currencySymbol) : '—' }}
                         </td>
                         <td class="px-4 py-3 text-right text-error">
-                            {{ $s ? format_money($deductTotal, $currencySymbol) : '&mdash;' }}
+                            {{ $s ? format_money($deductTotal, $currencySymbol) : '—' }}
                         </td>
                         <td class="px-4 py-3 text-right font-semibold text-text-primary">
-                            {{ $s ? format_money($net, $currencySymbol) : '&mdash;' }}
+                            {{ $s ? format_money($net, $currencySymbol) : '—' }}
                         </td>
                         <td class="px-4 py-3 text-right">
                             @can('payroll.edit')
@@ -210,7 +210,7 @@
                                     {{ format_money($run->total_net, $currencySymbol) }}
                                 </span>
                                 <span class="text-xs text-text-muted min-w-[120px]">
-                                    {{ $run->processedBy?->name ?? '&mdash;' }}
+                                    {{ $run->processedBy?->name ?? '—' }}
                                 </span>
                                 @can('payroll.create')
                                 @if($run->status === 'processed')
@@ -254,7 +254,7 @@
                                         @endphp
                                         <tr x-data="{ paying: false, payMethod: 'bank_transfer', payDate: '{{ date('Y-m-d') }}' }"
                                             class="hover:bg-surface transition-colors">
-                                            <td class="pl-12 pr-4 py-2 text-text-primary">{{ $item->staff?->full_name ?? '&mdash;' }}</td>
+                                            <td class="pl-12 pr-4 py-2 text-text-primary">{{ $item->staff?->full_name ?? '—' }}</td>
                                             <td class="px-4 py-2 text-right text-text-muted">{{ format_money($item->gross, $currencySymbol) }}</td>
                                             <td class="px-4 py-2 text-right text-success text-xs">+{{ format_money($item->allowances_total, $currencySymbol) }}</td>
                                             <td class="px-4 py-2 text-right text-error text-xs">−{{ format_money($item->deductions_total, $currencySymbol) }}</td>

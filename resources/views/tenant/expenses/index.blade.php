@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Expenses')
 
@@ -146,7 +146,7 @@
                             {{ format_money($expense->amount, $currencySymbol) }}
                         </td>
                         <td class="px-6 py-4 text-sm text-text-secondary hidden md:table-cell">
-                            {{ $expense->recordedBy?->name ?? '&mdash;' }}
+                            {{ $expense->recordedBy?->name ?? '—' }}
                         </td>
                         <td class="px-6 py-4 hidden sm:table-cell">
                             @if($expense->receipt_path)

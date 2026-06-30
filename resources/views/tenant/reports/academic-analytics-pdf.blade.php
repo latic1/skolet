@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -62,15 +62,15 @@
     <div class="meta-block">
         <div class="meta-item">
             <div class="meta-label">Exam</div>
-            <div class="meta-value">{{ $report['exam']?->name ?? '&mdash;' }}</div>
+            <div class="meta-value">{{ $report['exam']?->name ?? '—' }}</div>
         </div>
         <div class="meta-item">
             <div class="meta-label">Class</div>
-            <div class="meta-value">{{ $report['class']?->name ?? '&mdash;' }}{{ $report['section'] ? ' / ' . $report['section']->name : '' }}</div>
+            <div class="meta-value">{{ $report['class']?->name ?? '—' }}{{ $report['section'] ? ' / ' . $report['section']->name : '' }}</div>
         </div>
         <div class="meta-item">
             <div class="meta-label">Term</div>
-            <div class="meta-value">{{ $report['exam']?->term?->name ?? '&mdash;' }}</div>
+            <div class="meta-value">{{ $report['exam']?->term?->name ?? '—' }}</div>
         </div>
         <div class="meta-item">
             <div class="meta-label">Pass Threshold</div>

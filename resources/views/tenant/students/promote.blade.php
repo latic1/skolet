@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'End of Year Promotion')
 @section('page-title', 'Students')
@@ -175,7 +175,7 @@
                                 <span class="font-medium text-text-primary">{{ $student->full_name }}</span>
                             </td>
                             <td class="px-6 py-3 text-text-muted">{{ $student->admission_no }}</td>
-                            <td class="px-6 py-3 text-text-muted hidden sm:table-cell">{{ $student->section?->name ?? '&mdash;' }}</td>
+                            <td class="px-6 py-3 text-text-muted hidden sm:table-cell">{{ $student->section?->name ?? '—' }}</td>
                             <td class="px-6 py-3">
                                 <select name="outcomes[{{ $student->id }}]" required
                                         class="w-full px-2 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">

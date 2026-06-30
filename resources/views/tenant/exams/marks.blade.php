@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Marks Entry')
 @section('page-title', 'Marks Entry')
@@ -223,7 +223,7 @@
                                            class="w-24 px-3 py-1.5 bg-surface border border-border rounded-md text-sm text-text-primary text-center placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
                                     @else
                                     <span class="text-sm {{ isset($existingMarks[$student->id]) ? 'text-text-primary font-medium' : 'text-text-muted' }}">
-                                        {{ isset($existingMarks[$student->id]) ? number_format($existingMarks[$student->id]->marks, 1) : '&mdash;' }}
+                                        {{ isset($existingMarks[$student->id]) ? number_format($existingMarks[$student->id]->marks, 1) : '—' }}
                                     </span>
                                     @endif
                                 </td>
@@ -412,7 +412,7 @@
             },
 
             gradeLabel(studentId) {
-                return this.computeGrade(studentId) || '&mdash;';
+                return this.computeGrade(studentId) || '—';
             },
 
             gradeClass(studentId) {

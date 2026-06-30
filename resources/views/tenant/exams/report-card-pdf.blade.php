@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -258,7 +258,7 @@
         <div class="info-cell">
             <span class="info-label">Class</span>
             <span class="info-value">
-                {{ $student->schoolClass?->name ?? '&mdash;' }}
+                {{ $student->schoolClass?->name ?? '—' }}
                 @if($student->section) / {{ $student->section->name }}@endif
             </span>
         </div>

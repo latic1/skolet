@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Deleted Students')
 @section('page-title', 'Students')
@@ -63,7 +63,7 @@
                     <tr class="hover:bg-surface-secondary transition-colors">
                         <td class="px-4 py-3 font-medium text-text-primary">{{ $student->full_name }}</td>
                         <td class="px-4 py-3 text-text-muted hidden md:table-cell">{{ $student->admission_no }}</td>
-                        <td class="px-4 py-3 text-text-muted hidden sm:table-cell">{{ $student->schoolClass?->name ?? '&mdash;' }}</td>
+                        <td class="px-4 py-3 text-text-muted hidden sm:table-cell">{{ $student->schoolClass?->name ?? '—' }}</td>
                         <td class="px-4 py-3 text-text-muted text-xs">{{ $student->deleted_at?->diffForHumans() }}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">

@@ -1,4 +1,4 @@
-@php $currencySymbol = $schoolProfile?->currency_symbol ?? '₵'; @endphp
+﻿@php $currencySymbol = $schoolProfile?->currency_symbol ?? '₵'; @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,11 +124,11 @@ table.fees .center { text-align: center; }
         </div>
         <div class="strip-cell" style="width:20%">
             <span class="strip-label">Admission No</span>
-            <span class="strip-value">{{ $student->admission_no ?? '&mdash;' }}</span>
+            <span class="strip-value">{{ $student->admission_no ?? '—' }}</span>
         </div>
         <div class="strip-cell" style="width:20%">
             <span class="strip-label">Class</span>
-            <span class="strip-value">{{ $student->schoolClass?->name ?? '&mdash;' }}{{ $student->section ? ' &middot; ' . $student->section->name : '' }}</span>
+            <span class="strip-value">{{ $student->schoolClass?->name ?? '—' }}{{ $student->section ? ' &middot; ' . $student->section->name : '' }}</span>
         </div>
         <div class="strip-cell" style="width:20%;text-align:right">
             <span class="strip-label">Term</span>

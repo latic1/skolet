@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', $student->full_name . ' &mdash; Student Profile')
 @section('page-title', 'Students')
@@ -120,15 +120,15 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Date of Birth</dt>
-                <dd class="text-sm text-text-primary">{{ $student->date_of_birth?->format('d M Y') ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->date_of_birth?->format('d M Y') ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Gender</dt>
-                <dd class="text-sm text-text-primary">{{ $student->gender ? ucfirst($student->gender) : '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->gender ? ucfirst($student->gender) : '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Address</dt>
-                <dd class="text-sm text-text-primary">{{ $student->address ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->address ?? '—' }}</dd>
             </div>
         </dl>
     </div>
@@ -139,11 +139,11 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Guardian Name</dt>
-                <dd class="text-sm text-text-primary">{{ $student->guardian_name ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->guardian_name ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Contact</dt>
-                <dd class="text-sm text-text-primary">{{ $student->guardian_contact ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->guardian_contact ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Email</dt>
@@ -164,11 +164,11 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Class</dt>
-                <dd class="text-sm text-text-primary">{{ $student->schoolClass?->name ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->schoolClass?->name ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Section</dt>
-                <dd class="text-sm text-text-primary">{{ $student->section?->name ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $student->section?->name ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Admission Number</dt>
@@ -529,7 +529,7 @@
                     <tr>
                         <td class="py-2.5 pr-4 font-medium text-text-primary">{{ $parent->name }}</td>
                         <td class="py-2.5 pr-4 text-text-secondary">{{ $parent->email }}</td>
-                        <td class="py-2.5 pr-4 text-text-secondary capitalize">{{ $parent->pivot->relationship ?? '&mdash;' }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary capitalize">{{ $parent->pivot->relationship ?? '—' }}</td>
                         <td class="py-2.5 text-right">
                             <form method="POST" action="{{ $host }}/students/{{ $student->id }}/parents/{{ $parent->id }}">
                                 @csrf
@@ -771,7 +771,7 @@
                             @endif
                             <div class="flex items-center gap-3 mt-1.5 flex-wrap">
                                 <span class="text-xs text-text-muted">{{ $record->date->format('d M Y') }}</span>
-                                <span class="text-xs text-text-muted">by {{ $record->reportedBy?->name ?? '&mdash;' }}</span>
+                                <span class="text-xs text-text-muted">by {{ $record->reportedBy?->name ?? '—' }}</span>
                                 @if($record->parent_notified)
                                 <span class="text-xs text-success-foreground font-medium">Parent notified</span>
                                 @endif

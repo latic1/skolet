@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', $staff->full_name . ' &mdash; Staff Profile')
 @section('page-title', 'Staff')
@@ -118,7 +118,7 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Phone Number</dt>
-                <dd class="text-sm text-text-primary">{{ $staff->phone ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $staff->phone ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Status</dt>
@@ -126,11 +126,11 @@
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Role Title</dt>
-                <dd class="text-sm text-text-primary">{{ $staff->role_title ?? '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary">{{ $staff->role_title ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">System Role</dt>
-                <dd class="text-sm text-text-primary capitalize">{{ $systemRole ? str_replace('_', ' ', $systemRole) : '&mdash;' }}</dd>
+                <dd class="text-sm text-text-primary capitalize">{{ $systemRole ? str_replace('_', ' ', $systemRole) : '—' }}</dd>
             </div>
             <div class="sm:col-span-2">
                 <dt class="text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Email Address</dt>
@@ -179,9 +179,9 @@
                 <tbody class="divide-y divide-border">
                     @foreach($staff->assignments->sortBy([['schoolClass.order', 'asc'], ['subject.name', 'asc']]) as $assignment)
                     <tr>
-                        <td class="py-2.5 pr-4 font-medium text-text-primary">{{ $assignment->subject?->name ?? '&mdash;' }}</td>
-                        <td class="py-2.5 pr-4 text-text-secondary">{{ $assignment->schoolClass?->name ?? '&mdash;' }}</td>
-                        <td class="py-2.5 pr-4 text-text-secondary">{{ $assignment->section?->name ?? '&mdash;' }}</td>
+                        <td class="py-2.5 pr-4 font-medium text-text-primary">{{ $assignment->subject?->name ?? '—' }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary">{{ $assignment->schoolClass?->name ?? '—' }}</td>
+                        <td class="py-2.5 pr-4 text-text-secondary">{{ $assignment->section?->name ?? '—' }}</td>
                         @can('staff.edit')
                         <td class="py-2.5 text-right">
                             <form method="POST" action="{{ $host }}/staff/assignments/{{ $assignment->id }}">

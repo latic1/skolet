@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -292,24 +292,24 @@
         </div>
         <div class="info-cell">
             <span class="info-label">Date of Birth</span>
-            <span class="info-value">{{ $student->date_of_birth?->format('d M Y') ?? '&mdash;' }}</span>
+            <span class="info-value">{{ $student->date_of_birth?->format('d M Y') ?? '—' }}</span>
         </div>
     </div>
     <div class="info-row">
         <div class="info-cell">
             <span class="info-label">Class</span>
             <span class="info-value">
-                {{ $student->schoolClass?->name ?? '&mdash;' }}
+                {{ $student->schoolClass?->name ?? '—' }}
                 @if($student->section) / {{ $student->section->name }}@endif
             </span>
         </div>
         <div class="info-cell">
             <span class="info-label">Gender</span>
-            <span class="info-value">{{ $student->gender ? ucfirst($student->gender) : '&mdash;' }}</span>
+            <span class="info-value">{{ $student->gender ? ucfirst($student->gender) : '—' }}</span>
         </div>
         <div class="info-cell">
             <span class="info-label">Guardian</span>
-            <span class="info-value">{{ $student->guardian_name ?? '&mdash;' }}</span>
+            <span class="info-value">{{ $student->guardian_name ?? '—' }}</span>
         </div>
     </div>
 </div>

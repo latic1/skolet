@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -184,10 +184,10 @@
             @php $net = $row['income'] - $row['expenses']; @endphp
             <tr class="{{ ($row['income'] > 0 || $row['expenses'] > 0) ? 'has-data' : '' }}">
                 <td>{{ $row['month'] }}</td>
-                <td class="right text-green">{{ $row['income'] > 0 ? number_format($row['income'], 2) : '&mdash;' }}</td>
-                <td class="right text-red">{{ $row['expenses'] > 0 ? number_format($row['expenses'], 2) : '&mdash;' }}</td>
+                <td class="right text-green">{{ $row['income'] > 0 ? number_format($row['income'], 2) : '—' }}</td>
+                <td class="right text-red">{{ $row['expenses'] > 0 ? number_format($row['expenses'], 2) : '—' }}</td>
                 <td class="right {{ $net >= 0 ? 'text-green' : 'text-red' }}">
-                    {{ ($row['income'] > 0 || $row['expenses'] > 0) ? number_format($net, 2) : '&mdash;' }}
+                    {{ ($row['income'] > 0 || $row['expenses'] > 0) ? number_format($net, 2) : '—' }}
                 </td>
             </tr>
             @endforeach

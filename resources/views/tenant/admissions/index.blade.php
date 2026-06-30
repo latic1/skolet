@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Admissions')
 @section('page-title', 'Admissions')
@@ -134,7 +134,7 @@
                             @endcan
                             @else
                             <span class="text-xs text-text-muted">
-                                {{ $app->reviewed_at?->format('d M Y') ?? '&mdash;' }}
+                                {{ $app->reviewed_at?->format('d M Y') ?? '—' }}
                             </span>
                             @endif
                         </td>

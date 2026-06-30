@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Staff')
 @section('page-title', 'Staff')
@@ -179,8 +179,8 @@
                                 </a>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $member->role_title ?? '&mdash;' }}</td>
-                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $member->user?->email ?? '&mdash;' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $member->role_title ?? '—' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $member->user?->email ?? '—' }}</td>
                         <td class="px-6 py-4">
                             @if($systemRole)
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent capitalize">

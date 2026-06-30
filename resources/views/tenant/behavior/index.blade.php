@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Behavior & Discipline')
 @section('page-title', 'Behavior & Discipline')
@@ -150,7 +150,7 @@
                                class="text-sm font-medium text-text-primary hover:text-accent transition-colors">
                                 {{ $record->student->full_name }}
                             </a>
-                            <p class="text-xs text-text-muted mt-0.5">{{ $record->student->schoolClass?->name ?? '&mdash;' }}</p>
+                            <p class="text-xs text-text-muted mt-0.5">{{ $record->student->schoolClass?->name ?? '—' }}</p>
                         </td>
                         <td class="px-5 py-3.5">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $typeBadge }}">
@@ -164,7 +164,7 @@
                             <p class="text-sm text-text-primary line-clamp-2 max-w-xs">{{ $record->description }}</p>
                         </td>
                         <td class="px-5 py-3.5 hidden lg:table-cell">
-                            <p class="text-sm text-text-primary">{{ $record->reportedBy?->name ?? '&mdash;' }}</p>
+                            <p class="text-sm text-text-primary">{{ $record->reportedBy?->name ?? '—' }}</p>
                         </td>
                         <td class="px-5 py-3.5">
                             @if($record->parent_notified)

@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Leave Management')
 
@@ -349,7 +349,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 text-text-secondary hidden lg:table-cell">
-                                {{ $req->approvedBy?->name ?? '&mdash;' }}
+                                {{ $req->approvedBy?->name ?? '—' }}
                                 @if($req->approved_at)
                                 <span class="block text-xs text-text-muted">{{ $req->approved_at->format('d M Y') }}</span>
                                 @endif

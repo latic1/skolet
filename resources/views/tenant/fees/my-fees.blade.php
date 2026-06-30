@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'My Fees')
 @section('page-title', 'My Fees')
@@ -157,7 +157,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-primary hidden sm:table-cell">{{ $fs->term?->name ?? '&mdash;' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-primary hidden sm:table-cell">{{ $fs->term?->name ?? '—' }}</td>
                         <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ format_money((float) $fs->amount, $currencySymbol) }}</td>
                         <td class="px-6 py-4 text-sm text-success-foreground font-medium hidden md:table-cell">{{ format_money($paidAmount, $currencySymbol) }}</td>
                         <td class="px-6 py-4 text-sm font-medium hidden md:table-cell {{ $outstanding > 0 ? 'text-error' : 'text-text-muted' }}">

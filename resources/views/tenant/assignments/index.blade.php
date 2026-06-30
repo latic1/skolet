@@ -408,7 +408,7 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-text-secondary hidden lg:table-cell">
-                                        {{ $assignment->total_marks ? number_format($assignment->total_marks, 0) : '&mdash;' }}
+                                        {{ $assignment->total_marks ? number_format($assignment->total_marks, 0) : '—' }}
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center justify-end gap-2">

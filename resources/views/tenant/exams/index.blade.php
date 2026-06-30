@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Exams')
 @section('page-title', 'Exams')
@@ -147,11 +147,11 @@
                         </td>
 
                         {{-- Term --}}
-                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $exam->term?->name ?? '&mdash;' }}</td>
+                        <td class="px-6 py-4 text-sm text-text-secondary">{{ $exam->term?->name ?? '—' }}</td>
 
                         {{-- Academic Year --}}
                         <td class="px-6 py-4 text-sm text-text-secondary hidden md:table-cell">
-                            {{ $exam->term?->academicYear?->name ?? '&mdash;' }}
+                            {{ $exam->term?->academicYear?->name ?? '—' }}
                         </td>
 
                         {{-- Date Range --}}

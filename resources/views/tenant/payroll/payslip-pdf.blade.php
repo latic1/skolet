@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -76,7 +76,7 @@
         </div>
         <div class="info-grid-row">
             <div class="info-label">Role / Title</div>
-            <div class="info-value">{{ $item->staff->role_title ?? '&mdash;' }}</div>
+            <div class="info-value">{{ $item->staff->role_title ?? '—' }}</div>
         </div>
         <div class="info-grid-row">
             <div class="info-label">Pay Period</div>
@@ -84,7 +84,7 @@
         </div>
         <div class="info-grid-row">
             <div class="info-label">Processed</div>
-            <div class="info-value">{{ $run->processed_at?->format('d M Y') ?? '&mdash;' }}</div>
+            <div class="info-value">{{ $run->processed_at?->format('d M Y') ?? '—' }}</div>
         </div>
         <div class="info-grid-row">
             <div class="info-label">Payment Status</div>

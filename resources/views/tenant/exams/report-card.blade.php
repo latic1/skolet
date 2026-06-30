@@ -1,4 +1,4 @@
-@extends('layouts.tenant')
+﻿@extends('layouts.tenant')
 
 @section('title', 'Report Cards')
 @section('page-title', 'Report Cards')
@@ -181,7 +181,7 @@
                     <p class="text-xs text-text-muted mt-0.5">
                         Adm. No: <span class="font-medium text-text-secondary">{{ $student->admission_no }}</span>
                         &nbsp;&middot;&nbsp;
-                        {{ $student->schoolClass?->name ?? '&mdash;' }}
+                        {{ $student->schoolClass?->name ?? '—' }}
                         @if($student->section) / {{ $student->section->name }}@endif
                     </p>
                     <div class="flex items-center gap-2 mt-1.5">

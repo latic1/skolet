@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -90,7 +90,7 @@
                 </td>
                 <td class="subject-cell">{{ $entry->subject->name }}</td>
                 <td class="topic-cell">{{ $entry->topic_covered }}</td>
-                <td class="notes-cell">{{ $entry->notes ?? '&mdash;' }}</td>
+                <td class="notes-cell">{{ $entry->notes ?? '—' }}</td>
             </tr>
             @endforeach
         </tbody>
