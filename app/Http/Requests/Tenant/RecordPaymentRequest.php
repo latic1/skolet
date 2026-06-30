@@ -17,7 +17,8 @@ final class RecordPaymentRequest extends FormRequest
     {
         return [
             'student_id'       => ['required', 'uuid', 'exists:students,id'],
-            'fee_structure_id' => ['required', 'uuid', 'exists:fee_structures,id'],
+            'fee_structure_id' => ['required_without:fee_bundle_id', 'nullable', 'uuid', 'exists:fee_structures,id'],
+            'fee_bundle_id'    => ['required_without:fee_structure_id', 'nullable', 'uuid', 'exists:fee_bundles,id'],
             'amount'           => ['required', 'numeric', 'min:0.01'],
         ];
     }

@@ -6,27 +6,28 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\SendWebhookPayload;
+use App\Models\Tenant\FeeBundle;
 use App\Models\Tenant\FeePayment;
 use App\Models\Tenant\FeeStructure;
-use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Student;
-use App\Notifications\PaymentConfirmation;
 use App\Services\PaystackService;
+use App\Services\ReceiptService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 final class PaystackWebhookController extends Controller
 {
-    public function __construct(private readonly PaystackService $paystackService) {}
+    public function __construct(
+        private readonly PaystackService $paystackService,
+        private readonly ReceiptService $receiptService,
+    ) {}
 
     public function handle(Request $request): Response
     {
         $rawPayload = $request->getContent();
         $signature  = $request->header('X-Paystack-Signature', '');
 
-        // Step 1: verify the webhook signature before processing anything
         if (! $this->paystackService->verifyWebhookSignature($rawPayload, $signature)) {
             Log::warning('[PaystackWebhook] Invalid signature — request rejected.');
 
@@ -36,7 +37,6 @@ final class PaystackWebhookController extends Controller
         $event     = json_decode($rawPayload, true);
         $eventType = $event['event'] ?? '';
 
-        // Only process successful charge events
         if ($eventType !== 'charge.success') {
             return response('OK', 200);
         }
@@ -48,12 +48,11 @@ final class PaystackWebhookController extends Controller
             return response('Bad Request', 400);
         }
 
-        // Step 2: idempotency — skip if already recorded by a prior webhook or callback
+        // Idempotency: skip if already recorded
         if (FeePayment::where('paystack_ref', $reference)->exists()) {
             return response('OK', 200);
         }
 
-        // Step 3: always verify with the Paystack API before recording payment
         $verification = $this->paystackService->verifyTransaction($reference);
 
         if (! $verification['success']) {
@@ -62,45 +61,54 @@ final class PaystackWebhookController extends Controller
             return response('Payment verification failed', 422);
         }
 
-        // Step 4: extract tenant-scoped IDs from metadata
         $metadata       = $verification['metadata'];
         $studentId      = $metadata['student_id'] ?? null;
+        $feeBundleId    = $metadata['fee_bundle_id'] ?? null;
         $feeStructureId = $metadata['fee_structure_id'] ?? null;
 
-        if (! $studentId || ! $feeStructureId) {
+        if (! $studentId || (! $feeBundleId && ! $feeStructureId)) {
             Log::error('[PaystackWebhook] Missing metadata for ref: ' . $reference);
 
             return response('Bad Request', 400);
         }
 
-        $student      = Student::find($studentId);
-        $feeStructure = FeeStructure::find($feeStructureId);
+        $student = Student::find($studentId);
 
-        if (! $student || ! $feeStructure) {
-            Log::error('[PaystackWebhook] Student or FeeStructure not found for ref: ' . $reference);
+        if (! $student) {
+            Log::error('[PaystackWebhook] Student not found for ref: ' . $reference);
 
             return response('Not Found', 404);
         }
 
-        // Step 5: record the payment
         try {
-            FeePayment::create([
-                'student_id'       => $student->id,
-                'fee_structure_id' => $feeStructure->id,
-                'amount'           => $verification['amount'],
-                'payment_method'   => 'paystack',
-                'paystack_ref'     => $reference,
-                'recorded_by'      => null,
-                'paid_at'          => now(),
-            ]);
-            $profile = SchoolProfile::first();
-            if ($profile?->isNotificationEnabled('payment_confirmation') && $student->guardian_email) {
-                $latestPayment = FeePayment::where('paystack_ref', $reference)->first();
-                if ($latestPayment) {
-                    Notification::route('mail', $student->guardian_email)
-                        ->notify(new PaymentConfirmation($latestPayment));
+            if ($feeBundleId) {
+                $bundle = FeeBundle::with('items')->find($feeBundleId);
+                if (! $bundle) {
+                    Log::error('[PaystackWebhook] Bundle not found for ref: ' . $reference);
+
+                    return response('Not Found', 404);
                 }
+                $result = $this->receiptService->recordBundlePayment(
+                    $student, $bundle, $verification['amount'], 'paystack', $reference
+                );
+            } else {
+                $feeStructure = FeeStructure::find($feeStructureId);
+                if (! $feeStructure) {
+                    Log::error('[PaystackWebhook] FeeStructure not found for ref: ' . $reference);
+
+                    return response('Not Found', 404);
+                }
+                $result = $this->receiptService->recordStandalonePayment(
+                    $student, $feeStructure, $verification['amount'], 'paystack', $reference
+                );
             }
+
+            if (! $result['success']) {
+                Log::error('[PaystackWebhook] Failed to record payment for ref: ' . $reference . ' — ' . $result['error']);
+
+                return response('Internal Server Error', 500);
+            }
+
             SendWebhookPayload::dispatch(tenant('id'), 'payment_received', [
                 'event'     => 'payment_received',
                 'tenant'    => tenant('id'),
@@ -108,13 +116,14 @@ final class PaystackWebhookController extends Controller
                 'data'      => [
                     'student_id'     => $student->id,
                     'student_name'   => $student->full_name,
-                    'amount'         => $verification['amount'],
+                    'amount'         => $result['total_allocated'],
+                    'receipt_number' => $result['receipt_number'],
                     'payment_method' => 'paystack',
                     'reference'      => $reference,
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::error('[PaystackWebhook] Failed to record payment for ref: ' . $reference . ' — ' . $e->getMessage());
+            Log::error('[PaystackWebhook] Failed for ref: ' . $reference . ' — ' . $e->getMessage());
 
             return response('Internal Server Error', 500);
         }

@@ -46,7 +46,7 @@ final class FeeStatusService
             $academicYearId = $currentYear?->id;
         }
 
-        $query = FeeStructure::with(['term.academicYear', 'academicYear'])
+        $query = FeeStructure::with(['term.academicYear', 'academicYear', 'bundle'])
             ->where(function ($q) use ($student): void {
                 $q->where('target_class', 'all')
                   ->orWhere('target_class', $student->class_id);

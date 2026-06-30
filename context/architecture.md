@@ -81,6 +81,7 @@
 │   │       ├── Timetable.php
 │   │       ├── Exam.php
 │   │       ├── ExamResult.php
+│   │       ├── FeeBundle.php
 │   │       ├── FeeStructure.php
 │   │       ├── FeePayment.php
 │   │       ├── Announcement.php
@@ -104,7 +105,8 @@
 │   │   ├── TenantProvisioningService.php              → Creates tenant DB, runs migrations
 │   │   ├── PaystackService.php                        → Initialize/verify payments
 │   │   ├── ReportCardService.php                      → Builds report card data + PDF
-│   │   ├── FeeStatusService.php                       → Computes paid/unpaid/partial/overdue per student+fee_structure
+│   │   ├── FeeStatusService.php                       → Computes paid/unpaid/partial/overdue per student+fee_structure, and per-bundle
+│   │   ├── ReceiptService.php                         → Allocates a payment across bundle items, generates shared receipt_number, builds receipt PDF
 │   │   └── AttendanceReportService.php
 │   ├── Console/
 │   │   └── Commands/
@@ -478,56 +480,76 @@ When the year-end promotion workflow runs: a `student_class_history` row is writ
 
 **MVP assumption:** every subject's `marks` is recorded out of 100, so `marks` is directly the percentage used against `config('schoolflow.default_grading_scale')` — no per-subject max-marks conversion. Marks Entry (Feature 12) validates input as `0-100`. If a school needs subjects scored out of a different total (e.g. 50 or 20), this is a Phase 2 change: add a `max_marks` column to `exams` or `exam_results`, store raw marks, and compute `percentage = marks / max_marks * 100` before applying the grading scale.
 
-### `fee_structures`
+### `fee_bundles`
 
-One row per fee configuration. Supports any fee type — School Fees, Feeding, Hostel, Bus, PTA Dues, Extra Classes, Toileteries, Medical Bill, Extra Curricular Activities, etc. All fees are flat amounts (the admin computes any daily-rate or per-day calculations themselves before entering the total).
+A bundle groups several `fee_structures` rows under one parent label that the parent sees and pays as a single total — e.g. "First Semester Fees" bundling Medical Bill + PTA Dues + School Fees + Toiletries. Bundles are how a school presents "one bill" to parents while still tracking each fee item individually for internal accounting.
 
 | Column        | Type    | Notes                                                   |
 | -------------- | ------- | ----------------------------------------------------------- |
 | id             | uuid    |                                                             |
-| academic_year_id | uuid  | References academic_years — always set                      |
-| term_id        | uuid    | References terms — nullable. Null if `billing_cycle = 'annual'` |
-| fee_item       | string  | Admin-defined name e.g. "School Fees", "Feeding (Lunch)", "Hostel", "Bus", "PTA Dues", "Extra Classes" |
-| amount         | decimal |                                                             |
+| academic_year_id | uuid  | References academic_years                                   |
+| term_id        | uuid    | References terms — nullable, same `billing_cycle` rules as `fee_structures` |
+| name           | string  | e.g. "First Semester Fees", "Term 3 Bill"                    |
 | target_class   | string  | `all` or a specific `class_id`                              |
-| billing_cycle  | string  | `term` (default) or `annual`. Annual fees belong to `academic_year_id` only — `term_id` is null. Shown on every term's bill but owed once per year. |
-| is_mandatory   | boolean | Default `true`. MVP: all fees behave as mandatory. Phase 2: optional per-student assignment |
 | due_date       | date    | Nullable                                                    |
 
-**Annual fees (e.g. PTA Dues):**
-- `billing_cycle = 'annual'`, `term_id = null`, `academic_year_id` set
-- Appears on every term's bill as a line item (so parents see it), but is only owed once per year — `FeeStatusService` checks if it has already been paid in any term of the current academic year before marking it as outstanding
-- Due date is typically the start of the first term of the year
+**Bundle total** is always computed, never stored: sum of `amount` across every `fee_structures` row where `fee_bundle_id` matches.
+
+### `fee_structures`
+
+One row per individual fee configuration. Supports any fee type — School Fees, Feeding, Hostel, Bus, PTA Dues, Extra Classes, Toileteries, Medical Bill, Extra Curricular Activities, etc. All fees are flat amounts (the admin computes any daily-rate or per-day calculations themselves before entering the total).
+
+| Column        | Type    | Notes                                                   |
+| -------------- | ------- | ----------------------------------------------------------- |
+| id             | uuid    |                                                             |
+| fee_bundle_id  | uuid    | References fee_bundles — nullable. If set, this item is part of a bundle and the parent pays the bundle total, not this item individually. If null, this fee is collected and paid standalone (current default behavior). |
+| academic_year_id | uuid  | References academic_years — always set                      |
+| term_id        | uuid    | References terms — nullable. Null if `billing_cycle = 'annual'` |
+| fee_item       | string  | Admin-defined name e.g. "School Fees", "Feeding (Lunch)", "Hostel", "Bus", "PTA Dues", "Medical Bill", "Toiletries" |
+| amount         | decimal |                                                             |
+| target_class   | string  | `all` or a specific `class_id` — inherited from the bundle's `target_class` if bundled, but stored per-row for reporting flexibility |
+| billing_cycle  | string  | `term` (default) or `annual`. Annual fees belong to `academic_year_id` only — `term_id` is null. Shown on every term's bill but owed once per year. |
+| is_mandatory   | boolean | Default `true`. MVP: all fees behave as mandatory. Phase 2: optional per-student assignment |
+| due_date       | date    | Nullable — bundled items typically inherit the bundle's due date for display, but each row keeps its own for reporting |
+
+**Annual fees (e.g. PTA Dues) inside a bundle:** still possible — a bundle can mix `term` and `annual` items (matching the photo example: PTA Dues alongside Tuition Fee in one receipt). `FeeStatusService` still tracks the annual item's once-per-year status independently even when bundled; once paid, it stops contributing to the bundle's outstanding total in later terms but the bundle itself persists for the other (term) items.
 
 ### `fee_payments`
 
-One row per payment — a student can have multiple rows against the same `fee_structure_id` (e.g. two partial payments).
+One row per individual fee item paid within a transaction — when a parent pays a bundle total, multiple `fee_payments` rows are created at once (one per component `fee_structures` row), all sharing the same `receipt_number` so they print together as one receipt.
 
-| Column            | Type      | Notes                                          |
-| ------------------ | --------- | -------------------------------------------------- |
-| id                  | uuid      |                                                     |
-| student_id          | uuid      | References students                                |
-| fee_structure_id    | uuid      | References fee_structures                          |
-| amount              | decimal   | Amount paid in this transaction                     |
-| payment_method      | string    | cash / paystack                                     |
-| paystack_ref        | string    | Nullable — set when paid online                     |
-| recorded_by         | uuid      | Nullable — references users; set for cash payments  |
-| paid_at             | timestamp |                                                     |
+| Column            | Type      | Notes                                                       |
+| ------------------ | --------- | ----------------------------------------------------------------- |
+| id                  | uuid      |                                                                   |
+| student_id          | uuid      | References students                                              |
+| fee_structure_id    | uuid      | References fee_structures                                        |
+| receipt_number      | string    | Shared across every `fee_payments` row created in the same transaction — e.g. all rows from one bundle payment have the same `receipt_number`. Sequential, school-scoped (e.g. `RASN26.05.01`, configurable prefix per school). |
+| amount              | decimal   | Amount paid toward this specific fee item in this transaction      |
+| payment_method      | string    | cash / paystack                                                   |
+| paystack_ref        | string    | Nullable — set when paid online                                   |
+| recorded_by         | uuid      | Nullable — references users; set for cash payments                |
+| paid_at             | timestamp |                                                                   |
 
-**Which fee_structures rows apply to a student:**
+**Paying a bundle:** when a parent/Accountant pays a bundle total, the payment amount is allocated across the bundle's component `fee_structures` rows proportionally (or in a fixed order — oldest/cheapest first — if the payment is partial and doesn't cover the full bundle). Each allocation becomes its own `fee_payments` row, all sharing one `receipt_number`. This is what `ReceiptService` (Feature 17) groups by when rendering the printed receipt — one receipt, multiple fee-item line items, one total.
+
+**Which fee_structures/bundles apply to a student:**
 - `target_class = 'all'` OR `target_class = student.class_id`
 - AND (`billing_cycle = 'term'` AND `term_id = current term`) OR (`billing_cycle = 'annual'` AND `academic_year_id = current academic year`)
+- Bundled items (`fee_bundle_id` set) are grouped and shown as one bundle card with one total on the Fees page; unbundled items (`fee_bundle_id` null) are shown individually as today
 
-Annual fees (`billing_cycle = 'annual'`) appear on every term's bill as a line item for transparency, but `FeeStatusService` checks `fee_payments` across all terms of the current academic year — if already paid in any previous term, it shows as `paid` and is not collected again.
+Annual fees (`billing_cycle = 'annual'`) appear on every term's bill/bundle as a line item for transparency, but `FeeStatusService` checks `fee_payments` across all terms of the current academic year — if already paid in any previous term, it shows as `paid` and is not collected again, and its amount drops out of the *current* bundle's outstanding total (though it may still display as a zero-balance line item for transparency).
 
-**Status (computed, not stored):** for a given student + `fee_structure_id`, sum all `fee_payments.amount` rows and compare to `fee_structures.amount`:
+**Status (computed, not stored):**
 
+For an individual `fee_structures` row: sum all `fee_payments.amount` rows for that `fee_structure_id` + student, compare to `fee_structures.amount`:
 - `unpaid` — sum is 0
 - `partial` — `0 < sum < amount`
 - `paid` — `sum >= amount`
-- `overdue` — `sum < amount` AND `fee_structures.due_date` has passed (overrides `unpaid`/`partial` for display)
+- `overdue` — `sum < amount` AND `due_date` has passed (overrides `unpaid`/`partial` for display)
 
-`FeeStatusService` computes this on the fly for the Fees pages — no `status` column to keep in sync.
+For a bundle: sum the same logic across every component `fee_structures` row, then compare the combined paid total to the combined bundle total. Same four statuses, computed at the bundle level for what the parent sees.
+
+`FeeStatusService` computes both levels on the fly — no `status` column to keep in sync.
 
 ### `announcements`
 
@@ -547,11 +569,13 @@ Single row per tenant — set up during Feature 07b, used throughout the app (to
 | -------------- | ------- | ------------------------------------------------------ |
 | id             | uuid    |                                                        |
 | school_name    | string  |                                                        |
+| motto          | string  | Nullable — shown under school name on receipts/bills and public page header, e.g. "Developing Innovative and Pragmatic Leaders" |
 | description    | text    | Nullable — short description, used on public page      |
 | address        | string  | Nullable                                               |
 | phone          | string  | Nullable                                               |
 | email          | string  | Nullable                                               |
 | logo_path      | string  | Nullable — path under `storage/{tenant}/logos/`         |
+| receipt_prefix | string  | Nullable — short code used to generate `receipt_number`, e.g. school initials (defaults to first letters of `school_name` if not set) |
 | period_system  | string  | `3_term` (default) or `2_semester` — set once during Feature 07 Academic Calendar setup; determines what "Term 1/2/3" or "Semester 1/2" labels appear throughout the app. Changing this after data exists against old terms is not supported in MVP — treat as a one-time setup choice. |
 
 If `logo_path` is null, the topbar/login/public page fall back to the default SchoolFlow logo gradient (`ui-tokens.md`), and generated PDFs (report cards, receipts) show `school_name` as text only, no image.

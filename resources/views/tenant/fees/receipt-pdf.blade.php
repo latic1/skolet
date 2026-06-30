@@ -1,361 +1,405 @@
-﻿@php $currencySymbol = $schoolProfile?->currency_symbol ?? '₵'; @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Receipt #{{ $receiptNo }}</title>
 <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-        font-family: DejaVu Sans, sans-serif;
-        font-size: 11px;
-        color: #101828;
-        background: #ffffff;
-        padding: 32px;
-    }
+body {
+    font-family: DejaVu Sans, sans-serif;
+    font-size: 9pt;
+    color: #111;
+    background: #fff;
+}
 
-    /* ── Header ── */
-    .header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        padding-bottom: 20px;
-        border-bottom: 2px solid #2563eb;
-        margin-bottom: 20px;
-    }
-    .school-logo {
-        width: 44px;
-        height: 44px;
-        object-fit: contain;
-        margin-right: 10px;
-        vertical-align: middle;
-    }
-    .school-info {
-        display: inline-block;
-        vertical-align: middle;
-    }
-    .school-name {
-        font-size: 17px;
-        font-weight: 700;
-        color: #111827;
-        margin-bottom: 2px;
-    }
-    .school-sub {
-        font-size: 10px;
-        color: #6a7282;
-    }
-    .receipt-title {
-        text-align: right;
-    }
-    .receipt-title h1 {
-        font-size: 20px;
-        font-weight: 700;
-        color: #2563eb;
-        letter-spacing: -0.5px;
-        margin-bottom: 4px;
-    }
-    .receipt-no {
-        font-size: 10px;
-        color: #6a7282;
-        margin-bottom: 2px;
-    }
-    .receipt-date {
-        font-size: 10px;
-        color: #99a1af;
-    }
+@page { margin: 0; size: A4 portrait; }
 
-    /* ── Status badge ── */
-    .status-banner {
-        background: #ecfdf5;
-        border: 1px solid #d0fae5;
-        border-radius: 8px;
-        padding: 10px 16px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        background: #10b981;
-        border-radius: 50%;
-        display: inline-block;
-        flex-shrink: 0;
-    }
-    .status-text {
-        font-size: 11px;
-        font-weight: 700;
-        color: #007a55;
-    }
+.copy {
+    width: 210mm;
+    height: 143mm;
+    padding: 6mm 8mm;
+    page-break-inside: avoid;
+    overflow: hidden;
+}
 
-    /* ── Detail blocks ── */
-    .section-heading {
-        font-size: 9px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #99a1af;
-        margin-bottom: 8px;
-    }
-    .detail-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-    }
-    .detail-table tr td {
-        padding: 7px 0;
-        border-bottom: 1px solid #e7eaf3;
-        font-size: 11px;
-        vertical-align: top;
-    }
-    .detail-table tr:last-child td {
-        border-bottom: none;
-    }
-    .detail-label {
-        color: #6a7282;
-        width: 38%;
-    }
-    .detail-value {
-        color: #101828;
-        font-weight: 500;
-    }
+.cut-line {
+    width: 210mm;
+    height: 4mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px dashed #bbb;
+    line-height: 0;
+}
+.cut-line span {
+    background: #fff;
+    padding: 0 6mm;
+    font-size: 7pt;
+    color: #aaa;
+    letter-spacing: 0.05em;
+}
 
-    /* ── Amount box ── */
-    .amount-box {
-        background: #f9fafb;
-        border: 1px solid #e7eaf3;
-        border-radius: 8px;
-        padding: 16px 20px;
-        margin-bottom: 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .amount-label {
-        font-size: 11px;
-        color: #6a7282;
-    }
-    .amount-value {
-        font-size: 22px;
-        font-weight: 700;
-        color: #101828;
-    }
+.copy-banner {
+    background: #2a3f6f;
+    color: #fff;
+    text-align: center;
+    font-size: 7.5pt;
+    font-weight: bold;
+    letter-spacing: 0.15em;
+    padding: 2.5mm 0;
+    border-radius: 2px;
+    margin-bottom: 4mm;
+}
 
-    /* ── Two-column grid ── */
-    .two-col {
-        display: table;
-        width: 100%;
-        margin-bottom: 20px;
-    }
-    .col-left, .col-right {
-        display: table-cell;
-        width: 50%;
-        vertical-align: top;
-    }
-    .col-right {
-        padding-left: 20px;
-    }
-    .detail-box {
-        border: 1px solid #e7eaf3;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .detail-box-header {
-        background: #f9fafb;
-        padding: 8px 14px;
-        border-bottom: 1px solid #e7eaf3;
-        font-size: 9px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6a7282;
-    }
-    .detail-box-body {
-        padding: 12px 14px;
-    }
-    .detail-box-body p {
-        font-size: 11px;
-        color: #101828;
-        margin-bottom: 4px;
-    }
-    .detail-box-body p:last-child {
-        margin-bottom: 0;
-    }
-    .detail-box-body .muted {
-        color: #6a7282;
-        font-size: 10px;
-    }
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3mm;
+    border-bottom: 1.5pt solid #2a3f6f;
+    padding-bottom: 2.5mm;
+}
 
-    /* ── Method badge ── */
-    .method-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 9999px;
-        font-size: 10px;
-        font-weight: 700;
-    }
-    .method-cash {
-        background: #f9fafb;
-        color: #6a7282;
-        border: 1px solid #e7eaf3;
-    }
-    .method-paystack {
-        background: #e6faff;
-        color: #0891b2;
-        border: 1px solid #cffafe;
-    }
+.school-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 3mm;
+    flex: 1;
+}
 
-    /* ── Footer ── */
-    .footer {
-        margin-top: 32px;
-        padding-top: 16px;
-        border-top: 1px solid #e7eaf3;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-    }
-    .footer-note {
-        font-size: 9px;
-        color: #99a1af;
-        max-width: 55%;
-    }
-    .signature-block {
-        text-align: center;
-    }
-    .signature-line {
-        width: 130px;
-        border-top: 1px solid #364153;
-        margin: 0 auto 4px;
-    }
-    .signature-label {
-        font-size: 9px;
-        color: #6a7282;
-        text-align: center;
-    }
+.school-logo {
+    width: 15mm;
+    height: 15mm;
+    object-fit: contain;
+}
+
+.school-name {
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #1a2d5a;
+    line-height: 1.2;
+}
+
+.school-motto {
+    font-style: italic;
+    font-size: 7.5pt;
+    color: #555;
+    margin-top: 1mm;
+}
+
+.school-contact {
+    font-size: 7pt;
+    color: #666;
+    margin-top: 1.5mm;
+}
+
+.receipt-meta {
+    text-align: right;
+    min-width: 48mm;
+}
+
+.receipt-title {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #2a3f6f;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.receipt-meta-rows {
+    margin-top: 1.5mm;
+    font-size: 7.5pt;
+}
+
+.receipt-meta-rows .rm-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 2mm;
+    padding: 0.3mm 0;
+}
+
+.rm-label { color: #666; }
+.rm-value  { font-weight: bold; color: #111; }
+
+.info-row {
+    border-bottom: 0.5pt solid #eee;
+    padding: 1.2mm 0;
+    display: flex;
+    gap: 2mm;
+    align-items: baseline;
+}
+
+.info-label {
+    font-size: 7.5pt;
+    color: #666;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.info-value {
+    font-size: 8pt;
+    font-weight: bold;
+    color: #111;
+}
+
+.fee-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2mm;
+}
+
+.fee-table th {
+    font-size: 7pt;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #fff;
+    background: #2a3f6f;
+    padding: 1.5mm 3mm;
+    text-align: left;
+    font-weight: bold;
+}
+
+.fee-table th.amt { text-align: right; }
+
+.fee-table td {
+    font-size: 8pt;
+    padding: 1mm 3mm;
+    border-bottom: 0.5pt solid #eee;
+    vertical-align: middle;
+}
+
+.fee-table td.amt {
+    text-align: right;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.fee-table tfoot td {
+    border-top: 1pt solid #2a3f6f;
+    border-bottom: none;
+    font-weight: bold;
+    background: #f0f4ff;
+    font-size: 8.5pt;
+    padding: 1.5mm 3mm;
+}
+
+.summary {
+    margin-top: 2mm;
+    border: 0.5pt solid #ddd;
+    border-radius: 2px;
+    padding: 1.5mm 3mm;
+}
+
+.s-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 8mm;
+}
+
+.s-cell {
+    font-size: 7.5pt;
+    padding: 0.5mm 0;
+    min-width: 45%;
+}
+
+.s-lbl { color: #666; }
+.s-val { font-weight: bold; color: #111; }
+
+.words-row {
+    font-size: 7.5pt;
+    margin-top: 1mm;
+    padding-top: 1mm;
+    border-top: 0.5pt solid #eee;
+}
+
+.words-row .s-lbl { color: #666; }
+.words-row .s-val { font-style: italic; color: #1a2d5a; font-weight: bold; }
+
+.balance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.2mm;
+    padding-top: 1.2mm;
+    border-top: 0.5pt solid #ddd;
+}
+
+.b-lbl { font-size: 7.5pt; color: #666; }
+.b-right { display: flex; align-items: center; gap: 2mm; }
+.b-amount { font-size: 9pt; font-weight: bold; }
+.b-amount.zero  { color: #2a7a4e; }
+.b-amount.owing { color: #c0392b; }
+
+.p-tag {
+    font-size: 6.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.8mm 2mm;
+    border-radius: 2px;
+}
+
+.p-tag.full    { background: #d4edda; color: #2a7a4e; }
+.p-tag.partial { background: #fde8e8; color: #c0392b; }
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 2.5mm;
+    padding-top: 2mm;
+    border-top: 0.5pt solid #ddd;
+}
+
+.officer-block .o-lbl { font-size: 7pt; color: #666; }
+.officer-block .o-name { font-size: 7.5pt; font-weight: bold; color: #111; margin-top: 0.5mm; }
+
+.sig-boxes { display: flex; gap: 4mm; }
+
+.sig-box { text-align: center; width: 28mm; }
+
+.sig-area {
+    height: 9mm;
+    width: 100%;
+    border: 0.5pt dashed #bbb;
+    border-radius: 2px;
+    margin-bottom: 0.8mm;
+}
+
+.sig-cap { font-size: 6pt; color: #999; }
 </style>
 </head>
 <body>
 
-{{-- ── Header ── --}}
-<div class="header">
-    <div>
-        @if($logoBase64)
-            <img src="{{ $logoBase64 }}" class="school-logo" alt="School Logo">
-        @endif
-        <div class="school-info">
-            <div class="school-name">{{ $schoolProfile?->school_name ?? tenant('name') ?? 'School' }}</div>
-            @if($schoolProfile?->address)
-                <div class="school-sub">{{ $schoolProfile->address }}</div>
+@php
+    $currency = $schoolProfile?->currency_symbol ?? 'GHS';
+    $fmt = fn(float $v) => $currency . ' ' . number_format($v, 2);
+
+    $contactParts = array_filter([
+        $schoolProfile?->phone  ? 'Tel: ' . $schoolProfile->phone  : null,
+        $schoolProfile?->email  ? 'Email: ' . $schoolProfile->email : null,
+        $schoolProfile?->address ?? null,
+    ]);
+    $contactLine   = implode(' · ', $contactParts);
+    $isFullPayment = $paymentLabel === 'Full Payment';
+@endphp
+
+@for($copy = 1; $copy <= 2; $copy++)
+<div class="copy">
+
+    <div class="copy-banner">
+        @if($copy === 1) — SCHOOL COPY — @else — PARENT / CLIENT COPY — @endif
+    </div>
+
+    {{-- Header --}}
+    <div class="header">
+        <div class="school-block">
+            @if($logoBase64)
+            <img src="{{ $logoBase64 }}" alt="" class="school-logo">
             @endif
-            @if($schoolProfile?->phone || $schoolProfile?->email)
-                <div class="school-sub">
-                    @if($schoolProfile->phone){{ $schoolProfile->phone }}@endif
-                    @if($schoolProfile->phone && $schoolProfile->email) &nbsp;&middot;&nbsp; @endif
-                    @if($schoolProfile->email){{ $schoolProfile->email }}@endif
-                </div>
-            @endif
-        </div>
-    </div>
-    <div class="receipt-title">
-        <h1>RECEIPT</h1>
-        <div class="receipt-no"># {{ $receiptNo }}</div>
-        <div class="receipt-date">{{ $payment->paid_at?->format('d M Y, h:i A') }}</div>
-    </div>
-</div>
-
-{{-- ── Paid banner ── --}}
-<div class="status-banner">
-    <span class="status-dot"></span>
-    <span class="status-text">PAYMENT CONFIRMED</span>
-</div>
-
-{{-- ── Amount box ── --}}
-<div class="amount-box">
-    <div>
-        <div class="amount-label">Amount Paid</div>
-        <div style="font-size: 10px; color: #6a7282; margin-top: 2px;">{{ $payment->feeStructure?->fee_item ?? 'Fee Payment' }}</div>
-    </div>
-    <div class="amount-value">{{ format_money((float) $payment->amount, $currencySymbol) }}</div>
-</div>
-
-{{-- ── Two-column: Student | Payment info ── --}}
-<div class="two-col">
-    <div class="col-left">
-        <div class="detail-box">
-            <div class="detail-box-header">Student Details</div>
-            <div class="detail-box-body">
-                <p style="font-weight: 700; font-size: 12px;">{{ $payment->student?->full_name ?? '—' }}</p>
-                <p class="muted">Adm No: {{ $payment->student?->admission_no ?? '—' }}</p>
-                <p class="muted">{{ $payment->student?->schoolClass?->name ?? '' }}{{ $payment->student?->section ? ' &middot; ' . $payment->student->section->name : '' }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-right">
-        <div class="detail-box">
-            <div class="detail-box-header">Payment Details</div>
-            <div class="detail-box-body">
-                <p>
-                    Method:&nbsp;
-                    @if($payment->payment_method === 'paystack')
-                        <span class="method-badge method-paystack">Paystack</span>
-                    @else
-                        <span class="method-badge method-cash">Cash</span>
-                    @endif
-                </p>
-                @if($payment->paystack_ref)
-                    <p class="muted" style="margin-top: 4px;">Ref: {{ $payment->paystack_ref }}</p>
+            <div>
+                <div class="school-name">{{ $schoolProfile?->school_name ?? 'School Name' }}</div>
+                @if($schoolProfile?->motto)
+                <div class="school-motto">{{ $schoolProfile->motto }}</div>
                 @endif
-                @if($payment->recordedBy)
-                    <p class="muted" style="margin-top: 4px;">Recorded by: {{ $payment->recordedBy->name }}</p>
-                @endif
-                @php
-                    $fs = $payment->feeStructure;
-                @endphp
-                @if($fs?->term)
-                    <p class="muted" style="margin-top: 4px;">Term: {{ $fs->term->name }}{{ $fs->term->academicYear ? ' (' . $fs->term->academicYear->name . ')' : '' }}</p>
+                @if($contactLine)
+                <div class="school-contact">{{ $contactLine }}</div>
                 @endif
             </div>
         </div>
-    </div>
-</div>
 
-{{-- ── Fee details table ── --}}
-<div class="section-heading">Fee Breakdown</div>
-<table class="detail-table">
-    <tr>
-        <td class="detail-label">Fee Item</td>
-        <td class="detail-value">{{ $payment->feeStructure?->fee_item ?? '—' }}</td>
-    </tr>
-    <tr>
-        <td class="detail-label">Total Fee Amount</td>
-        <td class="detail-value">{{ format_money((float) ($payment->feeStructure?->amount ?? 0), $currencySymbol) }}</td>
-    </tr>
-    <tr>
-        <td class="detail-label">Amount Paid (this receipt)</td>
-        <td class="detail-value" style="color: #007a55; font-weight: 700;">{{ format_money((float) $payment->amount, $currencySymbol) }}</td>
-    </tr>
-    @if($fs?->due_date)
-    <tr>
-        <td class="detail-label">Due Date</td>
-        <td class="detail-value">{{ $fs->due_date->format('d M Y') }}</td>
-    </tr>
-    @endif
-</table>
+        <div class="receipt-meta">
+            <div class="receipt-title">Official Receipt</div>
+            <div class="receipt-meta-rows">
+                <div class="rm-row"><span class="rm-label">No:&nbsp;</span><span class="rm-value">{{ $receiptNumber }}</span></div>
+                @if($student?->admission_no)
+                <div class="rm-row"><span class="rm-label">Student ID:&nbsp;</span><span class="rm-value">{{ $student->admission_no }}</span></div>
+                @endif
+                <div class="rm-row"><span class="rm-label">Date:&nbsp;</span><span class="rm-value">{{ $paidAt->format('d/m/Y g:iA') }}</span></div>
+            </div>
+        </div>
+    </div>
 
-{{-- ── Footer ── --}}
-<div class="footer">
-    <div class="footer-note">
-        This is an official fee receipt issued by {{ $schoolProfile?->school_name ?? 'the school' }}.
-        Please keep this receipt for your records.
-        For queries, contact the school's accounts office.
+    {{-- Received From / Description --}}
+    <div class="info-row">
+        <span class="info-label">Received From:</span>
+        <span class="info-value">{{ $student?->full_name ?? '—' }}</span>
     </div>
-    <div class="signature-block">
-        <div class="signature-line"></div>
-        <div class="signature-label">Authorised Signature</div>
+    <div class="info-row" style="margin-bottom:1.5mm;">
+        <span class="info-label">Amount in respect of:</span>
+        <span class="info-value">{{ $description }}</span>
     </div>
+
+    {{-- Fee items table --}}
+    <table class="fee-table">
+        <thead>
+            <tr>
+                <th>Fee Item</th>
+                <th class="amt">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($feeLines as $line)
+            <tr>
+                <td>{{ $line['fee_item'] }}</td>
+                <td class="amt">{{ $fmt($line['amount']) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>Total Amount Paid</td>
+                <td class="amt">{{ $fmt($totalAmount) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    {{-- Summary --}}
+    <div class="summary">
+        <div class="s-grid">
+            <div class="s-cell"><span class="s-lbl">Pay Method: </span><span class="s-val">{{ ucfirst($method) }}</span></div>
+            <div class="s-cell"><span class="s-lbl">Academic Year: </span><span class="s-val">{{ $academicYearName ?: '—' }}</span></div>
+            <div class="s-cell"><span class="s-lbl">Class: </span><span class="s-val">{{ $className ?: '—' }}</span></div>
+            <div class="s-cell"><span class="s-lbl">Date: </span><span class="s-val">{{ $paidAt->format('d/m/Y') }}</span></div>
+            <div class="s-cell"><span class="s-lbl">Amount: </span><span class="s-val">{{ $fmt($totalAmount) }}</span></div>
+        </div>
+        <div class="words-row">
+            <span class="s-lbl">Amount in Words: </span>
+            <span class="s-val">{{ $amountInWords }}</span>
+        </div>
+        <div class="balance-row">
+            <span class="b-lbl">Remaining Balance:</span>
+            <div class="b-right">
+                <span class="b-amount {{ $currentBalance <= 0 ? 'zero' : 'owing' }}">{{ $fmt($currentBalance) }}</span>
+                <span class="p-tag {{ $isFullPayment ? 'full' : 'partial' }}">{{ $paymentLabel }}</span>
+            </div>
+        </div>
+    </div>
+
+    {{-- Footer --}}
+    <div class="footer">
+        <div class="officer-block">
+            <div class="o-lbl">Accounts Officer</div>
+            <div class="o-name">{{ $accountOfficer ?? '________________________' }}</div>
+        </div>
+        <div class="sig-boxes">
+            <div class="sig-box">
+                <div class="sig-area"></div>
+                <div class="sig-cap">Signature</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-area"></div>
+                <div class="sig-cap">Official Stamp</div>
+            </div>
+        </div>
+    </div>
+
 </div>
+@if($copy === 1)
+<div class="cut-line"><span>✂ CUT HERE</span></div>
+@endif
+@endfor
 
 </body>
 </html>

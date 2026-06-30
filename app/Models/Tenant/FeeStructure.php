@@ -15,6 +15,7 @@ final class FeeStructure extends Model
     use HasUuids, LogsActivity;
 
     protected $fillable = [
+        'fee_bundle_id',
         'billing_cycle',
         'academic_year_id',
         'term_id',
@@ -30,6 +31,11 @@ final class FeeStructure extends Model
         'due_date'     => 'date',
         'is_mandatory' => 'boolean',
     ];
+
+    public function bundle(): BelongsTo
+    {
+        return $this->belongsTo(FeeBundle::class, 'fee_bundle_id');
+    }
 
     public function term(): BelongsTo
     {
