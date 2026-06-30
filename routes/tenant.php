@@ -355,6 +355,8 @@ Route::domain('{subdomain}.' . $appHost)
             });
             Route::middleware('permission:payroll.edit')->group(function () {
                 Route::patch('/payroll/salary/{staff}', [PayrollController::class, 'updateSalaryStructure'])->name('payroll.salary.update');
+                Route::post('/payroll/components', [PayrollController::class, 'storeComponent'])->name('payroll.component.store');
+                Route::delete('/payroll/components/{component}', [PayrollController::class, 'destroyComponent'])->name('payroll.component.destroy');
             });
             Route::middleware('permission:payroll.create')->group(function () {
                 Route::post('/payroll/run', [PayrollController::class, 'runPayroll'])->name('payroll.run');

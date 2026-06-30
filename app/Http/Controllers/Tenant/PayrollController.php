@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\PayrollItem;
 use App\Models\Tenant\PayrollRun;
+use App\Models\Tenant\SalaryComponent;
 use App\Models\Tenant\SalaryStructure;
 use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Staff;
@@ -36,41 +37,57 @@ final class PayrollController extends Controller
             ->orderBy('month', 'desc')
             ->paginate(12);
 
-        return view('tenant.payroll.index', compact('staffWithStructures', 'runs'));
+        $salaryComponents = SalaryComponent::orderBy('type')->orderBy('name')->get();
+
+        return view('tenant.payroll.index', compact('staffWithStructures', 'runs', 'salaryComponents'));
     }
 
     public function updateSalaryStructure(Request $request, Staff $staff): RedirectResponse
     {
         $data = $request->validate([
-            'gross'                => ['required', 'numeric', 'min:0'],
-            'effective_from'       => ['nullable', 'date'],
-            'allowances'           => ['nullable', 'array'],
-            'allowances.housing'   => ['nullable', 'numeric', 'min:0'],
-            'allowances.transport' => ['nullable', 'numeric', 'min:0'],
-            'allowances.medical'   => ['nullable', 'numeric', 'min:0'],
-            'allowances.other'     => ['nullable', 'numeric', 'min:0'],
-            'deductions'           => ['nullable', 'array'],
-            'deductions.tax'       => ['nullable', 'numeric', 'min:0'],
-            'deductions.pension'   => ['nullable', 'numeric', 'min:0'],
-            'deductions.loan'      => ['nullable', 'numeric', 'min:0'],
-            'deductions.other'     => ['nullable', 'numeric', 'min:0'],
+            'gross'          => ['required', 'numeric', 'min:0'],
+            'effective_from' => ['nullable', 'date'],
+            'allowances'     => ['nullable', 'array'],
+            'allowances.*'   => ['nullable', 'numeric', 'min:0'],
+            'deductions'     => ['nullable', 'array'],
+            'deductions.*'   => ['nullable', 'numeric', 'min:0'],
         ]);
-
-        $defaultAllowances = ['housing' => 0, 'transport' => 0, 'medical' => 0, 'other' => 0];
-        $defaultDeductions = ['tax' => 0, 'pension' => 0, 'loan' => 0, 'other' => 0];
 
         SalaryStructure::updateOrCreate(
             ['staff_id' => $staff->id],
             [
                 'gross'          => $data['gross'],
                 'effective_from' => $data['effective_from'] ?? null,
-                'allowances'     => array_map('floatval', array_merge($defaultAllowances, $data['allowances'] ?? [])),
-                'deductions'     => array_map('floatval', array_merge($defaultDeductions, $data['deductions'] ?? [])),
+                'allowances'     => array_map('floatval', $data['allowances'] ?? []),
+                'deductions'     => array_map('floatval', $data['deductions'] ?? []),
             ]
         );
 
         return redirect(request()->getSchemeAndHttpHost() . '/payroll')
             ->with('success', "Salary structure updated for {$staff->full_name}.");
+    }
+
+    public function storeComponent(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'type'           => ['required', 'in:allowance,deduction'],
+            'name'           => ['required', 'string', 'max:100'],
+            'default_amount' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        SalaryComponent::create($data);
+
+        return redirect(request()->getSchemeAndHttpHost() . '/payroll?tab=components')
+            ->with('success', ucfirst($data['type']) . " \"{$data['name']}\" added.");
+    }
+
+    public function destroyComponent(SalaryComponent $component): RedirectResponse
+    {
+        $label = $component->name;
+        $component->delete();
+
+        return redirect(request()->getSchemeAndHttpHost() . '/payroll?tab=components')
+            ->with('success', "\"{$label}\" removed.");
     }
 
     public function runPayroll(Request $request): RedirectResponse

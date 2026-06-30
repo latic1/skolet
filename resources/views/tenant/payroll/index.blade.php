@@ -4,28 +4,30 @@
 
 @section('content')
 @php $host = request()->getSchemeAndHttpHost(); @endphp
+<script>
+window.__salaryComponents = {!! Js::from($salaryComponents->map(fn($c) => ['id' => $c->id, 'type' => $c->type, 'name' => $c->name, 'default_amount' => (float)$c->default_amount])->values()) !!};
+</script>
 
 <div class="flex flex-col gap-6"
      x-data="{
-         tab: '{{ request()->get('tab', 'salary') }}',
+         tab: '{{ in_array(request()->get('tab'), ['salary','runs','components']) ? request()->get('tab') : 'salary' }}',
 
          editModal: false,
          editStaffId: null,
          editStaffName: '',
-         editForm: {
-             gross: 0,
-             effective_from: '',
-             allowances: { housing: 0, transport: 0, medical: 0, other: 0 },
-             deductions: { tax: 0, pension: 0, loan: 0, other: 0 }
-         },
+         editForm: { gross: 0, effective_from: '', allowances: {}, deductions: {} },
+
+         get allowanceComponents() { return (window.__salaryComponents || []).filter(c => c.type === 'allowance'); },
+         get deductionComponents() { return (window.__salaryComponents || []).filter(c => c.type === 'deduction'); },
+
          openEdit(data) {
              this.editStaffId   = data.staff_id;
              this.editStaffName = data.staff_name;
              this.editForm = {
                  gross:          data.gross ?? 0,
                  effective_from: data.effective_from ?? '',
-                 allowances:     data.allowances ?? { housing: 0, transport: 0, medical: 0, other: 0 },
-                 deductions:     data.deductions ?? { tax: 0, pension: 0, loan: 0, other: 0 }
+                 allowances:     data.allowances ?? {},
+                 deductions:     data.deductions ?? {}
              };
              this.editModal = true;
          },
@@ -87,6 +89,11 @@
                     class="border-b-2 pb-3 text-sm font-medium transition-colors">
                 Payroll Runs
             </button>
+            <button type="button" @click="tab = 'components'"
+                    :class="tab === 'components' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'"
+                    class="border-b-2 pb-3 text-sm font-medium transition-colors">
+                Salary Components
+            </button>
         </nav>
     </div>
 
@@ -146,8 +153,8 @@
                                         staff_name:     @js($staff->full_name),
                                         gross:          {{ $s?->gross ?? 0 }},
                                         effective_from: '{{ $s?->effective_from?->format('Y-m-d') ?? '' }}',
-                                        allowances:     @js($s?->allowances ?? ['housing' => 0, 'transport' => 0, 'medical' => 0, 'other' => 0]),
-                                        deductions:     @js($s?->deductions ?? ['tax' => 0, 'pension' => 0, 'loan' => 0, 'other' => 0])
+                                        allowances:     @js($s?->allowances ?? []),
+                                        deductions:     @js($s?->deductions ?? [])
                                     })"
                                     class="text-xs font-medium text-accent hover:underline">
                                 {{ $s ? 'Edit' : 'Set Up' }}
@@ -371,6 +378,135 @@
         @endif
     </div>
 
+    {{-- ====================== Salary Components Tab ====================== --}}
+    <div x-show="tab === 'components'" x-cloak>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {{-- Allowances --}}
+            <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
+                <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+                    <p class="text-sm font-semibold text-text-primary">Allowances</p>
+                    <span class="text-xs text-success font-medium">+ Adds to gross</span>
+                </div>
+
+                @php $allowances = $salaryComponents->where('type', 'allowance'); @endphp
+
+                @if($allowances->isEmpty())
+                <div class="px-5 py-6 text-center">
+                    <p class="text-sm text-text-muted">No allowances yet</p>
+                </div>
+                @else
+                <ul class="divide-y divide-border">
+                    @foreach($allowances as $comp)
+                    <li class="flex items-center justify-between px-5 py-3">
+                        <div>
+                            <p class="text-sm font-medium text-text-primary">{{ $comp->name }}</p>
+                            <p class="text-xs text-text-muted">Default: {{ format_money((float)$comp->default_amount, $currencySymbol) }}</p>
+                        </div>
+                        @can('payroll.edit')
+                        <form method="POST" action="{{ $host }}/payroll/components/{{ $comp->id }}">
+                            @csrf @method('DELETE')
+                            <button type="submit" onclick="return confirm('Remove {{ addslashes($comp->name) }}?')"
+                                    class="text-xs text-error hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-error-light transition-colors">
+                                Remove
+                            </button>
+                        </form>
+                        @endcan
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+
+                @can('payroll.edit')
+                <div class="px-5 py-4 border-t border-border bg-surface-secondary">
+                    <form method="POST" action="{{ $host }}/payroll/components" class="flex items-end gap-2">
+                        @csrf
+                        <input type="hidden" name="type" value="allowance">
+                        <div class="flex-1">
+                            <label class="block text-xs text-text-muted mb-1">Name</label>
+                            <input type="text" name="name" placeholder="e.g. Transport"
+                                   class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                   required>
+                        </div>
+                        <div class="w-28">
+                            <label class="block text-xs text-text-muted mb-1">Default Amount</label>
+                            <input type="number" name="default_amount" placeholder="0.00" min="0" step="0.01"
+                                   class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                   required>
+                        </div>
+                        <button type="submit"
+                                class="px-3 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-lg hover:bg-accent-dark transition-colors shrink-0">
+                            Add
+                        </button>
+                    </form>
+                </div>
+                @endcan
+            </div>
+
+            {{-- Deductions --}}
+            <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
+                <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+                    <p class="text-sm font-semibold text-text-primary">Deductions</p>
+                    <span class="text-xs text-error font-medium">− Subtracted from gross</span>
+                </div>
+
+                @php $deductions = $salaryComponents->where('type', 'deduction'); @endphp
+
+                @if($deductions->isEmpty())
+                <div class="px-5 py-6 text-center">
+                    <p class="text-sm text-text-muted">No deductions yet</p>
+                </div>
+                @else
+                <ul class="divide-y divide-border">
+                    @foreach($deductions as $comp)
+                    <li class="flex items-center justify-between px-5 py-3">
+                        <div>
+                            <p class="text-sm font-medium text-text-primary">{{ $comp->name }}</p>
+                            <p class="text-xs text-text-muted">Default: {{ format_money((float)$comp->default_amount, $currencySymbol) }}</p>
+                        </div>
+                        @can('payroll.edit')
+                        <form method="POST" action="{{ $host }}/payroll/components/{{ $comp->id }}">
+                            @csrf @method('DELETE')
+                            <button type="submit" onclick="return confirm('Remove {{ addslashes($comp->name) }}?')"
+                                    class="text-xs text-error hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-error-light transition-colors">
+                                Remove
+                            </button>
+                        </form>
+                        @endcan
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+
+                @can('payroll.edit')
+                <div class="px-5 py-4 border-t border-border bg-surface-secondary">
+                    <form method="POST" action="{{ $host }}/payroll/components" class="flex items-end gap-2">
+                        @csrf
+                        <input type="hidden" name="type" value="deduction">
+                        <div class="flex-1">
+                            <label class="block text-xs text-text-muted mb-1">Name</label>
+                            <input type="text" name="name" placeholder="e.g. Tax"
+                                   class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                   required>
+                        </div>
+                        <div class="w-28">
+                            <label class="block text-xs text-text-muted mb-1">Default Amount</label>
+                            <input type="number" name="default_amount" placeholder="0.00" min="0" step="0.01"
+                                   class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                   required>
+                        </div>
+                        <button type="submit"
+                                class="px-3 py-2 text-sm font-medium bg-accent text-accent-foreground rounded-lg hover:bg-accent-dark transition-colors shrink-0">
+                            Add
+                        </button>
+                    </form>
+                </div>
+                @endcan
+            </div>
+
+        </div>
+    </div>
+
     {{-- ====================== Edit Salary Structure Modal ====================== --}}
     <div x-show="editModal" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -407,29 +543,41 @@
 
                 <div>
                     <p class="text-xs font-semibold text-success uppercase tracking-wide mb-2">Allowances (+)</p>
+                    <template x-if="allowanceComponents.length === 0">
+                        <p class="text-xs text-text-muted italic">No allowances defined. Add them in the Salary Components tab.</p>
+                    </template>
                     <div class="grid grid-cols-2 gap-3">
-                        @foreach(['housing' => 'Housing', 'transport' => 'Transport', 'medical' => 'Medical', 'other' => 'Other'] as $key => $label)
-                        <div>
-                            <label class="block text-xs text-text-muted mb-1">{{ $label }}</label>
-                            <input type="number" name="allowances[{{ $key }}]"
-                                   x-model="editForm.allowances.{{ $key }}" min="0" step="0.01"
-                                   class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
-                        </div>
-                        @endforeach
+                        <template x-for="comp in allowanceComponents" :key="comp.id">
+                            <div>
+                                <label class="block text-xs text-text-muted mb-1" x-text="comp.name"></label>
+                                <input type="number"
+                                       :name="`allowances[${comp.name}]`"
+                                       :value="editForm.allowances[comp.name] ?? comp.default_amount"
+                                       @input="editForm.allowances[comp.name] = parseFloat($event.target.value) || 0"
+                                       min="0" step="0.01"
+                                       class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+                            </div>
+                        </template>
                     </div>
                 </div>
 
                 <div>
                     <p class="text-xs font-semibold text-error uppercase tracking-wide mb-2">Deductions (−)</p>
+                    <template x-if="deductionComponents.length === 0">
+                        <p class="text-xs text-text-muted italic">No deductions defined. Add them in the Salary Components tab.</p>
+                    </template>
                     <div class="grid grid-cols-2 gap-3">
-                        @foreach(['tax' => 'Tax', 'pension' => 'Pension', 'loan' => 'Loan', 'other' => 'Other'] as $key => $label)
-                        <div>
-                            <label class="block text-xs text-text-muted mb-1">{{ $label }}</label>
-                            <input type="number" name="deductions[{{ $key }}]"
-                                   x-model="editForm.deductions.{{ $key }}" min="0" step="0.01"
-                                   class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
-                        </div>
-                        @endforeach
+                        <template x-for="comp in deductionComponents" :key="comp.id">
+                            <div>
+                                <label class="block text-xs text-text-muted mb-1" x-text="comp.name"></label>
+                                <input type="number"
+                                       :name="`deductions[${comp.name}]`"
+                                       :value="editForm.deductions[comp.name] ?? comp.default_amount"
+                                       @input="editForm.deductions[comp.name] = parseFloat($event.target.value) || 0"
+                                       min="0" step="0.01"
+                                       class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+                            </div>
+                        </template>
                     </div>
                 </div>
 
