@@ -141,6 +141,8 @@ final class ReceiptService
     ): array {
         $receiptNumber = $this->generateReceiptNumber();
 
+        $payment = null;
+
         try {
             $payment = FeePayment::create([
                 'receipt_number'   => $receiptNumber,
@@ -152,15 +154,15 @@ final class ReceiptService
                 'recorded_by'      => Auth::id(),
                 'paid_at'          => now(),
             ]);
-
-            $this->sendNotification($student, $payment);
-
-            return ['success' => true, 'receipt_number' => $receiptNumber, 'total_allocated' => $amount, 'error' => null];
         } catch (\Throwable $e) {
             Log::error('[ReceiptService::recordStandalonePayment] ' . $e->getMessage());
 
             return ['success' => false, 'receipt_number' => null, 'total_allocated' => 0, 'error' => 'Could not record payment. Please try again.'];
         }
+
+        $this->sendNotification($student, $payment);
+
+        return ['success' => true, 'receipt_number' => $receiptNumber, 'total_allocated' => $amount, 'error' => null];
     }
 
     // -------------------------------------------------------------------------
@@ -335,9 +337,15 @@ final class ReceiptService
         }
 
         $profile = SchoolProfile::first();
-        if ($profile?->isNotificationEnabled('payment_confirmation') && $student->guardian_email) {
+        if (! $profile?->isNotificationEnabled('payment_confirmation') || ! $student->guardian_email) {
+            return;
+        }
+
+        try {
             Notification::route('mail', $student->guardian_email)
                 ->notify(new PaymentConfirmation($payment));
+        } catch (\Throwable $e) {
+            Log::warning('[ReceiptService] Payment confirmation email failed: ' . $e->getMessage());
         }
     }
 }

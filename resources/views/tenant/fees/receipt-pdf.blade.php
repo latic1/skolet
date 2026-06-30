@@ -288,10 +288,6 @@ body {
 @for($copy = 1; $copy <= 2; $copy++)
 <div class="copy">
 
-    <div class="copy-banner">
-        @if($copy === 1) — SCHOOL COPY — @else — PARENT / CLIENT COPY — @endif
-    </div>
-
     {{-- Header --}}
     <div class="header">
         <div class="school-block">
