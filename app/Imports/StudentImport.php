@@ -127,24 +127,28 @@ final class StudentImport implements ToCollection, WithHeadingRow
         }
 
         // ── Pass 2: import all rows in a single transaction ───────────────────
-        DB::transaction(function () use ($rowsToInsert): void {
-            $year   = now()->year;
-            $prefix = $year . '/';
+        // A named advisory lock serialises concurrent import jobs so they cannot
+        // both read the same max sequence and race to produce duplicate numbers.
+        $year    = now()->year;
+        $lockKey = "admission_seq_{$year}";
+        DB::statement('DO GET_LOCK(?, 30)', [$lockKey]);
+        try {
+            DB::transaction(function () use ($rowsToInsert, $year): void {
+                $prefix   = $year . '/';
+                $last     = Student::where('admission_no', 'like', $prefix . '%')
+                    ->orderByDesc('admission_no')
+                    ->value('admission_no');
+                $sequence = $last ? ((int) substr($last, -4)) + 1 : 1;
 
-            // Read the current max sequence once before the loop.
-            // Querying inside the loop hits MySQL's REPEATABLE READ snapshot and
-            // returns the same value every iteration, producing duplicate numbers.
-            $last     = Student::where('admission_no', 'like', $prefix . '%')
-                ->orderByDesc('admission_no')
-                ->value('admission_no');
-            $sequence = $last ? ((int) substr($last, -4)) + 1 : 1;
-
-            foreach ($rowsToInsert as $data) {
-                $data['admission_no'] = $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
-                Student::create($data);
-                $sequence++;
-                $this->imported++;
-            }
-        });
+                foreach ($rowsToInsert as $data) {
+                    $data['admission_no'] = $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+                    Student::create($data);
+                    $sequence++;
+                    $this->imported++;
+                }
+            });
+        } finally {
+            DB::statement('DO RELEASE_LOCK(?)', [$lockKey]);
+        }
     }
 }
