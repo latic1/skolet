@@ -439,17 +439,60 @@ window.__feesPage = {
                 </div>
             </div>
             @elseif(!$searchQuery)
-            {{-- Empty state: no search yet --}}
+            {{-- Recent payments --}}
             <div class="bg-surface border border-border rounded-2xl shadow-card">
-                <div class="flex flex-col items-center justify-center py-16 px-6 text-center">
-                    <div class="w-12 h-12 rounded-xl bg-accent-muted flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                    </div>
-                    <p class="text-sm font-medium text-text-primary mb-1">Search for a student</p>
-                    <p class="text-xs text-text-muted">Enter a student name or admission number above to view their fee items</p>
+                <div class="px-6 py-4 border-b border-border flex items-center justify-between">
+                    <p class="text-sm font-semibold text-text-primary">Recent Payments</p>
+                    @if($recentPayments->isNotEmpty())
+                    <span class="text-xs text-text-muted">Last {{ $recentPayments->count() }} transactions</span>
+                    @endif
                 </div>
+                @if($recentPayments->isEmpty())
+                <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
+                    <p class="text-sm font-medium text-text-primary mb-1">No payments recorded yet</p>
+                    <p class="text-xs text-text-muted">Payments will appear here once fees are collected</p>
+                </div>
+                @else
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-border bg-surface-secondary">
+                                <th class="text-left px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wide">Student</th>
+                                <th class="text-left px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wide">Fee Item</th>
+                                <th class="text-right px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wide">Amount</th>
+                                <th class="text-left px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wide">Method</th>
+                                <th class="text-left px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wide">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            @foreach($recentPayments as $payment)
+                            <tr class="hover:bg-surface-secondary transition-colors">
+                                <td class="px-5 py-3">
+                                    <a href="{{ $host }}/fees?student_id={{ $payment->student_id }}&tab=collection"
+                                       class="flex items-center gap-2.5 group">
+                                        <div class="w-7 h-7 rounded-lg bg-accent-muted flex items-center justify-center shrink-0">
+                                            <span class="text-xs font-semibold text-accent">{{ strtoupper(substr($payment->student?->full_name ?? '?', 0, 1)) }}</span>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-text-primary group-hover:text-accent truncate">{{ $payment->student?->full_name ?? '—' }}</p>
+                                            <p class="text-xs text-text-muted">{{ $payment->student?->schoolClass?->name ?? '—' }}</p>
+                                        </div>
+                                    </a>
+                                </td>
+                                <td class="px-5 py-3 text-sm text-text-secondary">{{ $payment->feeStructure?->fee_item ?? '—' }}</td>
+                                <td class="px-5 py-3 text-sm font-semibold text-success-foreground text-right">{{ format_money((float)$payment->amount, $currencySymbol) }}</td>
+                                <td class="px-5 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-secondary text-text-secondary capitalize">
+                                        {{ $payment->payment_method ?? 'cash' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3 text-sm text-text-muted whitespace-nowrap">{{ $payment->paid_at?->format('d M Y, H:i') ?? $payment->created_at->format('d M Y, H:i') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @endif
             </div>
             @endif
 

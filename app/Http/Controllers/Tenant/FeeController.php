@@ -382,11 +382,16 @@ final class FeeController extends Controller
 
         $activeTab = $request->input('tab', 'collection');
 
+        $recentPayments = FeePayment::with(['student.schoolClass', 'feeStructure'])
+            ->orderByDesc('paid_at')
+            ->limit(15)
+            ->get();
+
         return view('tenant.fees.index', compact(
             'feeStructures', 'classes', 'terms',
             'searchQuery', 'searchResults', 'selectedStudent', 'feeItems',
             'filterTermId', 'activeTab', 'currentYear', 'currentYearTerms', 'currentTerm',
-            'academicYears', 'structureYearId'
+            'academicYears', 'structureYearId', 'recentPayments'
         ));
     }
 
