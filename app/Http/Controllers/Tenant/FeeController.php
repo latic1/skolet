@@ -469,9 +469,7 @@ final class FeeController extends Controller
         }
 
         $data     = compact('student', 'term', 'feeItems', 'arrearsTotal', 'schoolProfile', 'logoBase64', 'accountOfficer');
-        // Custom short page (A4 width, ~200mm tall) so a single-copy bill
-        // doesn't leave a large blank gap below the footer note.
-        $pdf      = Pdf::loadView('tenant.fees.term-bill-pdf', $data)->setPaper([0, 0, 595.28, 566.93], 'portrait');
+        $pdf      = Pdf::loadView('tenant.fees.term-bill-pdf', $data)->setPaper('a4', 'portrait');
         $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $student->full_name);
         $safeTerm = $term ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $term->name) : 'all';
 
