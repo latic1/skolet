@@ -22,7 +22,7 @@ final class TranscriptController extends Controller
     {
         $user = Auth::user();
 
-        $isAdmin     = $user->can('students.view');
+        $isAdmin     = $user->can('students.view') && Student::visibleTo($user)->whereKey($student->id)->exists();
         $isOwn       = $student->user_id && $student->user_id === $user->id;
         $isParent    = !$isAdmin && !$isOwn && $student->parents()->where('user_id', $user->id)->exists();
 

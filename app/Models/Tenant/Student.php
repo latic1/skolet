@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -68,6 +69,20 @@ final class Student extends Model
         return $this->belongsToMany(User::class, 'parent_student', 'student_id', 'user_id')
             ->withPivot('relationship')
             ->withTimestamps();
+    }
+
+    /**
+     * Restricts to students visible to the given user: unrestricted for
+     * users with settings.manage (school admin), scoped to assigned
+     * classes for teachers and other non-admin roles.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->can('settings.manage')) {
+            return $query;
+        }
+
+        return $query->whereIn('class_id', $user->staffAssignedClassIds());
     }
 
     public function getActivitylogOptions(): LogOptions

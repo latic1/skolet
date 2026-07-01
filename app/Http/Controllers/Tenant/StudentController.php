@@ -36,10 +36,14 @@ final class StudentController extends Controller
     ) {}
     public function index(): View
     {
-        $classes = SchoolClass::with('sections')->orderBy('order')->orderBy('name')->get();
+        $user = Auth::user();
+
+        $classes = SchoolClass::with('sections')
+            ->when(!$user->can('settings.manage'), fn ($q) => $q->whereIn('id', $user->staffAssignedClassIds()))
+            ->orderBy('order')->orderBy('name')->get();
         $anyClassHasSections = $classes->some(fn ($c) => $c->sections->isNotEmpty());
 
-        $query = Student::with(['schoolClass', 'section'])->orderBy('full_name');
+        $query = Student::with(['schoolClass', 'section'])->visibleTo($user)->orderBy('full_name');
 
         if (request()->filled('class_id')) {
             $query->where('class_id', request('class_id'));
@@ -138,6 +142,8 @@ final class StudentController extends Controller
 
     public function show(Student $student): View
     {
+        abort_unless(Student::visibleTo(Auth::user())->whereKey($student->id)->exists(), 403);
+
         $student->load(['schoolClass', 'section', 'user', 'parents']);
 
         $disciplinaryRecords = $student->disciplinaryRecords()->with('reportedBy')->get();

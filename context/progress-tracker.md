@@ -1857,6 +1857,20 @@ Already complete when this session ran. No new files created. Verified working s
 
 ---
 
+### 2026-07-01 — Bug Fix: Teachers could view students outside their assigned classes
+
+**Root cause**: `students.view` permission gated the route, but the students index/show queries never checked which classes a teacher is actually assigned to (via `SubjectTeacherAssignment`) — only `class_id` query-string filtering was applied, which is optional and client-supplied.
+
+**Fix:**
+- `User::staffAssignedClassIds()` (`app/Models/Tenant/User.php`) — resolves the user's `Staff` row and returns the distinct `class_id`s from `subject_teacher_assignments`; empty collection for non-staff/no-assignment users.
+- `Student::scopeVisibleTo($query, $user)` (`app/Models/Tenant/Student.php`) — no-op for users with `settings.manage` (school_admin), otherwise `whereIn('class_id', $user->staffAssignedClassIds())`.
+- `StudentController::index()` — class filter dropdown and student query both scoped via the above; `show()` — `abort_unless(Student::visibleTo($user)->whereKey($student->id)->exists(), 403)`.
+- `StudentApiController::index()`/`show()` — same scoping (JSON 403 instead of abort).
+- `TranscriptController::download()` — `$isAdmin` check now also requires the student to be visible to the requesting user.
+- Tests added to `StudentTest.php`: teacher scoped to assigned class only; `settings.manage` users unrestricted.
+
+---
+
 ## Notes
 
 - Tailwind `tailwind.config.js` still exists in the project root but is ignored by Tailwind v4 (no `@config` import in app.css). Can be deleted once confirmed no other tooling reads it.

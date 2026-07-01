@@ -20,6 +20,7 @@ final class StudentApiController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $students = Student::with(['schoolClass', 'section'])
+            ->visibleTo($request->user())
             ->when($request->input('class_id'), fn ($q, $v) => $q->where('class_id', $v))
             ->when($request->input('status'), fn ($q, $v) => $q->where('status', $v))
             ->when($request->input('search'), function ($q, $s) {
@@ -34,8 +35,12 @@ final class StudentApiController extends Controller
         return StudentResource::collection($students);
     }
 
-    public function show(Student $student): StudentResource
+    public function show(Student $student): StudentResource|JsonResponse
     {
+        if (! Student::visibleTo(auth()->user())->whereKey($student->id)->exists()) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
         $student->load(['schoolClass', 'section']);
 
         return new StudentResource($student);

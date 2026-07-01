@@ -709,6 +709,10 @@ Route::middleware(['web', InitializeTenancyBySubdomain::class, 'auth'])->group(f
     Route::middleware('permission:students.view')->group(function () {
         Route::resource('students', StudentController::class);
     });
+    // `students.view` alone isn't class-scoped: index/show additionally run
+    // Student::visibleTo($user), which is a no-op for `settings.manage` users
+    // (school_admin) and restricts everyone else to classes they're assigned
+    // to via subject_teacher_assignments (see User::staffAssignedClassIds()).
 
     Route::middleware('permission:staff.view')->group(function () {
         Route::resource('staff', StaffController::class);

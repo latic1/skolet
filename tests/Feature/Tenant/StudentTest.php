@@ -119,3 +119,71 @@ test('student status defaults to active', function (): void {
 
     expect($student->status)->toBe('active');
 });
+
+test('teacher can only see students in their assigned class', function (): void {
+    $otherClass = SchoolClass::create(['name' => 'Primary 2', 'order' => 2]);
+
+    $ownStudent = Student::create([
+        'admission_no'     => '2026/0020',
+        'full_name'        => 'Own Class Student',
+        'gender'           => 'male',
+        'guardian_name'    => 'Guardian',
+        'guardian_contact' => '0200000000',
+        'status'           => 'active',
+        'class_id'         => $this->class->id,
+    ]);
+
+    $otherStudent = Student::create([
+        'admission_no'     => '2026/0021',
+        'full_name'        => 'Other Class Student',
+        'gender'           => 'female',
+        'guardian_name'    => 'Guardian',
+        'guardian_contact' => '0200000000',
+        'status'           => 'active',
+        'class_id'         => $otherClass->id,
+    ]);
+
+    $teacherUser = User::create([
+        'name' => 'Teacher', 'email' => 'teacher@t.test', 'password' => bcrypt('pw'), 'role' => 'teacher',
+    ]);
+    $teacherUser->assignRole('teacher');
+
+    $staff = \App\Models\Tenant\Staff::create([
+        'user_id' => $teacherUser->id, 'full_name' => 'Teacher', 'role_title' => 'Teacher', 'status' => 'active',
+    ]);
+
+    \App\Models\Tenant\SubjectTeacherAssignment::create([
+        'staff_id'   => $staff->id,
+        'subject_id' => \App\Models\Tenant\Subject::create(['name' => 'Maths', 'code' => 'MTH'])->id,
+        'class_id'   => $this->class->id,
+        'section_id' => null,
+    ]);
+
+    $visibleIds = Student::visibleTo($teacherUser)->pluck('id');
+
+    expect($visibleIds)->toContain($ownStudent->id)
+        ->and($visibleIds)->not->toContain($otherStudent->id);
+});
+
+test('user with settings.manage sees all students regardless of assignment', function (): void {
+    $otherClass = SchoolClass::create(['name' => 'Primary 3', 'order' => 3]);
+
+    $student = Student::create([
+        'admission_no'     => '2026/0022',
+        'full_name'        => 'Unassigned Class Student',
+        'gender'           => 'male',
+        'guardian_name'    => 'Guardian',
+        'guardian_contact' => '0200000000',
+        'status'           => 'active',
+        'class_id'         => $otherClass->id,
+    ]);
+
+    \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'settings.manage', 'guard_name' => 'web']);
+    $admin = User::create([
+        'name' => 'Admin', 'email' => 'admin@t.test', 'password' => bcrypt('pw'), 'role' => 'school_admin',
+    ]);
+    $admin->assignRole('school_admin');
+    $admin->givePermissionTo('settings.manage');
+
+    expect(Student::visibleTo($admin)->pluck('id'))->toContain($student->id);
+});
