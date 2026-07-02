@@ -159,12 +159,13 @@
     {{-- Report Card Preview --}}
     @if($cardData)
     @php
-        $student = $cardData['student'];
-        $exam    = $cardData['exam'];
-        $results = $cardData['results'];
-        $average = $cardData['average'];
-        $avgGrade  = $cardData['average_grade'];
-        $avgRemark = $cardData['average_remark'];
+        $student     = $cardData['student'];
+        $exam        = $cardData['exam'];
+        $results     = $cardData['results'];
+        $average     = $cardData['average'];
+        $avgGrade    = $cardData['average_grade'];
+        $avgRemark   = $cardData['average_remark'];
+        $isWeighted  = $cardData['is_weighted'] ?? false;
     @endphp
 
     <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
@@ -188,6 +189,11 @@
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent">
                             {{ $exam->name }}
                         </span>
+                        @if($isWeighted)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-lightest text-success-foreground">
+                            CA + Exam Weighted
+                        </span>
+                        @endif
                         @if($exam->term?->academicYear)
                         <span class="text-xs text-text-muted">{{ $exam->term->academicYear->name }}</span>
                         @endif
@@ -236,7 +242,13 @@
                     <tr class="border-b border-border bg-surface-secondary">
                         <th class="text-left px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">#</th>
                         <th class="text-left px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Subject</th>
+                        @if($isWeighted)
+                        <th class="text-center px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">CA Avg</th>
+                        <th class="text-center px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Exam</th>
+                        <th class="text-center px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Final Score</th>
+                        @else
                         <th class="text-center px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Marks (/100)</th>
+                        @endif
                         <th class="text-center px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">Grade</th>
                         <th class="text-left px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary hidden sm:table-cell">Remark</th>
                         <th class="text-left px-6 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary hidden md:table-cell">Progress</th>
@@ -252,18 +264,35 @@
                         {{-- Subject --}}
                         <td class="px-6 py-4 text-sm font-medium text-text-primary">{{ $row['subject'] }}</td>
 
-                        {{-- Marks --}}
+                        @if($isWeighted)
+                        {{-- CA Average --}}
+                        <td class="px-6 py-4 text-center text-sm text-text-secondary">
+                            {{ $row['ca_average'] !== null ? number_format($row['ca_average'], 1) : '—' }}
+                        </td>
+                        {{-- Exam marks --}}
+                        <td class="px-6 py-4 text-center text-sm text-text-secondary">
+                            {{ $row['exam_marks'] !== null ? number_format($row['exam_marks'], 1) : '—' }}
+                        </td>
+                        @endif
+
+                        {{-- Marks / Final Score --}}
                         <td class="px-6 py-4 text-center">
+                            @if($row['marks'] !== null)
                             <span class="text-sm font-semibold text-text-primary">
                                 {{ number_format($row['marks'], 1) }}
                             </span>
+                            @else
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-muted">Pending</span>
+                            @endif
                         </td>
 
                         {{-- Grade badge --}}
                         <td class="px-6 py-4 text-center">
+                            @if($row['grade'])
                             <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold {{ $gradeBadge($row['grade']) }}">
                                 {{ $row['grade'] }}
                             </span>
+                            @endif
                         </td>
 
                         {{-- Remark --}}
@@ -285,7 +314,7 @@
                 @if($average !== null)
                 <tfoot>
                     <tr class="border-t-2 border-border bg-surface-secondary">
-                        <td colspan="2" class="px-6 py-4 text-sm font-semibold text-text-primary">Overall Average</td>
+                        <td colspan="{{ $isWeighted ? 4 : 2 }}" class="px-6 py-4 text-sm font-semibold text-text-primary">Overall Average</td>
                         <td class="px-6 py-4 text-center">
                             <span class="text-sm font-semibold text-text-primary">{{ number_format($average, 1) }}</span>
                         </td>

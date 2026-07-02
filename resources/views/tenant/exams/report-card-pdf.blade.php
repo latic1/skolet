@@ -232,7 +232,7 @@
     </div>
     <div class="report-title">
         <h1>REPORT CARD</h1>
-        <p>{{ $exam->name }}
+        <p>{{ $exam->name }}{{ ($is_weighted ?? false) ? ' (CA + Exam Weighted)' : '' }}
         @if($exam->term) &middot; {{ $exam->term->name }}@endif
         @if($exam->term?->academicYear) &middot; {{ $exam->term->academicYear->name }}@endif
         </p>
@@ -271,12 +271,19 @@
 
 {{-- ── Results Table ── --}}
 @if($results->isNotEmpty())
+@php $weighted = $is_weighted ?? false; @endphp
 <table class="results">
     <thead>
         <tr>
             <th style="width:28px">#</th>
             <th>Subject</th>
+            @if($weighted)
+            <th class="center" style="width:60px">CA Avg</th>
+            <th class="center" style="width:60px">Exam</th>
+            <th class="center" style="width:70px">Final</th>
+            @else
             <th class="center" style="width:80px">Marks (/100)</th>
+            @endif
             <th class="center" style="width:60px">Grade</th>
             <th style="width:90px">Remark</th>
             <th style="width:90px">Progress</th>
@@ -287,9 +294,21 @@
         <tr>
             <td>{{ $i + 1 }}</td>
             <td>{{ $row['subject'] }}</td>
-            <td class="center"><strong>{{ number_format($row['marks'], 1) }}</strong></td>
+            @if($weighted)
+            <td class="center">{{ $row['ca_average'] !== null ? number_format($row['ca_average'], 1) : '—' }}</td>
+            <td class="center">{{ $row['exam_marks'] !== null ? number_format($row['exam_marks'], 1) : '—' }}</td>
+            @endif
             <td class="center">
+                @if($row['marks'] !== null)
+                <strong>{{ number_format($row['marks'], 1) }}</strong>
+                @else
+                <span style="color:#99a1af;">Pending</span>
+                @endif
+            </td>
+            <td class="center">
+                @if($row['grade'])
                 <span class="grade-badge grade-{{ $row['grade'] }}">{{ $row['grade'] }}</span>
+                @endif
             </td>
             <td>{{ $row['remark'] }}</td>
             <td>
@@ -303,7 +322,7 @@
     @if($average !== null)
     <tfoot>
         <tr>
-            <td colspan="2"><strong>Overall Average</strong></td>
+            <td colspan="{{ $weighted ? 4 : 2 }}"><strong>Overall Average</strong></td>
             <td class="center"><strong>{{ number_format($average, 1) }}</strong></td>
             <td class="center">
                 @if($average_grade)

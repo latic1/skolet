@@ -43,6 +43,18 @@
         {{ session('error') }}
     </div>
     @endif
+    @if($errors->any())
+    <div class="flex items-start gap-3 bg-error-light border border-error text-error text-sm px-4 py-3 rounded-xl">
+        <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <ul class="list-disc list-inside space-y-0.5">
+            @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
 
     {{-- Page header --}}
     <div class="flex items-center justify-between">
@@ -143,6 +155,11 @@
                                     </svg>
                                 </div>
                                 <span class="text-sm font-medium text-text-primary">{{ $exam->name }}</span>
+                                @if($exam->exam_role === 'ca')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-muted text-accent">CA</span>
+                                @elseif($exam->exam_role === 'end_of_term')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-lightest text-success-foreground">End of Term</span>
+                                @endif
                             </div>
                         </td>
 
@@ -205,7 +222,8 @@
                                             name: {{ json_encode($exam->name) }},
                                             term_id: '{{ $exam->term_id ?? '' }}',
                                             start_date: '{{ $exam->start_date?->format('Y-m-d') ?? '' }}',
-                                            end_date: '{{ $exam->end_date?->format('Y-m-d') ?? '' }}'
+                                            end_date: '{{ $exam->end_date?->format('Y-m-d') ?? '' }}',
+                                            exam_role: '{{ $exam->exam_role }}'
                                         })"
                                         class="text-xs font-medium text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-surface-secondary">
                                     Edit
@@ -320,11 +338,12 @@
                 term_id: '',
                 start_date: '',
                 end_date: '',
+                exam_role: 'none',
             },
 
             openAdd() {
                 this.mode = 'add';
-                this.form = { id: '', name: '', term_id: '', start_date: '', end_date: '' };
+                this.form = { id: '', name: '', term_id: '', start_date: '', end_date: '', exam_role: 'none' };
                 this.showModal = true;
             },
 

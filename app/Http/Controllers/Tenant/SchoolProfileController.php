@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreGradingScaleRequest;
+use App\Http\Requests\Tenant\UpdateGradingWeightsRequest;
 use App\Http\Requests\Tenant\UpdateSchoolProfileRequest;
 use App\Models\Tenant\SchoolProfile;
 use App\Services\AdmissionNumberService;
@@ -84,6 +85,15 @@ final class SchoolProfileController extends Controller
 
         return redirect(request()->getSchemeAndHttpHost() . '/settings/academic-year')
             ->with('success', 'Grading scale saved successfully.');
+    }
+
+    public function updateGradingWeights(UpdateGradingWeightsRequest $request): RedirectResponse
+    {
+        $profile = SchoolProfile::first() ?? new SchoolProfile();
+        $profile->fill($request->validated())->save();
+
+        return redirect(request()->getSchemeAndHttpHost() . '/settings/academic-year')
+            ->with('success', 'Continuous Assessment weighting saved successfully.');
     }
 
     public function resetAdmissionCounter(AdmissionNumberService $service): RedirectResponse

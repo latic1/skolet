@@ -15,12 +15,17 @@ final class Exam extends Model
 {
     use HasUuids, LogsActivity;
 
+    public const ROLE_NONE        = 'none';
+    public const ROLE_CA          = 'ca';
+    public const ROLE_END_OF_TERM = 'end_of_term';
+
     protected $fillable = [
         'name',
         'term_id',
         'start_date',
         'end_date',
         'is_published',
+        'exam_role',
     ];
 
     protected $casts = [

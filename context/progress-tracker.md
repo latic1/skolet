@@ -1871,6 +1871,54 @@ Already complete when this session ran. No new files created. Verified working s
 
 ---
 
+### 2026-07-02 — Feature: Student Photo Upload
+
+`students.photo_path` existed on the schema since Feature 07 but nothing ever wrote to or
+displayed it. Wired it up end-to-end, mirroring the existing account-avatar/school-logo upload
+pattern.
+
+- `StoreStudentRequest`/`UpdateStudentRequest` — `photo` field: `image|mimes:jpg,jpeg,png,gif,webp|max:2048`.
+- `StudentController::store()`/`update()` — stores to `student-photos/{tenant}/{student_id}/photo.{ext}` on the `public` disk via a private `storeStudentPhoto()` helper; deletes the old file on replace.
+- `StudentController::photo()` — new streaming action at `/students/{student}/photo`, gated by the same `Student::visibleTo()` scope from the class-visibility fix above (a teacher can't fetch a photo for a student outside their assigned class).
+- `StudentController::anonymize()` — now also deletes the photo file from disk, not just nulling the column.
+- `students/create.blade.php`/`edit.blade.php` — upload field with live Alpine preview (same UX as `account/edit.blade.php`'s avatar picker).
+- `students/show.blade.php`/`index.blade.php` — display the photo when present, falling back to initials via an `onerror` handler on the `<img>`.
+
+---
+
+### 2026-07-02 — Feature: Continuous Assessment (CA) + End-of-Term Exam Weighted Grading
+
+Ghana GES-style grading: a subject's final term grade blends a Continuous Assessment average
+(class tests, mid-term tests) with the End-of-Term Exam using a configurable weight split
+(default 40% CA / 60% Exam). Reuses the existing `Exam`/`ExamResult` schema rather than adding
+a parallel assessment system.
+
+**Schema:**
+- `2026_07_02_000001_add_exam_role_to_exams_table.php` — `exams.exam_role` enum(`none`,`ca`,`end_of_term`) default `none`. Untagged exams don't count toward CA or the final grade.
+- `2026_07_02_000002_add_ca_exam_weights_to_school_profile_table.php` — `school_profile.ca_weight`/`exam_weight` unsignedTinyInteger, default 40/60.
+
+**Validation:**
+- `StoreExamRequest`/`UpdateExamRequest` — `exam_role` in `none,ca,end_of_term`; `withValidator` rejects a second `end_of_term` exam in the same term (only one allowed per term).
+- `UpdateGradingWeightsRequest` — `ca_weight`/`exam_weight` each 0-100, must sum to exactly 100.
+
+**Service — `ReportCardService`:**
+- `computeWeightedSubjectScores(Term, Student, scale, caWeight, examWeight)` (private) — groups a student's `ExamResult` rows in a term by subject; CA average = avg of marks from `exam_role=ca` exams; exam component = marks from the single `exam_role=end_of_term` exam; `weighted = caAverage * caWeight/100 + examMarks * examWeight/100` when both exist, else `marks = null` with `status = 'pending_ca'|'pending_exam'`.
+- `build(Exam, Student)` — unchanged for `none`/`ca`-role exams (raw single-exam marks, as before); when the exam is `end_of_term`, delegates to `computeWeightedSubjectScores()` and returns `is_weighted = true` plus per-row `ca_average`/`exam_marks`/`status` alongside the existing `marks`/`grade`/`remark`/`bar_width`/`bar_color` keys (backward-compatible shape).
+- `generateTranscript()` — per-term average uses the same weighted blend when a term has an `end_of_term` exam, otherwise falls back to the historical flat average (year/cumulative averages unchanged — still flat, out of scope for this pass).
+
+**Controller/Routes:**
+- `SchoolProfileController::updateGradingWeights()` — mirrors `updateGradingScale()`; `POST /settings/grading-weights`.
+
+**Views:**
+- `exams/_form.blade.php` — "Counts Toward" select (Not counted / CA / End of Term Exam).
+- `exams/index.blade.php` — CA/End of Term badge next to exam name; added a validation-error banner (pre-existing gap — the page had no way to surface a failed save before this).
+- `settings/academic-year.blade.php` — new "Continuous Assessment Weighting" section (two linked number inputs that keep CA%+Exam%=100 via Alpine).
+- `exams/report-card.blade.php` / `report-card-pdf.blade.php` — when `is_weighted`, show extra "CA Avg"/"Exam" columns and a "Pending" badge instead of a grade for incomplete subjects; unchanged for non-weighted exams.
+
+**Tests:** `ReportCardWeightingTest.php` — weighted blend with default and custom splits, pending status when one side is missing, `none`-tagged exams excluded from CA, backward-compatible raw results for non-`end_of_term` exams, one-end-of-term-per-term invariant.
+
+---
+
 ## Notes
 
 - Tailwind `tailwind.config.js` still exists in the project root but is ignored by Tailwind v4 (no `@config` import in app.css). Can be deleted once confirmed no other tooling reads it.

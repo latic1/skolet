@@ -466,6 +466,7 @@ When the year-end promotion workflow runs: a `student_class_history` row is writ
 | start_date  | date    |                          |
 | end_date    | date    |                          |
 | is_published | boolean | Marks/report cards visible to students/parents once true (Feature 13) |
+| exam_role   | enum    | `none` (default) \| `ca` \| `end_of_term` — see CA/Exam Weighting below |
 
 ### `exam_results`
 
@@ -479,6 +480,8 @@ When the year-end promotion workflow runs: a `student_class_history` row is writ
 | grade      | string  | Computed from grading scale |
 
 **MVP assumption:** every subject's `marks` is recorded out of 100, so `marks` is directly the percentage used against `config('schoolflow.default_grading_scale')` — no per-subject max-marks conversion. Marks Entry (Feature 12) validates input as `0-100`. If a school needs subjects scored out of a different total (e.g. 50 or 20), this is a Phase 2 change: add a `max_marks` column to `exams` or `exam_results`, store raw marks, and compute `percentage = marks / max_marks * 100` before applying the grading scale.
+
+**CA/Exam Weighting (Ghana GES-style grading):** a school tags each `Exam` row with `exam_role` — untagged (`none`) exams don't count toward the final grade; `ca` exams are averaged together into a "Continuous Assessment" bucket (a teacher "selects" which work counts simply by tagging it `ca`, e.g. "Class Test 1" + "Mid-Term Test"); exactly one exam per term can be `end_of_term` (enforced in `StoreExamRequest`/`UpdateExamRequest`). `SchoolProfile.ca_weight`/`exam_weight` (default 40/60, editable in Settings → Academic Calendar, must sum to 100) control the blend: `weighted_score = ca_average * ca_weight% + end_of_term_marks * exam_weight%`, computed per subject in `ReportCardService::computeWeightedSubjectScores()`. Viewing the report card for the `end_of_term` exam shows this blended score (`is_weighted = true` in the returned data); viewing any other exam shows its raw marks unchanged. A subject with only one side of the blend graded shows "Pending" rather than a partial score. The transcript's per-term average uses the same weighted blend when a term has an `end_of_term` exam, and falls back to a flat average otherwise (for terms that don't use this workflow).
 
 ### `fee_bundles`
 

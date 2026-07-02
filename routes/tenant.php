@@ -473,6 +473,7 @@ Route::domain('{subdomain}.' . $appHost)
                 Route::post('/settings/profile', [SchoolProfileController::class, 'update'])->name('settings.profile.update');
                 Route::post('/settings/profile/reset-counter', [SchoolProfileController::class, 'resetAdmissionCounter'])->name('settings.profile.reset-counter');
                 Route::post('/settings/grading-scale', [SchoolProfileController::class, 'updateGradingScale'])->name('settings.grading-scale');
+                Route::post('/settings/grading-weights', [SchoolProfileController::class, 'updateGradingWeights'])->name('settings.grading-weights');
 
                 // Notifications
                 Route::get('/settings/notifications', [NotificationsController::class, 'index'])->name('settings.notifications');

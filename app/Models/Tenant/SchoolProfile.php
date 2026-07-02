@@ -33,6 +33,8 @@ final class SchoolProfile extends Model
         'admissions_open',
         'currency_code',
         'currency_symbol',
+        'ca_weight',
+        'exam_weight',
     ];
 
     protected $casts = [
@@ -41,6 +43,8 @@ final class SchoolProfile extends Model
         'onboarding_step'       => 'integer',
         'notification_settings' => 'array',
         'admissions_open'       => 'boolean',
+        'ca_weight'             => 'integer',
+        'exam_weight'           => 'integer',
     ];
 
     public function getActivitylogOptions(): LogOptions

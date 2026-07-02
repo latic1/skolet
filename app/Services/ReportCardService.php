@@ -9,7 +9,9 @@ use App\Models\Tenant\Exam;
 use App\Models\Tenant\ExamResult;
 use App\Models\Tenant\SchoolProfile;
 use App\Models\Tenant\Student;
+use App\Models\Tenant\Term;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -35,25 +37,39 @@ final class ReportCardService
         $scale = SchoolProfile::first()?->grading_scale
             ?? config('skolet.default_grading_scale', []);
 
-        $rawResults = ExamResult::where('exam_id', $exam->id)
-            ->where('student_id', $student->id)
-            ->with('subject')
-            ->orderBy('created_at')
-            ->get();
+        if ($exam->exam_role === Exam::ROLE_END_OF_TERM && $exam->term) {
+            $profile = SchoolProfile::first();
+            $results = $this->computeWeightedSubjectScores(
+                $exam->term,
+                $student,
+                $scale,
+                $profile?->ca_weight ?? 40,
+                $profile?->exam_weight ?? 60,
+            );
+            $isWeighted = true;
+        } else {
+            $rawResults = ExamResult::where('exam_id', $exam->id)
+                ->where('student_id', $student->id)
+                ->with('subject')
+                ->orderBy('created_at')
+                ->get();
 
-        $results = $rawResults->map(function (ExamResult $r) use ($scale) {
-            [$grade, $remark] = $this->applyScale((float) $r->marks, $scale);
-            return [
-                'subject'    => $r->subject?->name ?? '—',
-                'marks'      => $r->marks,
-                'grade'      => $grade,
-                'remark'     => $remark,
-                'bar_width'  => min(100, (int) round($r->marks)),
-                'bar_color'  => $this->barColor($grade),
-            ];
-        });
+            $results = $rawResults->map(function (ExamResult $r) use ($scale) {
+                [$grade, $remark] = $this->applyScale((float) $r->marks, $scale);
+                return [
+                    'subject'    => $r->subject?->name ?? '—',
+                    'marks'      => $r->marks,
+                    'grade'      => $grade,
+                    'remark'     => $remark,
+                    'bar_width'  => min(100, (int) round($r->marks)),
+                    'bar_color'  => $this->barColor($grade),
+                ];
+            });
+            $isWeighted = false;
+        }
 
-        $average      = $results->isNotEmpty() ? round($results->avg('marks'), 1) : null;
+        $completedResults = $results->filter(fn ($r) => $r['marks'] !== null);
+        $average      = $completedResults->isNotEmpty() ? round($completedResults->avg('marks'), 1) : null;
         [$avgGrade, $avgRemark] = $average !== null
             ? $this->applyScale($average, $scale)
             : [null, null];
@@ -66,7 +82,64 @@ final class ReportCardService
             'average_grade'  => $avgGrade,
             'average_remark' => $avgRemark,
             'scale'          => $scale,
+            'is_weighted'    => $isWeighted,
         ];
+    }
+
+    /**
+     * Per-subject Continuous Assessment + End-of-Term Exam blend for one student/term.
+     * CA components are the average of all ExamResult marks from exams tagged
+     * Exam::ROLE_CA in the term; the exam component is the single Exam::ROLE_END_OF_TERM
+     * result. Exams left untagged (Exam::ROLE_NONE) are excluded from both buckets —
+     * this is how a teacher "selects" which work counts toward CA.
+     */
+    private function computeWeightedSubjectScores(Term $term, Student $student, array $scale, int $caWeight, int $examWeight): Collection
+    {
+        $rawResults = ExamResult::where('student_id', $student->id)
+            ->whereHas('exam', fn ($q) => $q->where('term_id', $term->id))
+            ->with(['exam', 'subject'])
+            ->get();
+
+        return $rawResults
+            ->groupBy('subject_id')
+            ->map(function (Collection $subjectResults) use ($scale, $caWeight, $examWeight) {
+                $subjectName = $subjectResults->first()->subject?->name ?? '—';
+
+                $caResults = $subjectResults->filter(fn (ExamResult $r) => $r->exam?->exam_role === Exam::ROLE_CA);
+                $eotResult = $subjectResults->first(fn (ExamResult $r) => $r->exam?->exam_role === Exam::ROLE_END_OF_TERM);
+
+                $caAverage = $caResults->isNotEmpty() ? round((float) $caResults->avg('marks'), 1) : null;
+                $examMarks = $eotResult?->marks !== null ? (float) $eotResult->marks : null;
+
+                $weighted = null;
+                if ($caAverage !== null && $examMarks !== null) {
+                    $weighted = round($caAverage * $caWeight / 100 + $examMarks * $examWeight / 100, 1);
+                }
+
+                $status = match (true) {
+                    $caAverage !== null && $examMarks !== null => 'complete',
+                    $examMarks !== null                        => 'pending_ca',
+                    default                                    => 'pending_exam',
+                };
+
+                [$grade, $remark] = $weighted !== null
+                    ? $this->applyScale($weighted, $scale)
+                    : [null, null];
+
+                return [
+                    'subject'            => $subjectName,
+                    'marks'              => $weighted,
+                    'grade'              => $grade,
+                    'remark'             => $remark,
+                    'bar_width'          => $weighted !== null ? min(100, (int) round($weighted)) : 0,
+                    'bar_color'          => $grade ? $this->barColor($grade) : '#d1d5db',
+                    'ca_average'         => $caAverage,
+                    'ca_component_count' => $caResults->count(),
+                    'exam_marks'         => $examMarks,
+                    'status'             => $status,
+                ];
+            })
+            ->values();
     }
 
     /**
@@ -140,8 +213,11 @@ final class ReportCardService
         $path      = "{$directory}/{$student->id}.pdf";
 
         try {
-            $scale = SchoolProfile::first()?->grading_scale
+            $profile    = SchoolProfile::first();
+            $scale      = $profile?->grading_scale
                 ?? config('skolet.default_grading_scale', []);
+            $caWeight   = $profile?->ca_weight ?? 40;
+            $examWeight = $profile?->exam_weight ?? 60;
 
             $rawResults = ExamResult::where('student_id', $student->id)
                 ->whereHas('exam', fn ($q) => $q->where('is_published', true))
@@ -152,12 +228,12 @@ final class ReportCardService
             $groupedByYear = $rawResults
                 ->filter(fn ($r) => $r->exam?->term?->academicYear !== null)
                 ->groupBy(fn ($r) => $r->exam->term->academicYear->id)
-                ->map(function ($yearResults) use ($student, $scale) {
+                ->map(function ($yearResults) use ($student, $scale, $caWeight, $examWeight) {
                     $academicYear = $yearResults->first()->exam->term->academicYear;
 
                     $termGroups = $yearResults
                         ->groupBy(fn ($r) => $r->exam->term->id)
-                        ->map(function ($termResults) use ($student, $scale) {
+                        ->map(function ($termResults) use ($student, $scale, $caWeight, $examWeight) {
                             $term = $termResults->first()->exam->term;
 
                             // Attendance % for this student during this term
@@ -205,9 +281,35 @@ final class ReportCardService
                                 ->sortBy(fn ($e) => optional($e['exam']->start_date)->toDateString() ?? $e['exam']->created_at->toDateString())
                                 ->values();
 
-                            $termAvg = $termResults->pluck('marks')->isNotEmpty()
-                                ? round($termResults->pluck('marks')->avg(), 1)
-                                : null;
+                            // When this term has a designated End-of-Term Exam, the term
+                            // average is the CA/Exam-weighted blend per subject rather than
+                            // a flat average of every mark (which would double-count CA
+                            // components against the exam). Terms without one keep the
+                            // historical flat-average behavior.
+                            $hasEndOfTerm = $termResults->contains(fn ($r) => $r->exam?->exam_role === Exam::ROLE_END_OF_TERM);
+
+                            if ($hasEndOfTerm) {
+                                $weightedSubjects = $termResults
+                                    ->groupBy('subject_id')
+                                    ->map(function ($subjectResults) use ($caWeight, $examWeight) {
+                                        $caResults = $subjectResults->filter(fn ($r) => $r->exam?->exam_role === Exam::ROLE_CA);
+                                        $eotResult = $subjectResults->first(fn ($r) => $r->exam?->exam_role === Exam::ROLE_END_OF_TERM);
+
+                                        $caAverage = $caResults->isNotEmpty() ? (float) $caResults->avg('marks') : null;
+                                        $examMarks = $eotResult?->marks !== null ? (float) $eotResult->marks : null;
+
+                                        return ($caAverage !== null && $examMarks !== null)
+                                            ? $caAverage * $caWeight / 100 + $examMarks * $examWeight / 100
+                                            : null;
+                                    })
+                                    ->filter(fn ($v) => $v !== null);
+
+                                $termAvg = $weightedSubjects->isNotEmpty() ? round($weightedSubjects->avg(), 1) : null;
+                            } else {
+                                $termAvg = $termResults->pluck('marks')->isNotEmpty()
+                                    ? round($termResults->pluck('marks')->avg(), 1)
+                                    : null;
+                            }
                             [$termGrade, $termRemark] = $termAvg !== null
                                 ? $this->applyScale($termAvg, $scale)
                                 : [null, null];
@@ -248,7 +350,7 @@ final class ReportCardService
                 ? $this->applyScale($cumulativeAvg, $scale)
                 : [null, null];
 
-            $schoolProfile = SchoolProfile::first();
+            $schoolProfile = $profile;
             $logoBase64    = null;
 
             if ($schoolProfile?->logo_path) {

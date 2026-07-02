@@ -226,7 +226,69 @@
 </div>
 
     {{-- =========================================================
-         Section 3: Academic Years
+         Section 3: Continuous Assessment Weighting
+         ========================================================= --}}
+@php
+    $caWeight   = old('ca_weight', $schoolProfile?->ca_weight ?? 40);
+    $examWeight = old('exam_weight', $schoolProfile?->exam_weight ?? 60);
+@endphp
+<div class="bg-surface border border-border rounded-2xl shadow-card"
+     x-data="{
+        submitting: false,
+        caWeight: {{ (int) $caWeight }},
+        examWeight: {{ (int) $examWeight }},
+        setCa(v) { this.caWeight = Math.max(0, Math.min(100, Number(v) || 0)); this.examWeight = 100 - this.caWeight; },
+        setExam(v) { this.examWeight = Math.max(0, Math.min(100, Number(v) || 0)); this.caWeight = 100 - this.examWeight; }
+     }">
+
+    <div class="px-6 py-4 border-b border-border">
+        <h3 class="text-base font-semibold text-text-primary">Continuous Assessment Weighting</h3>
+        <p class="text-xs text-text-muted mt-0.5">
+            When a term has an exam tagged &ldquo;End of Term Exam&rdquo;, the final subject grade blends the
+            Continuous Assessment average with that exam using this split. Tag which exams count toward CA
+            on the <a href="{{ $host }}/exams" class="text-accent hover:underline">Exams</a> page.
+        </p>
+    </div>
+
+    @if($errors->hasAny(['ca_weight', 'exam_weight']))
+    <div class="mx-6 mt-4 bg-error-light border border-error text-error text-sm px-4 py-3 rounded-xl">
+        <ul class="list-disc list-inside space-y-0.5">
+            @foreach($errors->only(['ca_weight', 'exam_weight']) as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
+    <form method="POST" action="{{ $host }}/settings/grading-weights"
+          @submit="submitting = true" class="p-6 flex flex-wrap items-end gap-4">
+        @csrf
+
+        <div class="flex flex-col gap-1.5">
+            <label class="block text-sm font-medium text-text-dark mb-1.5">CA Weight (%)</label>
+            <input type="number" name="ca_weight" min="0" max="100" required
+                   x-model="caWeight" @input="setCa($event.target.value)"
+                   class="w-28 px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label class="block text-sm font-medium text-text-dark mb-1.5">Exam Weight (%)</label>
+            <input type="number" name="exam_weight" min="0" max="100" required
+                   x-model="examWeight" @input="setExam($event.target.value)"
+                   class="w-28 px-3 py-2 bg-surface border border-border rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors">
+        </div>
+
+        <button type="submit"
+                :disabled="submitting"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            <span x-show="!submitting">Save Weighting</span>
+            <span x-show="submitting">Saving&hellip;</span>
+        </button>
+    </form>
+</div>
+
+    {{-- =========================================================
+         Section 4: Academic Years
          ========================================================= --}}
     <div class="bg-surface border border-border rounded-2xl shadow-card">
 
