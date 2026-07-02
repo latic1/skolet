@@ -37,14 +37,44 @@
     </div>
     @endif
 
-    <form method="POST" action="{{ $host }}/students/{{ $student->id }}" class="flex flex-col gap-6"
-          x-data="{ submitting: false }" @submit="submitting = true">
+    <form method="POST" action="{{ $host }}/students/{{ $student->id }}" enctype="multipart/form-data" class="flex flex-col gap-6"
+          x-data="{ submitting: false, previewUrl: {{ json_encode($photoUrl ?? '') }}, onPhotoChange(e) { const file = e.target.files[0]; if (file) { this.previewUrl = URL.createObjectURL(file); } } }"
+          @submit="submitting = true">
         @csrf
         @method('PUT')
 
         {{-- Personal Information --}}
         <div class="bg-surface border border-border rounded-2xl shadow-card p-6 flex flex-col gap-5">
             <h3 class="text-base font-semibold text-text-primary">Personal Information</h3>
+
+            {{-- Photo Upload --}}
+            <div>
+                <label class="block text-sm font-medium text-text-dark mb-3">Photo</label>
+                <div class="flex items-start gap-5 flex-wrap">
+                    <div class="w-20 h-20 rounded-xl border-2 border-border flex items-center justify-center shrink-0 overflow-hidden bg-surface-secondary">
+                        <template x-if="previewUrl">
+                            <img :src="previewUrl" alt="Student photo" class="w-full h-full object-cover">
+                        </template>
+                        <template x-if="!previewUrl">
+                            <span class="text-2xl font-semibold text-accent">{{ mb_strtoupper(mb_substr($student->full_name, 0, 1)) }}</span>
+                        </template>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="photo"
+                               class="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-md hover:bg-accent-dark transition-colors cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            Upload Photo
+                        </label>
+                        <input id="photo" type="file" name="photo" accept="image/*" class="hidden"
+                               @change="onPhotoChange($event)">
+                        <p class="text-xs text-text-muted">JPG, PNG, WebP up to 2 MB.</p>
+                    </div>
+                </div>
+                @error('photo')<p class="mt-2 text-xs text-error">{{ $message }}</p>@enderror
+            </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">

@@ -26,6 +26,7 @@ final class UpdateStudentRequest extends FormRequest
             'guardian_email'    => ['nullable', 'email', 'max:255'],
             'address'           => ['nullable', 'string', 'max:500'],
             'status'            => ['required', 'in:active,inactive,graduated'],
+            'photo'             => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ];
     }
 }

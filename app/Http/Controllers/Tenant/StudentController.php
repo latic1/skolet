@@ -25,6 +25,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -99,11 +100,15 @@ final class StudentController extends Controller
     public function store(StoreStudentRequest $request): RedirectResponse
     {
         try {
-            $data = $request->validated();
+            $data = collect($request->validated())->except('photo')->toArray();
             $data['status']       = $data['status'] ?? 'active';
             $data['admission_no'] = $this->admissionNumberService->generate();
 
             $student = Student::create($data);
+
+            if ($request->hasFile('photo')) {
+                $student->update(['photo_path' => $this->storeStudentPhoto($request, $student->id)]);
+            }
 
             SyncTenantStudentCount::run();
 
@@ -170,8 +175,10 @@ final class StudentController extends Controller
             $student->parents->contains('id', $user->id)
         );
 
+        $photoUrl = $this->photoUrl($student);
+
         return view('tenant.students.show', compact(
-            'student', 'disciplinaryRecords', 'feeDiscounts', 'studentFeeStructures', 'canDownloadTranscript'
+            'student', 'disciplinaryRecords', 'feeDiscounts', 'studentFeeStructures', 'canDownloadTranscript', 'photoUrl'
         ));
     }
 
@@ -184,14 +191,24 @@ final class StudentController extends Controller
             'name'     => $c->name,
             'sections' => $c->sections->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values(),
         ])->values()->toArray();
+        $photoUrl = $this->photoUrl($student);
 
-        return view('tenant.students.edit', compact('student', 'classes', 'classesJson'));
+        return view('tenant.students.edit', compact('student', 'classes', 'classesJson', 'photoUrl'));
     }
 
     public function update(UpdateStudentRequest $request, Student $student): RedirectResponse
     {
         try {
-            $student->update($request->validated());
+            $data = collect($request->validated())->except('photo')->toArray();
+
+            if ($request->hasFile('photo')) {
+                if ($student->photo_path && Storage::disk('public')->exists($student->photo_path)) {
+                    Storage::disk('public')->delete($student->photo_path);
+                }
+                $data['photo_path'] = $this->storeStudentPhoto($request, $student->id);
+            }
+
+            $student->update($data);
 
             if ($student->wasChanged('status')) {
                 SyncTenantStudentCount::run();
@@ -204,6 +221,20 @@ final class StudentController extends Controller
 
             return back()->withInput()->with('error', 'Could not update student. Please try again.');
         }
+    }
+
+    public function photo(Student $student): BinaryFileResponse
+    {
+        abort_unless(Student::visibleTo(Auth::user())->whereKey($student->id)->exists(), 403);
+
+        if (!$student->photo_path || !Storage::disk('public')->exists($student->photo_path)) {
+            abort(404);
+        }
+
+        return response()->file(
+            Storage::disk('public')->path($student->photo_path),
+            ['Cache-Control' => 'private, max-age=3600']
+        );
     }
 
     public function destroy(Student $student): RedirectResponse
@@ -264,6 +295,10 @@ final class StudentController extends Controller
     public function anonymize(Student $student): RedirectResponse
     {
         try {
+            if ($student->photo_path && Storage::disk('public')->exists($student->photo_path)) {
+                Storage::disk('public')->delete($student->photo_path);
+            }
+
             $student->update([
                 'full_name'       => 'Deleted Student',
                 'guardian_name'   => 'Removed',
@@ -371,6 +406,25 @@ final class StudentController extends Controller
 
             return back()->with('error', 'Could not revoke login access. Please try again.');
         }
+    }
+
+    private function storeStudentPhoto(Request $request, string $studentId): string
+    {
+        $tenantId = tenant('id');
+        $ext      = $request->file('photo')->getClientOriginalExtension();
+
+        return $request->file('photo')->storeAs(
+            "student-photos/{$tenantId}/{$studentId}",
+            "photo.{$ext}",
+            'public'
+        );
+    }
+
+    private function photoUrl(Student $student): ?string
+    {
+        return $student->photo_path && Storage::disk('public')->exists($student->photo_path)
+            ? request()->getSchemeAndHttpHost() . '/students/' . $student->id . '/photo'
+            : null;
     }
 
 }

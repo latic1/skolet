@@ -207,6 +207,7 @@ Route::domain('{subdomain}.' . $appHost)
             // Wildcard routes come last so literal paths above take precedence
             Route::middleware('permission:students.view')->group(function () {
                 Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
+                Route::get('/students/{student}/photo', [StudentController::class, 'photo'])->name('students.photo');
                 Route::get('/students/{student}/transcript', [TranscriptController::class, 'download'])->name('students.transcript');
             });
             Route::middleware('permission:students.edit')->group(function () {

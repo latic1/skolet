@@ -178,7 +178,14 @@
                         <td class="px-6 py-4 text-sm font-medium text-text-muted whitespace-nowrap">{{ $student->admission_no }}</td>
                         <td class="px-6 py-4">
                             <a href="{{ $host }}/students/{{ $student->id }}"
-                               class="text-sm font-medium text-text-primary hover:text-accent transition-colors">
+                               class="flex items-center gap-3 text-sm font-medium text-text-primary hover:text-accent transition-colors">
+                                <span class="relative w-8 h-8 rounded-full bg-accent-muted flex items-center justify-center shrink-0 overflow-hidden">
+                                    <span class="text-xs font-semibold text-accent">{{ mb_strtoupper(mb_substr($student->full_name, 0, 1)) }}</span>
+                                    @if($student->photo_path)
+                                    <img src="{{ $host }}/students/{{ $student->id }}/photo" alt=""
+                                         class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+                                    @endif
+                                </span>
                                 {{ $student->full_name }}
                             </a>
                         </td>

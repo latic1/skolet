@@ -30,8 +30,12 @@
     <div class="bg-surface border border-border rounded-2xl shadow-card p-6">
         <div class="flex items-start justify-between gap-4">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl bg-accent-muted flex items-center justify-center shrink-0">
+                <div class="relative w-14 h-14 rounded-2xl bg-accent-muted flex items-center justify-center shrink-0 overflow-hidden">
                     <span class="text-xl font-semibold text-accent">{{ mb_strtoupper(mb_substr($student->full_name, 0, 1)) }}</span>
+                    @if($photoUrl)
+                    <img src="{{ $photoUrl }}" alt="{{ $student->full_name }}"
+                         class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+                    @endif
                 </div>
                 <div>
                     <h2 class="text-base font-semibold text-text-primary">{{ $student->full_name }}</h2>
